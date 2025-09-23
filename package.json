@@ -1,0 +1,50 @@
+{
+  "name": "taco-casa-digital-solution",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "npm@10.5.0",
+  "workspaces": [
+    "apps/web",
+    "packages/domain",
+    "packages/firebase"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "preview": "npm --workspace apps/web run preview",
+    "lint": "npm --workspaces run lint",
+    "format": "prettier --write .",
+    "test": "npm --workspaces run test",
+    "test:unit": "npm --workspace packages/domain run test && npm --workspace apps/web run test:unit",
+    "test:e2e": "npm --workspace apps/web run test:e2e",
+    "e2e": "npm --workspace apps/web run test:e2e",
+    "deploy": "npm --workspace apps/web run deploy",
+    "seed": "npm --workspace packages/firebase run seed",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-tailwindcss": "^3.18.2",
+    "firebase-tools": "^14.17.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.44.1"
+  },
+  "lint-staged": {
+    "*.{json,md}": "prettier --write",
+    "{apps,packages}/**/*.{ts,tsx,js,jsx}": [
+      "eslint --max-warnings=0",
+      "prettier --write"
+    ]
+  }
+}

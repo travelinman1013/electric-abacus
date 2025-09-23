@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function userRole() {
+      return isAuthenticated() && userData(request.auth.uid).exists()
+        ? userData(request.auth.uid).data.role
+        : null;
+    }
+
+    function isOwner() {
+      return userRole() == 'owner';
+    }
+
+    function isTeamMember() {
+      return userRole() == 'teamMember';
+    }
+
+    function weekDoc(weekId) {
+      return get(/databases/$(database)/documents/weeks/$(weekId));
+    }
+
+    function weekStatus(weekId) {
+      return weekDoc(weekId).exists() ? weekDoc(weekId).data.status : null;
+    }
+
+    function isWeekDraft(weekId) {
+      return weekStatus(weekId) == 'draft';
+    }
+
+    function isWeekFinalized(weekId) {
+      return weekStatus(weekId) == 'finalized';
+    }
+
+    // User Profiles
+    match /users/{uid} {
+      allow read: if isOwner() || (isAuthenticated() && request.auth.uid == uid);
+      allow create: if isOwner();
+      allow update: if isOwner();
+      allow delete: if false;
+    }
+
+    // Ingredients + Versions
+    match /ingredients/{ingredientId} {
+      allow read: if isOwner() || isTeamMember();
+      allow create, update, delete: if isOwner();
+
+      match /versions/{versionId} {
+        allow read: if isOwner() || isTeamMember();
+        allow create, update, delete: if isOwner();
+      }
+    }
+
+    // Menu Items + Recipes
+    match /menuItems/{menuItemId} {
+      allow read: if isOwner() || isTeamMember();
+      allow create, update, delete: if isOwner();
+
+      match /recipes/{recipeId} {
+        allow read: if isOwner() || isTeamMember();
+        allow create, update, delete: if isOwner();
+      }
+    }
+
+    // Weeks and nested collections
+    match /weeks/{weekId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner();
+      allow delete: if false;
+
+      match /sales/{docId} {
+        allow read: if isOwner() || isTeamMember();
+        allow create, update: if !isWeekFinalized(weekId) && (isOwner() || (isTeamMember() && docId == 'daily' && isWeekDraft(weekId)));
+        allow delete: if false;
+      }
+
+      match /inventory/{ingredientId} {
+        allow read: if isOwner() || isTeamMember();
+        allow create, update: if !isWeekFinalized(weekId) && (isOwner() || (isTeamMember() && isWeekDraft(weekId)));
+        allow delete: if false;
+      }
+
+      match /costSnapshot/{ingredientId} {
+        allow read: if isOwner();
+        allow create, update: if isOwner() && !isWeekFinalized(weekId);
+        allow delete: if false;
+      }
+
+      match /report/{docId} {
+        allow read: if isOwner();
+        allow create, update: if isOwner() && !isWeekFinalized(weekId);
+        allow delete: if false;
+      }
+    }
+  }
+}

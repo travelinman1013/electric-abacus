@@ -1,0 +1,20 @@
+{
+  "name": "@firebase/services",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint 'src/**/*.ts' --max-warnings=0",
+    "test": "vitest run",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "firebase": "^12.3.0",
+    "firebase-admin": "^12.7.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
