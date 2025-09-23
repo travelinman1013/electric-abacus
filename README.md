@@ -22,13 +22,13 @@ Common scripts:
 - `npm run test:e2e` – Execute Playwright E2E smoke tests across browsers.
 - `npm run seed` – Populate Firebase with demo users, ingredients, a draft week.
 
-## Latest Updates
+## Latest Updates (Sep 2025)
 
-- **Testing Infrastructure Complete** – Fixed Playwright expect collision with isolated `playwright.config.ts`, resolved Vite alias conflicts, and implemented comprehensive test coverage across all layers.
-- **WeekReviewPage Testing** – Added 4 focused component tests covering finalization logic, authentication guards, loading states, and error scenarios with proper mocking.
-- **E2E Coverage** – Replaced placeholder Playwright tests with 9 real smoke tests covering navigation, authentication flows, and basic functionality across all browsers.
-- **Firestore Security** – Extended rule tests with 10 new scenarios covering finalize behavior restrictions for cost snapshots, reports, sales, and inventory data.
-- **Finalize flow groundwork** – `finalizeWeek` Firestore helper now snapshots inventory cost data, computes the domain report, persists the summary, and marks the week finalized in a single transaction. `WeekReviewPage` pulls live report data, wires owner-only finalization, and shows computed costing metrics instead of placeholders.
+- **Enhanced Finalization UX** – Added confirmation dialog with week summary preview, comprehensive error handling with user-friendly messages, and proper loading states throughout the finalization flow.
+- **Ingredient Version Tracking** – Surfaced ingredient version metadata in cost snapshot table with visual indicators for missing/outdated versions and tooltips for provenance tracking.
+- **Full PDF Export** – Implemented professional PDF generation using @react-pdf/renderer with comprehensive cost breakdowns, version tracking, and proper formatting for record-keeping.
+- **Radix UI Integration** – Added accessible dialog component with keyboard navigation and proper focus management for better user experience.
+- **Error Resilience** – Enhanced error handling covers all finalization scenarios: missing data, permissions, network issues, and ingredient conflicts with specific guidance.
 
 ## What’s Ready
 
@@ -37,6 +37,7 @@ Common scripts:
 - Shared domain types + costing math module (usage, cost of sales, report summary) with tests.
 - Firestore service layer covering weeks, inventory, sales, ingredient versioning, and menu recipe CRUD, including finalize transaction scaffolding.
 - Tailwind/shadcn UI primitives and layout shell prepared for role-specific experiences.
+- Enhanced finalization workflow with confirmation dialog, comprehensive error handling, ingredient version tracking, and professional PDF export functionality.
 - Comprehensive testing infrastructure: Domain ≥90% coverage, WeekReviewPage component tests, E2E smoke suite, and Firestore security rules validation.
 
 ## Testing Status
@@ -48,6 +49,6 @@ Common scripts:
 
 ## Still in Progress
 
-- **Finalize UX validation** – Need real Firestore data to verify `finalizeWeek` transaction, flesh out error handling, and surface cost snapshot metadata (e.g., ingredient version provenance) in the UI.
-- **PDF Export** – Export functionality remains placeholder (button disabled, awaiting implementation).
-- **Docs & ops** – Architecture notes, deployment runbook, and GitHub Actions CI remain TODO.
+- **GitHub Actions CI** – Automated testing pipeline configuration for continuous integration.
+- **Firebase Emulator Setup** – Documentation for local Firestore rule testing with emulator.
+- **Docs & ops** – Architecture documentation, deployment runbook, and performance optimization guides.

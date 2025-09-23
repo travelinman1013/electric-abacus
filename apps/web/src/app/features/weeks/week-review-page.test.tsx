@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest';
 
 // Mock all the hooks
@@ -14,19 +14,19 @@ const mockUseFinalizeWeek = vi.fn();
 const mockUseAuthContext = vi.fn();
 
 vi.mock('../../hooks/use-weeks', () => ({
-  useWeek: () => mockUseWeek(),
-  useWeekInventory: () => mockUseWeekInventory(),
-  useWeekCostSnapshot: () => mockUseWeekCostSnapshot(),
-  useWeekReport: () => mockUseWeekReport(),
-  useFinalizeWeek: () => mockUseFinalizeWeek()
+  useWeek: (): unknown => mockUseWeek(),
+  useWeekInventory: (): unknown => mockUseWeekInventory(),
+  useWeekCostSnapshot: (): unknown => mockUseWeekCostSnapshot(),
+  useWeekReport: (): unknown => mockUseWeekReport(),
+  useFinalizeWeek: (): unknown => mockUseFinalizeWeek()
 }));
 
 vi.mock('../../hooks/use-ingredients', () => ({
-  useIngredients: () => mockUseIngredients()
+  useIngredients: (): unknown => mockUseIngredients()
 }));
 
 vi.mock('../../providers/auth-provider', () => ({
-  useAuthContext: () => mockUseAuthContext()
+  useAuthContext: (): unknown => mockUseAuthContext()
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -66,13 +66,6 @@ const mockDraftWeek = {
   finalizedBy: null
 };
 
-const mockFinalizedWeek = {
-  id: '2025-W01',
-  status: 'finalized' as const,
-  createdAt: '2025-01-01T00:00:00.000Z',
-  finalizedAt: '2025-01-08T00:00:00.000Z',
-  finalizedBy: 'owner-1'
-};
 
 const mockInventoryEntries = [
   { ingredientId: 'beef', begin: 10, received: 5, end: 3 },
@@ -111,14 +104,6 @@ const mockOwnerAuthContext = {
   hasRole: vi.fn()
 };
 
-const mockTeamAuthContext = {
-  profile: { role: 'teamMember' },
-  user: { uid: 'team-1' },
-  loading: false,
-  signIn: vi.fn(),
-  signOut: vi.fn(),
-  hasRole: vi.fn()
-};
 
 describe('WeekReviewPage', () => {
   afterEach(() => {

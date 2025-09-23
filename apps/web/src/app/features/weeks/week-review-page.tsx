@@ -14,9 +14,18 @@ import {
   CardHeader,
   CardTitle
 } from '../../components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '../../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { cn } from '../../lib/utils';
 import { useIngredients } from '../../hooks/use-ingredients';
+import { downloadWeekReportPDF } from '../../services/pdf-export';
 import {
   useFinalizeWeek,
   useWeek,
@@ -38,6 +47,8 @@ export const WeekReviewPage = () => {
   const { weekId } = useParams<{ weekId: string }>();
   const { profile } = useAuthContext();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
 
   const weekQuery = useWeek(weekId);
   const inventoryQuery = useWeekInventory(weekId);
@@ -125,15 +136,24 @@ export const WeekReviewPage = () => {
   const tableRows = useMemo(
     () =>
       summary
-        ? summary.breakdown.map((item) => ({
-            ingredientId: item.ingredientId,
-            ingredientName: ingredientMap.get(item.ingredientId)?.name ?? item.ingredientId,
-            usage: item.usage,
-            unitCost: item.unitCost,
-            costOfSales: item.costOfSales
-          }))
+        ? summary.breakdown.map((item) => {
+            const ingredient = ingredientMap.get(item.ingredientId);
+            const snapshotEntry = snapshotForComputation.find(
+              (snapshot) => snapshot.ingredientId === item.ingredientId
+            );
+
+            return {
+              ingredientId: item.ingredientId,
+              ingredientName: ingredient?.name ?? item.ingredientId,
+              usage: item.usage,
+              unitCost: item.unitCost,
+              costOfSales: item.costOfSales,
+              sourceVersionId: snapshotEntry?.sourceVersionId ?? 'unspecified',
+              isVersionMissing: !snapshotEntry?.sourceVersionId || snapshotEntry.sourceVersionId === 'unspecified'
+            };
+          })
         : [],
-    [ingredientMap, summary]
+    [ingredientMap, summary, snapshotForComputation]
   );
 
   const canFinalize = Boolean(
@@ -153,19 +173,93 @@ export const WeekReviewPage = () => {
         ? 'Add inventory entries to enable finalization.'
         : null;
 
-  const handleFinalize = async () => {
-    if (!weekId || finalizeDisabled) {
+  const handleFinalizeClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const getErrorMessage = (error: unknown): string => {
+    if (!(error instanceof Error)) {
+      return 'Unable to finalize this week right now. Please try again.';
+    }
+
+    const message = error.message.toLowerCase();
+
+    if (message.includes('does not exist')) {
+      return 'Week not found. Please refresh the page and try again.';
+    }
+
+    if (message.includes('already finalized')) {
+      return 'This week has already been finalized by another user.';
+    }
+
+    if (message.includes('without inventory entries')) {
+      return 'Cannot finalize a week without inventory data. Please add inventory entries first.';
+    }
+
+    if (message.includes('ingredient') && message.includes('not found')) {
+      return 'Some ingredients referenced in inventory no longer exist. Please check the ingredient list.';
+    }
+
+    if (message.includes('permission') || message.includes('denied')) {
+      return 'You do not have permission to finalize weeks. Contact your administrator.';
+    }
+
+    if (message.includes('network') || message.includes('offline')) {
+      return 'Network connection issue. Please check your internet and try again.';
+    }
+
+    return error.message;
+  };
+
+  const handleConfirmFinalize = async () => {
+    if (!weekId) {
       return;
     }
     setActionError(null);
+    setShowConfirmDialog(false);
     try {
       await finalizeWeekMutation.mutateAsync({ weekId });
     } catch (mutationError) {
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message
-          : 'Unable to finalize this week right now.';
-      setActionError(message);
+      setActionError(getErrorMessage(mutationError));
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!weekId || !summary) {
+      return;
+    }
+
+    setIsPdfExporting(true);
+    setActionError(null);
+
+    try {
+      const ingredientNames = Object.fromEntries(
+        ingredients.map((ingredient) => [ingredient.id, ingredient.name])
+      );
+
+      const sourceVersions = Object.fromEntries(
+        snapshotForComputation.map((snapshot) => [
+          snapshot.ingredientId,
+          snapshot.sourceVersionId
+        ])
+      );
+
+      await downloadWeekReportPDF({
+        weekId,
+        summary,
+        finalizedAt: week?.finalizedAt?.toDate?.()?.toISOString(),
+        finalizedBy: week?.finalizedBy || undefined,
+        ingredientNames,
+        sourceVersions
+      });
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? `Failed to generate PDF: ${error.message}`
+          : 'Failed to generate PDF. Please try again.'
+      );
+    } finally {
+      setIsPdfExporting(false);
     }
   };
 
@@ -200,10 +294,14 @@ export const WeekReviewPage = () => {
 
         <div className="flex flex-col items-end gap-2">
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" disabled>
-              Export PDF (coming soon)
+            <Button
+              variant="outline"
+              onClick={handleExportPDF}
+              disabled={!summary || isPdfExporting}
+            >
+              {isPdfExporting ? 'Generating PDF...' : 'Export PDF'}
             </Button>
-            <Button onClick={handleFinalize} disabled={finalizeDisabled}>
+            <Button onClick={handleFinalizeClick} disabled={finalizeDisabled}>
               {week?.status === 'finalized'
                 ? 'Week finalized'
                 : finalizeWeekMutation.isPending
@@ -277,6 +375,7 @@ export const WeekReviewPage = () => {
               <CardTitle>Ingredient costing snapshot</CardTitle>
               <CardDescription>
                 Generated from the inventory usage and ingredient pricing at the time of finalize.
+                Source versions track ingredient cost changes over time.
               </CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto">
@@ -288,6 +387,7 @@ export const WeekReviewPage = () => {
                       <TableHead className="text-right">Usage</TableHead>
                       <TableHead className="text-right">Unit cost</TableHead>
                       <TableHead className="text-right">Cost of sales</TableHead>
+                      <TableHead className="text-center">Source Version</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -297,6 +397,23 @@ export const WeekReviewPage = () => {
                         <TableCell className="text-right">{row.usage.toFixed(2)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(row.unitCost)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(row.costOfSales)}</TableCell>
+                        <TableCell className="text-center">
+                          <span
+                            className={cn(
+                              'inline-block rounded px-2 py-1 text-xs font-mono',
+                              row.isVersionMissing
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-slate-100 text-slate-700'
+                            )}
+                            title={
+                              row.isVersionMissing
+                                ? 'No version tracking for this ingredient'
+                                : `Ingredient version: ${row.sourceVersionId}`
+                            }
+                          >
+                            {row.sourceVersionId}
+                          </span>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -319,6 +436,53 @@ export const WeekReviewPage = () => {
           </Card>
         </>
       ) : null}
+
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finalize Week {weekId}?</DialogTitle>
+            <DialogDescription>
+              This action will create a permanent snapshot of ingredient costs and lock all data for this week.
+              You will not be able to edit inventory, sales, or cost data after finalization.
+            </DialogDescription>
+          </DialogHeader>
+
+          {summary && (
+            <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <h4 className="text-sm font-medium">Summary to be finalized:</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-500">Total usage:</span>
+                  <div className="font-medium">{summary.totals.totalUsageUnits.toFixed(2)} units</div>
+                </div>
+                <div>
+                  <span className="text-slate-500">Total cost:</span>
+                  <div className="font-medium">{formatCurrency(summary.totals.totalCostOfSales)}</div>
+                </div>
+              </div>
+              <div className="text-xs text-slate-500">
+                {summary.breakdown.length} ingredient{summary.breakdown.length !== 1 ? 's' : ''} will be snapshot
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={finalizeWeekMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmFinalize}
+              disabled={finalizeWeekMutation.isPending}
+            >
+              {finalizeWeekMutation.isPending ? 'Finalizing...' : 'Yes, finalize week'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

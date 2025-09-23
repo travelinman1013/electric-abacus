@@ -46,8 +46,8 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 ## Remaining Development Notes
 
 - Step 1 polish mostly complete: workspace scripts vetted, Tailwind/shadcn scaffolded, README refreshed. Vitest UI suite now includes a WeekList smoke test; Playwright placeholder exists but needs real coverage and runner fix.
-- Step 2 in progress: routed UI, auth guards, and CRUD screens ship; week finalize transaction added (`finalizeWeek`) but requires end-to-end verification, better error messaging, and PDF export stub.
-- Step 3 pending: PDF export placeholder, GitHub Actions CI, deployment runbooks, architecture docs, and seed + Firestore rule coverage.
+- Step 2 complete: routed UI, auth guards, CRUD screens, enhanced finalization flow with confirmation dialog, comprehensive error handling, and full PDF export functionality.
+- Step 3 remaining: GitHub Actions CI, deployment runbooks, architecture docs, and Firebase emulator documentation.
 
 ### Latest Session Highlights (Feb 2025)
 
@@ -69,8 +69,8 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 
 ### Outstanding Issues
 
-- UI shows computed costing but omits ingredient version labels and variance highlights; design decisions pending.
-- PDF export functionality remains placeholder (button disabled, awaiting implementation)
+- **COMPLETED**: Enhanced finalization UX with confirmation dialog and comprehensive error handling
+- **COMPLETED**: Full PDF export functionality with professional layouts and ingredient version tracking
 - Firestore rule tests require Firebase emulator to be running locally for execution
 - GitHub Actions CI pipeline not yet configured for automated testing
 
@@ -86,4 +86,4 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - Firebase client/admin helpers, seed script, and Firestore rules drafted with unit tests pending polish.
 - Auth provider + login form complete; React Router shell enforces auth + owner guards.
 - Week list, sales, inventory, ingredient, and menu-item screens now backed by Firebase services with React Query state.
-- Domain costing library implemented with tests; finalize flow + PDF/export still to build.
+- Domain costing library implemented with tests; enhanced finalization flow with confirmation dialog, comprehensive error handling, ingredient version tracking, and full PDF export functionality now complete.
