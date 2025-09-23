@@ -1,6 +1,6 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import reactPlugin from "eslint-plugin-react";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import tailwind from "eslint-plugin-tailwindcss";
 
@@ -15,9 +15,13 @@ export default tseslint.config(
       "apps/web/dist"
     ]
   },
-  js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
   {
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+      react.configs.recommended,
+      react.configs["jsx-runtime"]
+    ],
     files: ["**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
       parserOptions: {
@@ -26,9 +30,8 @@ export default tseslint.config(
       }
     },
     plugins: {
-      react: reactPlugin,
       "react-hooks": reactHooks,
-      tailwindcss: tailwind
+      tailwind
     },
     settings: {
       react: {
@@ -36,8 +39,6 @@ export default tseslint.config(
       }
     },
     rules: {
-      ...reactPlugin.configs.recommended.rules,
-      ...reactPlugin.configs["jsx-runtime"].rules,
       ...reactHooks.configs.recommended.rules,
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-floating-promises": "error",
