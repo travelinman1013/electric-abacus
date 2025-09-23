@@ -1,6 +1,6 @@
 import type { FirebaseOptions } from 'firebase/app';
 
-import { initFirebaseClient } from '@firebase/services';
+import { initFirebaseClient } from '@taco/firebase';
 
 let initialized = false;
 

@@ -19,7 +19,7 @@ vi.mock('../../providers/auth-provider', () => ({
   useAuthContext: () => mockUseAuthContext()
 }));
 
-vi.mock('@firebase/services', () => ({
+vi.mock('@taco/firebase', () => ({
   getClientAuth: vi.fn(),
   getClientFirestore: vi.fn()
 }));

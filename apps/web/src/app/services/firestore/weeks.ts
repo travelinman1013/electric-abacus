@@ -23,7 +23,7 @@ import type {
 } from '@domain/costing';
 import { computeReportSummary } from '@domain/costing';
 
-import { getClientAuth, getClientFirestore } from '@firebase/services';
+import { getClientAuth, getClientFirestore } from '@taco/firebase';
 
 import { timestampToIsoString, toNonNegativeNumber } from './utils';
 

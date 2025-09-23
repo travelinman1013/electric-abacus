@@ -14,7 +14,7 @@ import {
 
 import type { Ingredient, IngredientVersion } from '@domain/costing';
 
-import { getClientFirestore } from '@firebase/services';
+import { getClientFirestore } from '@taco/firebase';
 
 import { timestampToIsoString } from './utils';
 import { ensureId } from './ids';

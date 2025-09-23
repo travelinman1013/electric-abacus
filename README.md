@@ -24,11 +24,10 @@ Common scripts:
 
 ## Latest Updates (Sep 2025)
 
-- **Enhanced Finalization UX** – Added confirmation dialog with week summary preview, comprehensive error handling with user-friendly messages, and proper loading states throughout the finalization flow.
-- **Ingredient Version Tracking** – Surfaced ingredient version metadata in cost snapshot table with visual indicators for missing/outdated versions and tooltips for provenance tracking.
-- **Full PDF Export** – Implemented professional PDF generation using @react-pdf/renderer with comprehensive cost breakdowns, version tracking, and proper formatting for record-keeping.
-- **Radix UI Integration** – Added accessible dialog component with keyboard navigation and proper focus management for better user experience.
-- **Error Resilience** – Enhanced error handling covers all finalization scenarios: missing data, permissions, network issues, and ingredient conflicts with specific guidance.
+- **Dev Server Fixed** – Resolved critical Vite alias conflicts and Node.js compatibility issues preventing app from loading.
+- **Firebase Module Separation** – Created client-only exports to prevent server-side code bundling in browser.
+- **UI Working** – Login screen now loads correctly with shadcn styling and proper error handling.
+- **Authentication Issue** – Demo credentials not working, authentication flow needs debugging.
 
 ## What’s Ready
 
@@ -49,6 +48,6 @@ Common scripts:
 
 ## Still in Progress
 
+- **Authentication Debug** – Demo login credentials not working, Firebase auth flow needs investigation.
 - **GitHub Actions CI** – Automated testing pipeline configuration for continuous integration.
 - **Firebase Emulator Setup** – Documentation for local Firestore rule testing with emulator.
-- **Docs & ops** – Architecture documentation, deployment runbook, and performance optimization guides.

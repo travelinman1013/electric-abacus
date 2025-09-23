@@ -1,5 +1,5 @@
 {
-  "name": "@firebase/services",
+  "name": "@taco/firebase",
   "private": true,
   "type": "module",
   "scripts": {

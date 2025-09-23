@@ -13,7 +13,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebas
 import { doc, getDoc } from 'firebase/firestore';
 
 import type { UserProfile, UserRole } from '@domain/costing';
-import { getClientAuth, getClientFirestore } from '@firebase/services';
+import { getClientAuth, getClientFirestore } from '@taco/firebase';
 
 interface AuthContextValue {
   user: FirebaseUser | null;
