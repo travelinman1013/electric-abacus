@@ -21,6 +21,7 @@ import type {
   WeeklyInventoryEntry,
   WeeklySales
 } from '@domain/costing';
+import { computeReportSummary } from '@domain/costing';
 
 import { getClientAuth, getClientFirestore } from '@firebase/services';
 
@@ -246,4 +247,99 @@ export const getDraftWeeks = async (): Promise<Week[]> => {
       finalizedBy: null
     } satisfies Week;
   });
+};
+
+export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
+  const firestore = getClientFirestore();
+  const auth = getClientAuth();
+  const currentUser = auth.currentUser;
+
+  const summary = await runTransaction(firestore, async (transaction) => {
+    const weekRef = doc(firestore, 'weeks', weekId);
+    const weekSnapshot = await transaction.get(weekRef);
+    if (!weekSnapshot.exists()) {
+      throw new Error(`Week ${weekId} does not exist.`);
+    }
+
+    const weekData = weekSnapshot.data();
+    const status = (weekData.status ?? 'draft') as WeekStatus;
+    if (status === 'finalized') {
+      throw new Error(`Week ${weekId} is already finalized.`);
+    }
+
+    const inventoryRef = collection(firestore, 'weeks', weekId, 'inventory');
+    const inventorySnapshot = await transaction.get(inventoryRef);
+
+    if (inventorySnapshot.empty) {
+      throw new Error('Cannot finalize a week without inventory entries.');
+    }
+
+    const inventoryEntries = inventorySnapshot.docs.map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        ingredientId: docSnapshot.id,
+        begin: toNonNegativeNumber(data.begin),
+        received: toNonNegativeNumber(data.received),
+        end: toNonNegativeNumber(data.end)
+      } satisfies WeeklyInventoryEntry;
+    });
+
+    const costSnapshots = await Promise.all(
+      inventoryEntries.map(async (entry) => {
+        const ingredientRef = doc(firestore, 'ingredients', entry.ingredientId);
+        const ingredientSnapshot = await transaction.get(ingredientRef);
+
+        if (!ingredientSnapshot.exists()) {
+          throw new Error(`Ingredient ${entry.ingredientId} was not found while finalizing.`);
+        }
+
+        const ingredientData = ingredientSnapshot.data();
+
+        return {
+          ingredientId: entry.ingredientId,
+          unitCost: toNonNegativeNumber(ingredientData.unitCost),
+          sourceVersionId: ingredientData.currentVersionId ?? 'unspecified'
+        } satisfies WeeklyCostSnapshotEntry;
+      })
+    );
+
+    const summaryResult = computeReportSummary({
+      inventory: inventoryEntries,
+      costSnapshots
+    });
+
+    const snapshotCollectionRef = collection(firestore, 'weeks', weekId, 'costSnapshot');
+    const existingSnapshots = await transaction.get(snapshotCollectionRef);
+    const validSnapshotIds = new Set(costSnapshots.map((snapshot) => snapshot.ingredientId));
+    existingSnapshots.docs.forEach((docSnapshot) => {
+      if (!validSnapshotIds.has(docSnapshot.id)) {
+        transaction.delete(docSnapshot.ref);
+      }
+    });
+
+    costSnapshots.forEach((snapshot) => {
+      const snapshotRef = doc(firestore, 'weeks', weekId, 'costSnapshot', snapshot.ingredientId);
+      transaction.set(snapshotRef, {
+        unitCost: snapshot.unitCost,
+        sourceVersionId: snapshot.sourceVersionId,
+        capturedAt: serverTimestamp()
+      });
+    });
+
+    const reportRef = doc(firestore, 'weeks', weekId, 'report', 'summary');
+    transaction.set(reportRef, {
+      ...summaryResult,
+      generatedAt: serverTimestamp()
+    });
+
+    transaction.update(weekRef, {
+      status: 'finalized',
+      finalizedAt: serverTimestamp(),
+      finalizedBy: currentUser?.uid ?? null
+    });
+
+    return summaryResult;
+  });
+
+  return summary;
 };

@@ -1,28 +1,26 @@
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
-import tailwind from "eslint-plugin-tailwindcss";
+import js from '@eslint/js';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import tailwindcss from 'eslint-plugin-tailwindcss';
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
     ignores: [
-      "node_modules",
-      "dist",
-      "coverage",
-      "playwright-report",
-      "apps/web/node_modules",
-      "apps/web/dist"
+      'node_modules',
+      'dist',
+      'coverage',
+      'playwright-report',
+      'apps/web/node_modules',
+      'apps/web/dist'
     ]
   },
+  js.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  react.configs.flat.recommended,
+  react.configs.flat['jsx-runtime'],
   {
-    extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommendedTypeChecked,
-      react.configs.recommended,
-      react.configs["jsx-runtime"]
-    ],
-    files: ["**/*.{ts,tsx,js,jsx}"],
+    files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -30,21 +28,19 @@ export default tseslint.config(
       }
     },
     plugins: {
-      "react-hooks": reactHooks,
-      tailwind
+      'react-hooks': reactHooks,
+      tailwindcss
     },
     settings: {
       react: {
-        version: "detect"
+        version: 'detect'
       }
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "@typescript-eslint/consistent-type-imports": "error",
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-misused-promises": "error",
-      "tailwindcss/classnames-order": "warn",
-      "tailwindcss/no-custom-classname": "off"
+      '@typescript-eslint/consistent-type-imports': 'error',
+      'tailwindcss/classnames-order': 'warn',
+      'tailwindcss/no-custom-classname': 'off'
     }
   }
 );

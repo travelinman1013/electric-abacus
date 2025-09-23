@@ -1,5 +1,8 @@
-import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+
+import type { WeekStatus, WeeklyCostSnapshotEntry } from '@domain/costing';
+import { computeReportSummary } from '@domain/costing';
 
 import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
@@ -13,47 +16,19 @@ import {
 } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { cn } from '../../lib/utils';
+import { useIngredients } from '../../hooks/use-ingredients';
+import {
+  useFinalizeWeek,
+  useWeek,
+  useWeekCostSnapshot,
+  useWeekInventory,
+  useWeekReport
+} from '../../hooks/use-weeks';
+import { useAuthContext } from '../../providers/auth-provider';
 
-interface CostBreakdownRow {
-  ingredientId: string;
-  ingredientName: string;
-  usage: number;
-  unitCost: number;
-  costOfSales: number;
-}
-
-interface SummaryPlaceholder {
-  totalUsageUnits: number;
-  totalCostOfSales: number;
-  breakdown: CostBreakdownRow[];
-}
-
-const placeholderSummary: SummaryPlaceholder = {
-  totalUsageUnits: 182.45,
-  totalCostOfSales: 1462.12,
-  breakdown: [
-    {
-      ingredientId: 'seasoned-beef',
-      ingredientName: 'Seasoned Beef',
-      usage: 102.4,
-      unitCost: 6.15,
-      costOfSales: 629.76
-    },
-    {
-      ingredientId: 'cheddar-cheese',
-      ingredientName: 'Cheddar Cheese',
-      usage: 58.1,
-      unitCost: 5.8,
-      costOfSales: 336.98
-    },
-    {
-      ingredientId: 'flour-tortillas',
-      ingredientName: 'Flour Tortillas',
-      usage: 21.95,
-      unitCost: 2.19,
-      costOfSales: 48.07
-    }
-  ]
+const badgeVariantByStatus: Record<WeekStatus, 'warning' | 'success'> = {
+  draft: 'warning',
+  finalized: 'success'
 };
 
 const formatCurrency = (value: number) =>
@@ -61,9 +36,149 @@ const formatCurrency = (value: number) =>
 
 export const WeekReviewPage = () => {
   const { weekId } = useParams<{ weekId: string }>();
-  const status: 'draft' | 'finalized' = 'draft';
+  const { profile } = useAuthContext();
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const totals = useMemo(() => placeholderSummary, []);
+  const weekQuery = useWeek(weekId);
+  const inventoryQuery = useWeekInventory(weekId);
+  const costSnapshotQuery = useWeekCostSnapshot(weekId);
+  const reportQuery = useWeekReport(weekId);
+  const ingredientsQuery = useIngredients();
+  const finalizeWeekMutation = useFinalizeWeek();
+
+  const week = weekQuery.data;
+  const inventoryEntries = useMemo(
+    () => inventoryQuery.data ?? [],
+    [inventoryQuery.data]
+  );
+  const costSnapshotEntries = useMemo(
+    () => costSnapshotQuery.data ?? [],
+    [costSnapshotQuery.data]
+  );
+  const report = reportQuery.data;
+  const ingredients = useMemo(
+    () => ingredientsQuery.data ?? [],
+    [ingredientsQuery.data]
+  );
+
+  const isLoading =
+    weekQuery.isLoading ||
+    inventoryQuery.isLoading ||
+    ingredientsQuery.isLoading ||
+    costSnapshotQuery.isLoading ||
+    reportQuery.isLoading;
+
+  const errorMessage =
+    (weekQuery.isError && weekQuery.error instanceof Error
+      ? weekQuery.error.message
+      : null) ??
+    (inventoryQuery.isError && inventoryQuery.error instanceof Error
+      ? inventoryQuery.error.message
+      : null) ??
+    (ingredientsQuery.isError && ingredientsQuery.error instanceof Error
+      ? ingredientsQuery.error.message
+      : null) ??
+    (costSnapshotQuery.isError && costSnapshotQuery.error instanceof Error
+      ? costSnapshotQuery.error.message
+      : null) ??
+    (reportQuery.isError && reportQuery.error instanceof Error
+      ? reportQuery.error.message
+      : null);
+
+  const ingredientMap = useMemo(
+    () => new Map(ingredients.map((ingredient) => [ingredient.id, ingredient])),
+    [ingredients]
+  );
+
+  const isFinalized = week?.status === 'finalized';
+
+  const snapshotForComputation = useMemo<WeeklyCostSnapshotEntry[]>(() => {
+    if (isFinalized && costSnapshotEntries.length) {
+      return costSnapshotEntries;
+    }
+
+    return inventoryEntries.map((entry) => {
+      const ingredient = ingredientMap.get(entry.ingredientId);
+      return {
+        ingredientId: entry.ingredientId,
+        unitCost: ingredient ? Math.max(ingredient.unitCost, 0) : 0,
+        sourceVersionId: ingredient?.currentVersionId ?? 'unspecified'
+      } satisfies WeeklyCostSnapshotEntry;
+    });
+  }, [costSnapshotEntries, ingredientMap, inventoryEntries, isFinalized]);
+
+  const summary = useMemo(() => {
+    if (!inventoryEntries.length) {
+      return null;
+    }
+
+    if (isFinalized && report) {
+      return report;
+    }
+
+    return computeReportSummary({
+      inventory: inventoryEntries,
+      costSnapshots: snapshotForComputation
+    });
+  }, [inventoryEntries, isFinalized, report, snapshotForComputation]);
+
+  const tableRows = useMemo(
+    () =>
+      summary
+        ? summary.breakdown.map((item) => ({
+            ingredientId: item.ingredientId,
+            ingredientName: ingredientMap.get(item.ingredientId)?.name ?? item.ingredientId,
+            usage: item.usage,
+            unitCost: item.unitCost,
+            costOfSales: item.costOfSales
+          }))
+        : [],
+    [ingredientMap, summary]
+  );
+
+  const canFinalize = Boolean(
+    weekId &&
+      week?.status === 'draft' &&
+      profile?.role === 'owner' &&
+      inventoryEntries.length > 0
+  );
+
+  const finalizeDisabled = !canFinalize || finalizeWeekMutation.isPending;
+
+  const finalizeHelperText = !weekId || week?.status !== 'draft'
+    ? null
+    : profile?.role !== 'owner'
+      ? 'Only owners can finalize weeks.'
+      : inventoryEntries.length === 0
+        ? 'Add inventory entries to enable finalization.'
+        : null;
+
+  const handleFinalize = async () => {
+    if (!weekId || finalizeDisabled) {
+      return;
+    }
+    setActionError(null);
+    try {
+      await finalizeWeekMutation.mutateAsync({ weekId });
+    } catch (mutationError) {
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Unable to finalize this week right now.';
+      setActionError(message);
+    }
+  };
+
+  if (!weekId) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold text-slate-900">Weekly review</h1>
+        <p className="text-sm text-slate-500">Select a week from the list to inspect costing and finalize.</p>
+      </div>
+    );
+  }
+
+  const badgeVariant = week ? badgeVariantByStatus[week.status] : 'warning';
 
   return (
     <div className="space-y-8">
@@ -72,88 +187,138 @@ export const WeekReviewPage = () => {
           <p className="text-xs uppercase tracking-wide text-slate-500">{weekId}</p>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-semibold text-slate-900">Weekly review</h1>
-            <Badge variant={status === 'draft' ? 'warning' : 'success'} className="uppercase">
-              {status}
-            </Badge>
+            {week ? (
+              <Badge variant={badgeVariant} className="uppercase">
+                {week.status}
+              </Badge>
+            ) : null}
           </div>
           <p className="text-sm text-slate-500">
-            Verify sales, inventory, and costing before finalizing. Finalization snapshots ingredient costs
-            and locks edits.
+            Verify sales, inventory, and costing before finalizing. Finalization snapshots ingredient costs and locks edits.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" disabled>
-            Export PDF (coming soon)
-          </Button>
-          <Button disabled={status !== 'draft'}>
-            {status === 'draft' ? 'Finalize week' : 'Week finalized'}
-          </Button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" disabled>
+              Export PDF (coming soon)
+            </Button>
+            <Button onClick={handleFinalize} disabled={finalizeDisabled}>
+              {week?.status === 'finalized'
+                ? 'Week finalized'
+                : finalizeWeekMutation.isPending
+                  ? 'Finalizing...'
+                  : 'Finalize week'}
+            </Button>
+          </div>
+          {finalizeHelperText ? (
+            <p className="text-xs text-slate-500">{finalizeHelperText}</p>
+          ) : null}
         </div>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardDescription>Total usage units</CardDescription>
-            <CardTitle>{totals.totalUsageUnits.toFixed(2)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Total cost of sales</CardDescription>
-            <CardTitle>{formatCurrency(totals.totalCostOfSales)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Variance check</CardDescription>
-            <CardTitle>0 issues</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {actionError ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {actionError}
+        </div>
+      ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ingredient costing snapshot</CardTitle>
-          <CardDescription>
-            Generated from the inventory usage and ingredient version pricing at the time of finalize.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ingredient</TableHead>
-                <TableHead className="text-right">Usage</TableHead>
-                <TableHead className="text-right">Unit cost</TableHead>
-                <TableHead className="text-right">Cost of sales</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {totals.breakdown.map((row) => (
-                <TableRow key={row.ingredientId}>
-                  <TableCell className="font-medium text-slate-800">{row.ingredientName}</TableCell>
-                  <TableCell className="text-right">{row.usage.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(row.unitCost)}</TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(row.costOfSales)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-        <CardFooter className="justify-between text-sm text-slate-500">
-          <span>Owners can re-run costing before finalizing to refresh ingredient price changes.</span>
-          <a
-            href="#"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-slate-600 hover:text-slate-900')}
-          >
-            View raw inventory
-          </a>
-        </CardFooter>
-      </Card>
+      {errorMessage ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {errorMessage}
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+          Loading week data...
+        </div>
+      ) : null}
+
+      {!isLoading && !errorMessage && week === null ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          Week not found. Return to the week list and choose another period.
+        </div>
+      ) : null}
+
+      {!isLoading && !errorMessage && week && !inventoryEntries.length ? (
+        <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+          Inventory inputs are required before costing can be generated. Enter counts on the inventory screen.
+        </div>
+      ) : null}
+
+      {!isLoading && !errorMessage && week && inventoryEntries.length ? (
+        <>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardDescription>Total usage units</CardDescription>
+                <CardTitle>{summary ? summary.totals.totalUsageUnits.toFixed(2) : '0.00'}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardDescription>Total cost of sales</CardDescription>
+                <CardTitle>
+                  {summary ? formatCurrency(summary.totals.totalCostOfSales) : formatCurrency(0)}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardDescription>Variance check</CardDescription>
+                <CardTitle>0 issues</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Ingredient costing snapshot</CardTitle>
+              <CardDescription>
+                Generated from the inventory usage and ingredient pricing at the time of finalize.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              {summary ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ingredient</TableHead>
+                      <TableHead className="text-right">Usage</TableHead>
+                      <TableHead className="text-right">Unit cost</TableHead>
+                      <TableHead className="text-right">Cost of sales</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tableRows.map((row) => (
+                      <TableRow key={row.ingredientId}>
+                        <TableCell className="font-medium text-slate-800">{row.ingredientName}</TableCell>
+                        <TableCell className="text-right">{row.usage.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(row.unitCost)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(row.costOfSales)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                  No costing data yet. Finalize the week once inventory is complete.
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="justify-between text-sm text-slate-500">
+              <span>Owners can re-run costing before finalizing to refresh ingredient price changes.</span>
+              <Link
+                to={`/weeks/${weekId}/inventory`}
+                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-slate-600 hover:text-slate-900')}
+              >
+                View raw inventory
+              </Link>
+            </CardFooter>
+          </Card>
+        </>
+      ) : null}
     </div>
   );
 };

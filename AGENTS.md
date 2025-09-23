@@ -39,9 +39,22 @@
 
 ## Remaining Development Notes
 
-- Finish Step 1 polish: validate workspace scripts, Tailwind + shadcn scaffolding, Vitest/Playwright wiring, README updates.
-- Step 2: implement routed UI with role guards, auth flows, week lifecycle, team forms, owner CRUD, finalize transaction tied to domain costing snapshots.
-- Step 3: add PDF export placeholder, GitHub Actions CI, deployment runbooks, architecture docs, and ensure seed+rules coverage.
+- Step 1 polish mostly complete: workspace scripts vetted, Tailwind/shadcn scaffolded, README refreshed. Vitest UI suite now includes a WeekList smoke test; Playwright placeholder exists but needs real coverage and runner fix.
+- Step 2 in progress: routed UI, auth guards, and CRUD screens ship; week finalize transaction added (`finalizeWeek`) but requires end-to-end verification, better error messaging, and PDF export stub.
+- Step 3 pending: PDF export placeholder, GitHub Actions CI, deployment runbooks, architecture docs, and seed + Firestore rule coverage.
+
+### Latest Session Highlights (Feb 2025)
+
+- Root ESLint flat config updated to use plugin-provided flat presets so `npm run lint` succeeds without compat errors.
+- Added `finalizeWeek` Firestore helper and wired WeekReviewPage to live domain summaries with owner-only finalize CTA.
+- Extended Vite/TS path aliases to include `@firebase/services`; Week list gained a co-located Vitest UI spec; Playwright smoke file scaffolded under `apps/web/tests/e2e`.
+
+### Outstanding Issues
+
+- Playwright CLI fails immediately (`TypeError: Cannot redefine property: Symbol($$jest-matchers-object)`) due to expect globals collision; needs runtime isolation (e.g., avoid importing Vitest expect helpers) before real smoke coverage can land.
+- WeekReview finalization flow lacks integration tests and real Firestore verification; add mocked hooks tests plus manual/automated flow once expect conflict resolved.
+- UI shows computed costing but omits ingredient version labels and variance highlights; design decisions pending.
+- Firestore rule tests still missing finalize prohibitions; update `packages/firebase/tests` once finalize semantics confirmed.
 
 ## Security & Configuration Tips
 

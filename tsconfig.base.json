@@ -12,7 +12,8 @@
     "baseUrl": ".",
     "paths": {
       "@domain/*": ["packages/domain/src/*"],
-      "@firebase/*": ["packages/firebase/src/*"]
+      "@firebase/*": ["packages/firebase/src/*"],
+      "@firebase/services": ["packages/firebase/src/index.ts"]
     }
   },
   "include": ["packages", "apps"],

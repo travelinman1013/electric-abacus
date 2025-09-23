@@ -10,6 +10,7 @@ import type {
 
 import {
   createWeek,
+  finalizeWeek,
   getCostSnapshots,
   getWeek,
   getWeekInventory,
@@ -33,6 +34,10 @@ interface SaveWeekSalesVariables {
 interface SaveWeekInventoryVariables {
   weekId: string;
   entries: WeeklyInventoryEntry[];
+}
+
+interface FinalizeWeekVariables {
+  weekId: string;
 }
 
 export const useWeeks = () =>
@@ -134,3 +139,17 @@ export const useWeekReport = (weekId: string | undefined) =>
     },
     enabled: Boolean(weekId)
   });
+
+export const useFinalizeWeek = () => {
+  const queryClient = useQueryClient();
+  return useMutation<ReportSummary, Error, FinalizeWeekVariables>({
+    mutationFn: ({ weekId }) => finalizeWeek(weekId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['week', variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['weeks'] });
+      queryClient.invalidateQueries({ queryKey: ['week-inventory', variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week-cost-snapshot', variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week-report', variables.weekId] });
+    }
+  });
+};

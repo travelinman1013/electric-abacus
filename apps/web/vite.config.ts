@@ -2,19 +2,25 @@ import path from 'node:path';
 
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@domain': path.resolve(__dirname, '../../packages/domain/src'),
-      '@firebase': path.resolve(__dirname, '../../packages/firebase/src')
-    }
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+      { find: '@domain', replacement: path.resolve(__dirname, '../../packages/domain/src') },
+      {
+        find: '@firebase/services',
+        replacement: path.resolve(__dirname, '../../packages/firebase/src/index.ts')
+      },
+      { find: '@firebase', replacement: path.resolve(__dirname, '../../packages/firebase/src') }
+    ]
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
     coverage: {
       reporter: ['text', 'lcov'],
       provider: 'v8',
