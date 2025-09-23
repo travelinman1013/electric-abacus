@@ -13,8 +13,7 @@ export default defineConfig({
       {
         find: '@firebase/services',
         replacement: path.resolve(__dirname, '../../packages/firebase/src/index.ts')
-      },
-      { find: '@firebase', replacement: path.resolve(__dirname, '../../packages/firebase/src') }
+      }
     ]
   },
   test: {

@@ -8,7 +8,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import {,
+import {
   doc,
   getDoc,
   setDoc,
@@ -20,7 +20,7 @@ let testEnv: RulesTestEnvironment;
 const PROJECT_ID = 'taco-casa-demo';
 
 beforeAll(async () => {
-  const rules = await readFile('firestore.rules', 'utf8');
+  const rules = await readFile('../../firestore.rules', 'utf8');
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {
@@ -136,5 +136,145 @@ describe('Firestore security rules', () => {
     await assertFails(
       setDoc(finalizedInventory, { begin: 10, received: 5, end: 3 })
     );
+  });
+
+  describe('Finalize behavior restrictions', () => {
+    it('blocks cost snapshot creation in finalized weeks', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const finalizedSnapshot = doc(ownerDb, 'weeks/2025-W02/costSnapshot/beef');
+
+      await assertFails(
+        setDoc(finalizedSnapshot, {
+          unitCost: 8.50,
+          sourceVersionId: 'v1',
+          capturedAt: new Date()
+        })
+      );
+    });
+
+    it('blocks cost snapshot updates in finalized weeks', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await setDoc(doc(db, 'weeks/2025-W02/costSnapshot/beef'), {
+          unitCost: 8.00,
+          sourceVersionId: 'v1',
+          capturedAt: new Date()
+        });
+      });
+
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const finalizedSnapshot = doc(ownerDb, 'weeks/2025-W02/costSnapshot/beef');
+
+      await assertFails(
+        updateDoc(finalizedSnapshot, { unitCost: 8.50 })
+      );
+    });
+
+    it('allows cost snapshot creation in draft weeks', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const draftSnapshot = doc(ownerDb, 'weeks/2025-W01/costSnapshot/beef');
+
+      await assertSucceeds(
+        setDoc(draftSnapshot, {
+          unitCost: 8.50,
+          sourceVersionId: 'v1',
+          capturedAt: new Date()
+        })
+      );
+    });
+
+    it('blocks report creation in finalized weeks', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const finalizedReport = doc(ownerDb, 'weeks/2025-W02/report/summary');
+
+      await assertFails(
+        setDoc(finalizedReport, {
+          totals: { totalUsageUnits: 100, totalCostOfSales: 500 },
+          breakdown: [],
+          generatedAt: new Date()
+        })
+      );
+    });
+
+    it('blocks report updates in finalized weeks', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await setDoc(doc(db, 'weeks/2025-W02/report/summary'), {
+          totals: { totalUsageUnits: 90, totalCostOfSales: 450 },
+          breakdown: [],
+          generatedAt: new Date()
+        });
+      });
+
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const finalizedReport = doc(ownerDb, 'weeks/2025-W02/report/summary');
+
+      await assertFails(
+        updateDoc(finalizedReport, {
+          totals: { totalUsageUnits: 100, totalCostOfSales: 500 }
+        })
+      );
+    });
+
+    it('allows report creation in draft weeks', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const draftReport = doc(ownerDb, 'weeks/2025-W01/report/summary');
+
+      await assertSucceeds(
+        setDoc(draftReport, {
+          totals: { totalUsageUnits: 100, totalCostOfSales: 500 },
+          breakdown: [],
+          generatedAt: new Date()
+        })
+      );
+    });
+
+    it('blocks sales updates in finalized weeks', async () => {
+      const teamDb = testEnv.authenticatedContext('team-1').firestore();
+      const finalizedSales = doc(teamDb, 'weeks/2025-W02/sales/daily');
+
+      await assertFails(
+        setDoc(finalizedSales, {
+          mon: 100,
+          tue: 110,
+          wed: 120,
+          thu: 130,
+          fri: 140,
+          sat: 150,
+          sun: 160
+        })
+      );
+    });
+
+    it('blocks inventory updates in finalized weeks', async () => {
+      const teamDb = testEnv.authenticatedContext('team-1').firestore();
+      const finalizedInventory = doc(teamDb, 'weeks/2025-W02/inventory/cheese');
+
+      await assertFails(
+        setDoc(finalizedInventory, { begin: 10, received: 5, end: 3 })
+      );
+    });
+
+    it('blocks updating week status from finalized back to draft', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const finalizedWeek = doc(ownerDb, 'weeks/2025-W02');
+
+      await assertFails(
+        updateDoc(finalizedWeek, { status: 'draft' })
+      );
+    });
+
+    it('allows updating week status from draft to finalized', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+      const draftWeek = doc(ownerDb, 'weeks/2025-W01');
+
+      await assertSucceeds(
+        updateDoc(draftWeek, {
+          status: 'finalized',
+          finalizedAt: new Date(),
+          finalizedBy: 'owner-1'
+        })
+      );
+    });
   });
 });
