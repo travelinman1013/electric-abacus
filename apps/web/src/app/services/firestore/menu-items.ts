@@ -20,6 +20,7 @@ export interface MenuItemInput {
   id?: string;
   name: string;
   isActive?: boolean;
+  sellingPrice?: number;
 }
 
 export interface RecipeInput {
@@ -44,7 +45,8 @@ export const listMenuItems = async (): Promise<MenuItem[]> => {
     return {
       id: docSnapshot.id,
       name: data.name,
-      isActive: data.isActive ?? true
+      isActive: data.isActive ?? true,
+      sellingPrice: data.sellingPrice
     } satisfies MenuItem;
   });
 };
@@ -75,7 +77,8 @@ export const getMenuItemWithRecipes = async (menuItemId: string): Promise<MenuIt
     item: {
       id: snapshot.id,
       name: itemData.name,
-      isActive: itemData.isActive ?? true
+      isActive: itemData.isActive ?? true,
+      sellingPrice: itemData.sellingPrice
     },
     recipes
   } satisfies MenuItemWithRecipes;
@@ -93,12 +96,14 @@ export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[
       transaction.update(itemRef, {
         name: input.name,
         isActive: input.isActive ?? true,
+        sellingPrice: input.sellingPrice,
         updatedAt: serverTimestamp()
       });
     } else {
       transaction.set(itemRef, {
         name: input.name,
         isActive: input.isActive ?? true,
+        sellingPrice: input.sellingPrice,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -134,7 +139,8 @@ export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[
   return {
     id: menuItemId,
     name: input.name,
-    isActive: input.isActive ?? true
+    isActive: input.isActive ?? true,
+    sellingPrice: input.sellingPrice
   } satisfies MenuItem;
 };
 

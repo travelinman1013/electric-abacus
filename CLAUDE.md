@@ -4,99 +4,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Taco Casa Digital Solution - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles restaurant operations including inventory tracking, sales data, ingredient management, and cost calculations.
+Taco Casa Digital Solution - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles restaurant operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations.
 
-## Project Structure & Module Organization
+## Project Structure
 
-- Root `package.json` defines workspace for `apps/web`, `packages/domain`, and `packages/firebase`.
-- Frontend lives in `apps/web/src` with feature folders under `app/` and shared UI in `app/components`.
-- Domain logic sits in `packages/domain/src`; Firestore rules, admin utilities, and seed scripts reside in `packages/firebase`.
-- Tests: domain unit tests in `packages/domain/src/__tests__`, Firestore rule tests in `packages/firebase/tests`, UI/unit specs in `apps/web/src`, and Playwright E2E specs in `apps/web/tests/e2e`.
+- **apps/web**: React frontend with Vite, TypeScript, and Tailwind CSS
+- **packages/domain**: Business logic and costing calculations
+- **packages/firebase**: Firestore rules, admin utilities, and seed scripts
 
-## Build, Test, and Development Commands
+## Key Commands
 
-- `npm run dev` – start the Vite dev server at `http://localhost:5173`.
-- `npm run build` – type-check and produce production build for web app.
-- `npm run lint` – run ESLint across workspaces (fails on warnings).
-- `npm run test:unit` – run Vitest coverage for domain + web unit suites.
-- `npm run test:e2e` – execute Playwright smoke tests (ensure dev server or `npm run build && npm run preview`).
-- `npm run seed` – execute Firebase admin seeding; requires `.env` values.
+- `npm run dev` – Start dev server at `http://localhost:5173`
+- `npm run build` – Build for production
+- `npm run lint` – Run ESLint (fails on warnings)
+- `npm run test:unit` – Run unit tests with coverage
+- `npm run seed` – Seed Firebase with test data
 
-## Coding Style & Naming Conventions
+## Current Features
 
-- TypeScript everywhere; strict mode enabled via `tsconfig.base.json`.
-- Run `npm run format` after edits; Prettier enforces 2-space indent, 100-char line width.
-- Favor functional React components, hooks prefixed with `use*`, and files using kebab-case (`week-picker.tsx`).
-- Tailwind classes ordered by utility groups; keep shared styles via helpers in `app/lib`.
+### Recipe Costing System (Sep 2025)
+- **Real-time Cost Calculation**: Dynamic recipe costs update as ingredients are modified
+- **Food Cost Percentage**: Live calculation with color-coded thresholds:
+  - Green: <30% (excellent margin)
+  - Yellow: 30-35% (acceptable margin)
+  - Red: >35% (needs adjustment)
+- **Ingredient Categories**: food, paper, other
+- **Enhanced Tables**: Unit cost and line total columns with recipe totals
 
-## Testing Guidelines
+### Core Functionality
+- User authentication with role-based access (owner/teamMember)
+- Weekly inventory tracking with usage calculations
+- Sales data entry and reporting
+- Ingredient management with version history
+- Menu item recipes with cost analysis
+- Week finalization with PDF export
 
-- Unit tests use Vitest + React Testing Library; co-locate UI tests beside components with `.test.tsx` suffix.
-- Domain module requires ≥90% line coverage (`packages/domain/vitest.config.ts` enforces thresholds).
-- Firestore rules validated with `@firebase/rules-unit-testing`; run `npm run test --workspace packages/firebase` before pushing security changes.
-- Playwright smoke spec (`apps/web/tests/e2e/finalize-week.spec.ts`) must pass prior to release.
+## Known Issues (Sep 2025)
 
-## Commit & Pull Request Guidelines
+1. **Ingredients Page**: Select component rendering prevents form submission
+2. **Menu Items Page**: "Add ingredient" and "Update menu item" buttons not responding
 
-- Commit messages follow conventional, action-oriented verbs (e.g., `feat: add finalize flow transaction`).
-- Scope commits narrowly; include updated tests and docs.
-- PRs should describe user impact, testing evidence (`npm run test:unit`, `npm run test:e2e`), and reference related issues.
-- Attach screenshots or recordings for UI-facing changes and note required environment variables if deployment blocking.
+## Testing Status
 
-## Next Steps
+- **Domain Tests**: ✅ 99% coverage on costing functions (15 tests)
+- **Unit Tests**: ✅ All passing
+- **E2E Tests**: ✅ 9 smoke tests passing
+- **Lint**: ✅ No errors or warnings
 
-- **Post-Login Testing**: Verify all authenticated routes and features work correctly
-- **CI/CD Pipeline**: Set up GitHub Actions for automated testing and deployment
-- **Firebase Emulator**: Configure local development with Firebase emulators
-- **Production Deployment**: Deploy to Firebase Hosting with proper environment configuration
-
-### Latest Session Highlights (Feb 2025)
-
-- Root ESLint flat config updated to use plugin-provided flat presets so `npm run lint` succeeds without compat errors.
-- Added `finalizeWeek` Firestore helper and wired WeekReviewPage to live domain summaries with owner-only finalize CTA.
-- Extended Vite/TS path aliases to include `@firebase/services`; Week list gained a co-located Vitest UI spec; Playwright smoke file scaffolded under `apps/web/tests/e2e`.
-- **RESOLVED**: Playwright expect collision issue completely fixed by creating isolated `playwright.config.ts` and removing conflicting @firebase alias
-- **COMPLETED**: WeekReviewPage comprehensive component tests with role-based finalization logic, error states, and business rule validation
-- **COMPLETED**: Real E2E smoke tests covering navigation, authentication flows, and basic application functionality (9 tests passing)
-- **COMPLETED**: Expanded Firestore security rule tests with 10 new finalize behavior tests covering cost snapshots, reports, sales, and inventory restrictions
-
-### Testing Infrastructure Status
-
-- **Lint**: ✅ All workspaces passing with ESLint flat config
-- **Unit Tests**: ✅ Domain (≥90% coverage) + Web component tests (6/6 passing)
-- **E2E Tests**: ✅ Playwright smoke suite (9/9 passing across browsers)
-- **Firestore Rules**: ✅ Comprehensive security tests written (requires emulator setup)
-- **WeekReviewPage**: ✅ Component tests cover finalization, auth, loading, and error states
-
-### Latest Session (Sep 2025) - Authentication Fixed
-
-- **COMPLETED**: Firebase Authentication and Firestore services enabled in console
-- **FIXED**: Firebase configuration mismatch in client `.env` file (API key and measurement ID)
-- **ADDED**: Comprehensive authentication error logging and debugging tools
-- **VERIFIED**: Seed script populates Firestore with test users and data
-- **STATUS**: Authentication flow now working; login page functional with debug tools
-
-### Demo Credentials
+## Demo Credentials
 
 - **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
 - **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
 
-### Current Status
+## Architecture Notes
 
-- **Authentication**: ✅ Working with detailed error handling and debug tools
-- **Firebase Setup**: ✅ Properly configured and seeded
-- **Dev Environment**: ✅ Running on `http://localhost:5173/`
-
-## Security & Configuration Tips
-
-- Never commit `.env` files; keep secrets in Firebase console or GitHub Actions secrets.
-- Rotate Firebase API keys regularly and restrict admin credentials to seed tooling.
-- Review `firestore.rules` and its tests for RBAC changes—regressions must be covered by new tests.
-
-## Sprint Progress (Feb 2025)
-
-- Monorepo scaffolding in place with shared linting, prettier, and Husky (needs GH Actions wiring).
-- Firebase client/admin helpers, seed script, and Firestore rules drafted with unit tests pending polish.
-- Auth provider + login form complete; React Router shell enforces auth + owner guards.
-- Week list, sales, inventory, ingredient, and menu-item screens now backed by Firebase services with React Query state.
-- Domain costing library implemented with tests; enhanced finalization flow with confirmation dialog, comprehensive error handling, ingredient version tracking, and full PDF export functionality now complete.
+- Uses React Query for server state management
+- Firebase Authentication for user management
+- Firestore for data persistence
+- Domain package contains pure business logic
+- Strict TypeScript with full type safety

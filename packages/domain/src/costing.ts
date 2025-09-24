@@ -1,6 +1,10 @@
 import type {
   ComputeReportSummaryInput,
   CostOfSalesBreakdown,
+  Ingredient,
+  RecipeCostSummary,
+  RecipeIngredient,
+  RecipeIngredientCost,
   ReportSummary,
   WeeklyCostSnapshotEntry,
   WeeklyInventoryEntry
@@ -114,4 +118,67 @@ export const computeReportSummary = (input: ComputeReportSummaryInput): ReportSu
       costOfSales: Number(item.costOfSales.toFixed(2))
     }))
   } satisfies ReportSummary;
+};
+
+export const calculateRecipeCost = (
+  recipes: RecipeIngredient[],
+  ingredients: Ingredient[]
+): RecipeCostSummary => {
+  const ingredientMap = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
+
+  const ingredientCosts: RecipeIngredientCost[] = recipes.map((recipe) => {
+    const ingredient = ingredientMap.get(recipe.ingredientId);
+    const unitCost = ingredient ? clampNonNegative(ensureNumber(ingredient.unitCost)) : 0;
+    const quantity = clampNonNegative(ensureNumber(recipe.quantity));
+    const lineCost = quantity * unitCost;
+
+    return {
+      ingredientId: recipe.ingredientId,
+      ingredientName: ingredient?.name ?? 'Unknown Ingredient',
+      quantity,
+      unitOfMeasure: recipe.unitOfMeasure,
+      unitCost,
+      lineCost: Number(lineCost.toFixed(4)),
+      category: ingredient?.category ?? 'other'
+    } satisfies RecipeIngredientCost;
+  });
+
+  const totalRecipeCost = ingredientCosts.reduce((total, item) => total + item.lineCost, 0);
+
+  return {
+    totalRecipeCost: Number(totalRecipeCost.toFixed(4)),
+    foodCostPercentage: 0, // Will be calculated when selling price is available
+    ingredients: ingredientCosts
+  } satisfies RecipeCostSummary;
+};
+
+export const calculateFoodCostPercentage = (
+  recipeCost: number,
+  sellingPrice: number
+): number => {
+  const cost = clampNonNegative(ensureNumber(recipeCost));
+  const price = clampNonNegative(ensureNumber(sellingPrice));
+
+  if (price === 0) {
+    return 0;
+  }
+
+  const percentage = (cost / price) * 100;
+  return Number(percentage.toFixed(2));
+};
+
+export const calculateRecipeCostWithPercentage = (
+  recipes: RecipeIngredient[],
+  ingredients: Ingredient[],
+  sellingPrice?: number
+): RecipeCostSummary => {
+  const costSummary = calculateRecipeCost(recipes, ingredients);
+  const foodCostPercentage = sellingPrice
+    ? calculateFoodCostPercentage(costSummary.totalRecipeCost, sellingPrice)
+    : 0;
+
+  return {
+    ...costSummary,
+    foodCostPercentage
+  } satisfies RecipeCostSummary;
 };

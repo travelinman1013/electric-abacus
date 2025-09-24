@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  calculateFoodCostPercentage,
+  calculateRecipeCost,
+  calculateRecipeCostWithPercentage,
   computeCostOfSales,
   computeReportSummary,
   computeUsage,
   computeUsageByIngredient
 } from '../costing';
 
-import type { WeeklyCostSnapshotEntry, WeeklyInventoryEntry } from '../types';
+import type { Ingredient, RecipeIngredient, WeeklyCostSnapshotEntry, WeeklyInventoryEntry } from '../types';
 
 describe('computeUsage', () => {
   it('computes usage using begin + received - end and clamps at zero', () => {
@@ -130,5 +133,130 @@ describe('computeUsageByIngredient', () => {
     ];
 
     expect(computeUsageByIngredient(inventory)).toEqual({ beef: 7, cheese: 6 });
+  });
+});
+
+describe('calculateRecipeCost', () => {
+  const testIngredients: Ingredient[] = [
+    {
+      id: 'ground-beef',
+      name: 'Ground Beef',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 10,
+      casePrice: 50,
+      unitCost: 5.0,
+      category: 'food',
+      isActive: true
+    },
+    {
+      id: 'cheddar-cheese',
+      name: 'Cheddar Cheese',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 5,
+      casePrice: 25,
+      unitCost: 5.0,
+      category: 'food',
+      isActive: true
+    },
+    {
+      id: 'taco-wrapper',
+      name: 'Taco Wrapper',
+      unitOfMeasure: 'each',
+      unitsPerCase: 100,
+      casePrice: 10,
+      unitCost: 0.1,
+      category: 'paper',
+      isActive: true
+    }
+  ];
+
+  const testRecipe: RecipeIngredient[] = [
+    { id: '1', ingredientId: 'ground-beef', quantity: 0.25, unitOfMeasure: 'lb' },
+    { id: '2', ingredientId: 'cheddar-cheese', quantity: 0.1, unitOfMeasure: 'lb' },
+    { id: '3', ingredientId: 'taco-wrapper', quantity: 1, unitOfMeasure: 'each' }
+  ];
+
+  it('calculates recipe cost from ingredients and quantities', () => {
+    const result = calculateRecipeCost(testRecipe, testIngredients);
+
+    expect(result.totalRecipeCost).toBeCloseTo(1.85, 4); // 0.25*5 + 0.1*5 + 1*0.1
+    expect(result.ingredients).toHaveLength(3);
+    expect(result.ingredients[0].ingredientName).toBe('Ground Beef');
+    expect(result.ingredients[0].lineCost).toBeCloseTo(1.25, 4);
+    expect(result.ingredients[0].category).toBe('food');
+  });
+
+  it('handles missing ingredients gracefully', () => {
+    const recipeWithMissingIngredient: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'unknown-ingredient', quantity: 1, unitOfMeasure: 'lb' }
+    ];
+
+    const result = calculateRecipeCost(recipeWithMissingIngredient, testIngredients);
+
+    expect(result.totalRecipeCost).toBe(0);
+    expect(result.ingredients[0].ingredientName).toBe('Unknown Ingredient');
+    expect(result.ingredients[0].unitCost).toBe(0);
+    expect(result.ingredients[0].category).toBe('other');
+  });
+
+  it('handles zero quantities', () => {
+    const recipeWithZeroQuantity: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'ground-beef', quantity: 0, unitOfMeasure: 'lb' }
+    ];
+
+    const result = calculateRecipeCost(recipeWithZeroQuantity, testIngredients);
+
+    expect(result.totalRecipeCost).toBe(0);
+    expect(result.ingredients[0].lineCost).toBe(0);
+  });
+});
+
+describe('calculateFoodCostPercentage', () => {
+  it('calculates food cost percentage correctly', () => {
+    expect(calculateFoodCostPercentage(1.85, 5.99)).toBeCloseTo(30.88, 2);
+    expect(calculateFoodCostPercentage(2.50, 10.00)).toBe(25.0);
+  });
+
+  it('returns zero when selling price is zero', () => {
+    expect(calculateFoodCostPercentage(1.85, 0)).toBe(0);
+  });
+
+  it('handles invalid inputs gracefully', () => {
+    expect(calculateFoodCostPercentage(Number.NaN, 5.99)).toBe(0);
+    expect(calculateFoodCostPercentage(-1, 5.99)).toBe(0);
+    expect(calculateFoodCostPercentage(1.85, Number.NEGATIVE_INFINITY)).toBe(0);
+  });
+});
+
+describe('calculateRecipeCostWithPercentage', () => {
+  const testIngredients: Ingredient[] = [
+    {
+      id: 'ground-beef',
+      name: 'Ground Beef',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 10,
+      casePrice: 50,
+      unitCost: 5.0,
+      category: 'food',
+      isActive: true
+    }
+  ];
+
+  const testRecipe: RecipeIngredient[] = [
+    { id: '1', ingredientId: 'ground-beef', quantity: 0.25, unitOfMeasure: 'lb' }
+  ];
+
+  it('calculates both recipe cost and food cost percentage', () => {
+    const result = calculateRecipeCostWithPercentage(testRecipe, testIngredients, 4.99);
+
+    expect(result.totalRecipeCost).toBeCloseTo(1.25, 4);
+    expect(result.foodCostPercentage).toBeCloseTo(25.05, 2);
+  });
+
+  it('returns zero percentage when no selling price provided', () => {
+    const result = calculateRecipeCostWithPercentage(testRecipe, testIngredients);
+
+    expect(result.totalRecipeCost).toBeCloseTo(1.25, 4);
+    expect(result.foodCostPercentage).toBe(0);
   });
 });

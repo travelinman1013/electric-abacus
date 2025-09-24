@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import type { Ingredient } from '@domain/costing';
+import type { Ingredient, IngredientCategory } from '@domain/costing';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -36,6 +36,7 @@ const ingredientSchema = z.object({
   casePrice: z
     .number({ invalid_type_error: 'Enter the case price' })
     .nonnegative('Case price cannot be negative'),
+  category: z.enum(['food', 'paper', 'other']).optional(),
   isActive: z.boolean().optional()
 });
 
@@ -72,6 +73,7 @@ export const IngredientsPage = () => {
       unitOfMeasure: 'lb',
       unitsPerCase: 1,
       casePrice: 0,
+      category: 'food' as IngredientCategory,
       isActive: true
     }
   });
@@ -83,6 +85,7 @@ export const IngredientsPage = () => {
       unitOfMeasure: 'lb',
       unitsPerCase: 1,
       casePrice: 0,
+      category: 'food' as IngredientCategory,
       isActive: true
     }
   });
@@ -94,6 +97,7 @@ export const IngredientsPage = () => {
         unitOfMeasure: editingIngredient.data.unitOfMeasure,
         unitsPerCase: editingIngredient.data.unitsPerCase,
         casePrice: editingIngredient.data.casePrice,
+        category: editingIngredient.data.category,
         isActive: editingIngredient.data.isActive
       });
     }
@@ -267,6 +271,18 @@ export const IngredientsPage = () => {
                 </FormField>
 
                 <FormField
+                  label="Category"
+                  htmlFor="new-category"
+                  error={createForm.formState.errors.category?.message}
+                >
+                  <Select id="new-category" {...createForm.register('category')}>
+                    <option value="food">Food</option>
+                    <option value="paper">Paper Goods</option>
+                    <option value="other">Other</option>
+                  </Select>
+                </FormField>
+
+                <FormField
                   label="Units per case"
                   htmlFor="new-units"
                   required
@@ -344,6 +360,18 @@ export const IngredientsPage = () => {
                     error={editForm.formState.errors.unitOfMeasure?.message}
                   >
                     <Input id="edit-unit" {...editForm.register('unitOfMeasure')} />
+                  </FormField>
+
+                  <FormField
+                    label="Category"
+                    htmlFor="edit-category"
+                    error={editForm.formState.errors.category?.message}
+                  >
+                    <Select id="edit-category" {...editForm.register('category')}>
+                      <option value="food">Food</option>
+                      <option value="paper">Paper Goods</option>
+                      <option value="other">Other</option>
+                    </Select>
                   </FormField>
 
                   <FormField

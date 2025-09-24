@@ -1,98 +1,93 @@
-# Next Session: Post-Login UI Testing & Validation
+# Next Session Context - Taco Casa Digital Solution
 
-## Current Status
-✅ Firebase infrastructure is fully operational - Authentication and Firestore services enabled
-✅ Seed script runs successfully and populates database with test data
-✅ Core codebase issues resolved (path resolution, SDK configuration)
-✅ Documentation updated with current project state
+## Priority Fixes Required
 
-## Demo Credentials (Seeded in Firestore)
-- **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
-- **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
+### 1. Ingredients Page - Form Not Working
+**Issue**: The ingredients page forms are not rendering properly. The Select component appears to be causing issues.
 
-## Primary Objectives
+**Location**: `apps/web/src/app/features/ingredients/ingredients-page.tsx`
 
-### 1. **Login & Authentication Flow Testing**
-- Start dev server with `npm run dev` and test login with both demo accounts
-- Verify authentication state management and role-based routing works correctly
-- Ensure profile data loads properly from Firestore after successful login
-- Test logout functionality and auth state persistence
+**Symptoms**:
+- Category select dropdown not rendering correctly
+- Form submission blocked
+- Likely incompatibility between our Select component and react-hook-form's register
 
-### 2. **Post-Login UI Functionality Validation**
-Systematically test each authenticated screen with seeded data:
+**Fix needed**:
+- Check lines 278-282 and 370-374 where Select components are used for category
+- Consider using Controller from react-hook-form for Select components
+- Ensure the Select component properly forwards refs
 
-**Week Management**
-- Week list page should show `2025-W39` (draft status) from seed data
-- Week selection and navigation should work smoothly
-- Verify role-based permissions (owner vs team member access)
+### 2. Menu Items Page - Buttons Not Responding
+**Issue**: "Add ingredient" and "Update menu item" buttons are not functioning
 
-**Sales Entry**
-- Sales page should load with current week's sales structure
-- Test daily sales input (Mon-Sun) with form validation
-- Verify data persistence to Firestore `weeks/{weekId}/sales/daily`
+**Location**: `apps/web/src/app/features/menu-items/menu-items-page.tsx`
 
-**Inventory Tracking**
-- Inventory page should display seeded ingredients: seasoned-beef, cheddar-cheese, flour-tortillas
-- Test inventory input forms (begin/received/end values)
-- Verify calculations and data persistence
+**Symptoms**:
+- "Add ingredient" button (line 402) does nothing when clicked
+- "Update menu item" button in edit form not submitting
+- Likely related to form watch dependencies in useMemo hooks
 
-**Ingredient Management**
-- Ingredients page should list seeded ingredients with pricing/units
-- Test CRUD operations on ingredients
-- Verify ingredient versioning system works correctly
+**Fix needed**:
+- Check the handleAddRecipeRow function (line 195)
+- Review form.watch usage in useMemo (lines 118-128)
+- Ensure proper dependency arrays in hooks
 
-**Week Finalization (Owner Only)**
-- Week review page should show cost calculations and summary
-- Test finalization workflow with confirmation dialog
-- Verify PDF export functionality
-- Ensure proper role restrictions (team members cannot finalize)
+## What Was Just Completed
 
-### 3. **Data Integration & State Management**
-- Verify React Query hooks are working correctly with live Firestore data
-- Test optimistic updates and error handling in forms
-- Ensure data consistency across different screens when navigating
-- Check loading states and error boundaries are functioning
+### Recipe Costing System
+Successfully implemented dynamic recipe costing with:
+- Real-time cost calculation as ingredients are added/modified
+- Food cost percentage with color coding (green <30%, yellow 30-35%, red >35%)
+- Enhanced recipe tables with unit cost and line total columns
+- Recipe total footer rows
+- Ingredient categorization (food/paper/other)
 
-### 4. **UI/UX Polish**
-- Verify Tailwind styling and shadcn components render correctly
-- Test responsive design across different screen sizes
-- Ensure consistent navigation and user feedback
-- Validate form validation messages and user guidance
+### Domain Package Updates
+- Added `calculateRecipeCost`, `calculateFoodCostPercentage`, `calculateRecipeCostWithPercentage` functions
+- Extended types: MenuItem with sellingPrice, Ingredient with category
+- 99% test coverage with 15 new tests
 
-## Technical Notes
+### Firebase Integration
+- Updated all services to handle new fields (sellingPrice, category)
+- Backward compatible with existing data
 
-### Key Files to Monitor:
-- `apps/web/src/app/components/auth/` - Authentication components
-- `apps/web/src/app/(authenticated)/` - Protected route pages
-- `packages/firebase/src/client.ts` - Firestore service layer
-- `apps/web/src/app/hooks/` - React Query hooks
+## Technical Context
 
-### Expected Behavior:
-- All authenticated pages should load without console errors
-- Data should be fetched correctly from seeded Firestore collections
-- Form submissions should update Firestore in real-time
-- Role-based access controls should be enforced on frontend and backend
+### Key Files Modified
+1. `packages/domain/src/types.ts` - Added IngredientCategory type, extended interfaces
+2. `packages/domain/src/costing.ts` - New recipe costing functions
+3. `apps/web/src/app/features/menu-items/menu-items-page.tsx` - Recipe costing UI
+4. `apps/web/src/app/features/ingredients/ingredients-page.tsx` - Category field
+5. `apps/web/src/app/services/firestore/*.ts` - Firebase service updates
 
-### If Issues Are Found:
-1. Check browser console for JavaScript errors
-2. Verify Firestore security rules in Firebase Console
-3. Test network requests in browser dev tools
-4. Confirm React Query cache behavior and data flow
+### Dependencies to Watch
+- React Hook Form for form management
+- Our custom Select component vs native HTML select
+- Form watch() creating new references on each render
+
+## Testing the Fixes
+
+1. Start dev server: `npm run dev`
+2. Login as owner: `regan.owner@tacocasa.test` / `OwnerPass123!`
+3. Test Ingredients page:
+   - Should be able to create new ingredients with category
+   - Should be able to edit existing ingredients
+4. Test Menu Items page:
+   - "Add ingredient" should add new recipe rows
+   - Forms should submit properly
+   - Recipe costs should update in real-time
 
 ## Success Criteria
-- [ ] Both demo accounts can log in successfully
-- [ ] All authenticated pages render without errors
-- [ ] Seeded data displays correctly throughout the application
-- [ ] Form inputs successfully update Firestore
-- [ ] Role-based permissions work as expected
-- [ ] Week finalization flow (owner only) functions correctly
-- [ ] No critical console errors or broken functionality
 
-## Next Steps After Testing
-Once UI validation is complete, the remaining tasks are:
-- GitHub Actions CI pipeline setup
-- Firebase emulator documentation for local development
-- Production deployment preparation
+1. Ingredients page fully functional with category selection
+2. Menu items page buttons working (add ingredient, update)
+3. No console errors
+4. Forms submit and save to Firebase
+5. Real-time cost calculations continue working
 
----
-*Generated after successful Firebase seed script resolution - ready for comprehensive post-login testing*
+## Additional Context
+
+- The dev server uses Vite with HMR, no restart needed
+- TypeScript build has some errors but dev server works
+- Domain package tests all passing
+- Firebase is properly configured and seeded

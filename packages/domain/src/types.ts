@@ -17,6 +17,8 @@ export interface Week {
   finalizedBy: string | null;
 }
 
+export type IngredientCategory = 'food' | 'paper' | 'other';
+
 export interface Ingredient {
   id: string;
   name: string;
@@ -25,6 +27,7 @@ export interface Ingredient {
   casePrice: number;
   unitCost: number;
   isActive: boolean;
+  category: IngredientCategory;
   currentVersionId?: string;
 }
 
@@ -42,6 +45,7 @@ export interface MenuItem {
   id: string;
   name: string;
   isActive: boolean;
+  sellingPrice?: number;
 }
 
 export interface RecipeIngredient {
@@ -100,4 +104,20 @@ export interface ComputeReportSummaryInput {
   inventory: WeeklyInventoryEntry[];
   costSnapshots: WeeklyCostSnapshotEntry[];
   now?: () => Date;
+}
+
+export interface RecipeCostSummary {
+  totalRecipeCost: number;
+  foodCostPercentage: number;
+  ingredients: RecipeIngredientCost[];
+}
+
+export interface RecipeIngredientCost {
+  ingredientId: string;
+  ingredientName: string;
+  quantity: number;
+  unitOfMeasure: string;
+  unitCost: number;
+  lineCost: number;
+  category: IngredientCategory;
 }

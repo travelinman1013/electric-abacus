@@ -1,57 +1,63 @@
-# Taco Casa Digital Solution (MVP)
+# Taco Casa Digital Solution
 
-This monorepo hosts the Taco Casa weekly operations MVP built with React, Firebase, and a shared TypeScript domain library. The current sprint delivered the production foundation—authentication shell, routed UI skeletons, and data access layers backed by Firebase—and now focuses on wiring the week finalization flow and baseline automated tests.
+Restaurant operations management system built with React, Firebase, and TypeScript. Features real-time recipe costing, food cost percentage analysis, and comprehensive inventory management.
 
-## Structure
+## Quick Start
 
-- `apps/web` – Vite + React web app (Tailwind, shadcn-style UI, React Query, Playwright/Vitest setup).
-- `packages/domain` – Pure TypeScript costing library with unit tests.
-- `packages/firebase` – Client/admin wrappers, seed script, and Firestore rules/tests scaffolding.
+```bash
+npm install
+npm run dev  # Start dev server at http://localhost:5173
+```
 
-## Getting Started
+## Key Features
 
-1. Install dependencies: `npm install` (workspace-aware).
-2. Copy `.env.example` → `.env` and populate Firebase admin credentials for tooling.
-3. For web client environment values, set the `VITE_FIREBASE_*` keys (see `apps/web/src/app/utils/firebaseClient.ts`).
-4. Run the dev server: `npm run dev` (proxies to `apps/web`).
+- **Recipe Costing**: Real-time cost calculation with food cost percentage
+- **Inventory Management**: Track weekly usage with automatic calculations
+- **Sales Tracking**: Daily sales entry and reporting
+- **Menu Management**: Recipe builder with ingredient costs
+- **User Roles**: Owner and team member access levels
+- **Week Finalization**: PDF export with cost analysis
 
-Common scripts:
+## Project Structure
 
-- `npm run lint` – ESLint across workspaces (uses flat config).
-- `npm run test:unit` – Domain + web Vitest suites (domain coverage threshold enforced).
-- `npm run test:e2e` – Execute Playwright E2E smoke tests across browsers.
-- `npm run seed` – Populate Firebase with demo users, ingredients, a draft week.
+```
+├── apps/web/          # React frontend (Vite + TypeScript)
+├── packages/domain/   # Business logic and calculations
+└── packages/firebase/ # Firestore rules and admin tools
+```
 
-## Latest Updates (Sep 2025)
+## Scripts
 
-- **Authentication Fixed** – Resolved Firebase configuration mismatch; login page now fully functional
-- **Debug Tools Added** – Enhanced error logging and Firebase connectivity test button
-- **Ready for Testing** – Dev server at `http://localhost:5173/` with working authentication
+- `npm run dev` – Start development server
+- `npm run build` – Build for production
+- `npm run test:unit` – Run unit tests
+- `npm run lint` – Lint all workspaces
+- `npm run seed` – Seed Firebase with test data
 
-## What’s Ready
+## Recent Updates (Sep 2025)
 
-- Firebase auth provider with profile fetch, login form, and guarded routing/layout.
-- Week list, sales entry, inventory, ingredients, and menu item pages wired to Firestore services with optimistic React Query hooks.
-- Shared domain types + costing math module (usage, cost of sales, report summary) with tests.
-- Firestore service layer covering weeks, inventory, sales, ingredient versioning, and menu recipe CRUD, including finalize transaction scaffolding.
-- Tailwind/shadcn UI primitives and layout shell prepared for role-specific experiences.
-- Enhanced finalization workflow with confirmation dialog, comprehensive error handling, ingredient version tracking, and professional PDF export functionality.
-- Comprehensive testing infrastructure: Domain ≥90% coverage, WeekReviewPage component tests, E2E smoke suite, and Firestore security rules validation.
+### Recipe Costing System
+- Dynamic recipe cost calculation
+- Food cost percentage with color-coded thresholds
+- Ingredient categorization (food/paper/other)
+- Enhanced recipe tables with cost breakdowns
 
-## Testing Status
+### Known Issues
+- Ingredients page: Form submission blocked
+- Menu items: Button interactions not working
 
-- **Unit Tests**: ✅ Domain (≥90% coverage) + Web component tests (6/6 passing)
-- **E2E Tests**: ✅ Playwright smoke suite (9/9 passing across browsers)
-- **Firestore Rules**: ✅ Comprehensive security tests (requires emulator setup)
-- **Linting**: ✅ ESLint flat config across all workspaces
+## Demo Accounts
 
-## Demo Credentials
+- Owner: `regan.owner@tacocasa.test` / `OwnerPass123!`
+- Team: `taylor.team@tacocasa.test` / `TeamPass123!`
 
-- **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
-- **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
+## Environment Setup
 
-## Next Steps
+Copy `.env.example` to `.env` and configure Firebase credentials.
 
-- **Post-Login Testing**: Verify all authenticated routes and functionality
-- **CI/CD Pipeline**: Set up GitHub Actions for automated testing and deployment
-- **Firebase Emulator**: Configure local development environment
+## Testing
+
+- Domain: 99% coverage on costing functions
+- Unit tests: All passing
+- E2E: 9 smoke tests passing
+- Linting: Clean

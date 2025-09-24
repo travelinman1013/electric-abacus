@@ -12,7 +12,7 @@ import {
   where
 } from 'firebase/firestore';
 
-import type { Ingredient, IngredientVersion } from '@domain/costing';
+import type { Ingredient, IngredientCategory, IngredientVersion } from '@domain/costing';
 
 import { getClientFirestore } from '@taco/firebase';
 
@@ -25,6 +25,7 @@ export interface CreateIngredientInput {
   unitOfMeasure: string;
   unitsPerCase: number;
   casePrice: number;
+  category?: IngredientCategory;
   isActive?: boolean;
 }
 
@@ -54,6 +55,7 @@ export const listIngredients = async (): Promise<Ingredient[]> => {
       casePrice: data.casePrice,
       unitCost: data.unitCost,
       isActive: data.isActive ?? true,
+      category: data.category ?? 'food',
       currentVersionId: data.currentVersionId ?? undefined
     };
     return ingredient;
@@ -100,6 +102,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
       casePrice: input.casePrice,
       unitCost,
       isActive: input.isActive ?? true,
+      category: input.category ?? 'food',
       currentVersionId: versionId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -123,6 +126,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
     casePrice: input.casePrice,
     unitCost,
     isActive: input.isActive ?? true,
+    category: input.category ?? 'food',
     currentVersionId: versionId
   } satisfies Ingredient;
 };
@@ -149,6 +153,7 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
       casePrice: input.casePrice,
       unitCost,
       isActive: input.isActive ?? true,
+      category: input.category ?? 'food',
       currentVersionId: newVersionId,
       updatedAt: serverTimestamp()
     });
@@ -204,6 +209,7 @@ export const getIngredient = async (ingredientId: string): Promise<Ingredient | 
     casePrice: data.casePrice,
     unitCost: data.unitCost,
     isActive: data.isActive ?? true,
+    category: data.category ?? 'food',
     currentVersionId: data.currentVersionId ?? undefined
   } satisfies Ingredient;
 };

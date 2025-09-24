@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Ingredient } from '@domain/costing';
+import { calculateRecipeCostWithPercentage } from '@domain/costing';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -38,6 +39,10 @@ const recipeSchema = z.object({
 const menuItemSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   isActive: z.boolean().optional(),
+  sellingPrice: z
+    .number({ invalid_type_error: 'Enter a valid price' })
+    .nonnegative('Price cannot be negative')
+    .optional(),
   recipes: z.array(recipeSchema).min(1, 'Add at least one ingredient')
 });
 
@@ -45,6 +50,11 @@ type MenuItemFormValues = z.infer<typeof menuItemSchema>;
 
 const formatIngredientList = (ingredients: string[]) =>
   ingredients.length ? ingredients.join(', ') : 'No recipe yet';
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+
+const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
 const buildDefaultRecipe = (ingredient?: Ingredient) => ({
   ingredientId: ingredient?.id ?? '',
@@ -82,11 +92,13 @@ export const MenuItemsPage = () => {
     return new Map(ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
   }, [ingredients]);
 
+
   const createForm = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),
     defaultValues: {
       name: '',
       isActive: true,
+      sellingPrice: undefined,
       recipes: []
     }
   });
@@ -97,16 +109,30 @@ export const MenuItemsPage = () => {
     defaultValues: {
       name: '',
       isActive: true,
+      sellingPrice: undefined,
       recipes: []
     }
   });
   const editRecipes = useFieldArray({ control: editForm.control, name: 'recipes' });
+
+  const createRecipeCostSummary = useMemo(() => {
+    const recipes = createForm.watch('recipes') || [];
+    const sellingPrice = createForm.watch('sellingPrice');
+    return calculateRecipeCostWithPercentage(recipes, ingredients, sellingPrice);
+  }, [createForm.watch('recipes'), createForm.watch('sellingPrice'), ingredients]);
+
+  const editRecipeCostSummary = useMemo(() => {
+    const recipes = editForm.watch('recipes') || [];
+    const sellingPrice = editForm.watch('sellingPrice');
+    return calculateRecipeCostWithPercentage(recipes, ingredients, sellingPrice);
+  }, [editForm.watch('recipes'), editForm.watch('sellingPrice'), ingredients]);
 
   useEffect(() => {
     if (activeIngredients.length && !createForm.getValues('recipes').length) {
       createForm.reset({
         name: '',
         isActive: true,
+        sellingPrice: undefined,
         recipes: [buildDefaultRecipe(activeIngredients[0])]
       });
     }
@@ -117,6 +143,7 @@ export const MenuItemsPage = () => {
       editForm.reset({
         name: editingMenuItem.data.item.name,
         isActive: editingMenuItem.data.item.isActive,
+        sellingPrice: editingMenuItem.data.item.sellingPrice,
         recipes: editingMenuItem.data.recipes.map((recipe) => ({
           ingredientId: recipe.ingredientId,
           quantity: recipe.quantity,
@@ -127,7 +154,7 @@ export const MenuItemsPage = () => {
         editRecipes.replace([buildDefaultRecipe(activeIngredients[0])]);
       }
     } else if (!editingMenuItemId) {
-      editForm.reset({ name: '', isActive: true, recipes: [] });
+      editForm.reset({ name: '', isActive: true, sellingPrice: undefined, recipes: [] });
       editRecipes.replace([]);
     }
   }, [editingMenuItem.data, editingMenuItemId, activeIngredients, editForm, editRecipes]);
@@ -136,12 +163,16 @@ export const MenuItemsPage = () => {
     setFormMessage(null);
     try {
       await upsertMenuItemMutation.mutateAsync({
-        item: { name: values.name, isActive: values.isActive ?? true },
+        item: {
+          name: values.name,
+          isActive: values.isActive ?? true,
+          sellingPrice: values.sellingPrice
+        },
         recipes: values.recipes
       });
       setFormMessage({ type: 'success', message: 'Menu item created' });
       const defaultRecipe = activeIngredients[0] ? [buildDefaultRecipe(activeIngredients[0])] : [];
-      createForm.reset({ name: '', isActive: true, recipes: defaultRecipe });
+      createForm.reset({ name: '', isActive: true, sellingPrice: undefined, recipes: defaultRecipe });
       createRecipes.replace(defaultRecipe);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create menu item.';
@@ -156,7 +187,12 @@ export const MenuItemsPage = () => {
     setFormMessage(null);
     try {
       await upsertMenuItemMutation.mutateAsync({
-        item: { id: editingMenuItemId, name: values.name, isActive: values.isActive ?? true },
+        item: {
+          id: editingMenuItemId,
+          name: values.name,
+          isActive: values.isActive ?? true,
+          sellingPrice: values.sellingPrice
+        },
         recipes: values.recipes
       });
       setFormMessage({ type: 'success', message: 'Menu item updated' });
@@ -233,6 +269,22 @@ export const MenuItemsPage = () => {
             {error?.unitOfMeasure?.message ? (
               <p className="text-xs text-destructive">{error.unitOfMeasure.message}</p>
             ) : null}
+          </TableCell>
+          <TableCell className="text-right text-sm text-slate-600 font-mono">
+            {(() => {
+              const ingredient = ingredientsList.find((ing) => ing.id === field.ingredientId);
+              return ingredient ? formatCurrency(ingredient.unitCost) : '—';
+            })()}
+          </TableCell>
+          <TableCell className="text-right text-sm text-slate-900 font-mono font-medium">
+            {(() => {
+              const ingredient = ingredientsList.find((ing) => ing.id === field.ingredientId);
+              const quantity = form.watch(`recipes.${index}.quantity`) || 0;
+              if (ingredient && quantity > 0) {
+                return formatCurrency(ingredient.unitCost * quantity);
+              }
+              return '—';
+            })()}
           </TableCell>
           <TableCell className="text-right">
             <Button
@@ -371,6 +423,46 @@ export const MenuItemsPage = () => {
                   <Input id="menu-name" {...createForm.register('name')} />
                 </FormField>
 
+                <FormField
+                  label="Selling Price"
+                  htmlFor="menu-selling-price"
+                  error={createForm.formState.errors.sellingPrice?.message}
+                >
+                  <Input
+                    id="menu-selling-price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    {...createForm.register('sellingPrice', { valueAsNumber: true })}
+                  />
+                </FormField>
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-slate-700">Recipe Cost:</span>
+                    <span className="font-mono text-slate-900">
+                      {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
+                    </span>
+                  </div>
+                  {createRecipeCostSummary.foodCostPercentage > 0 && (
+                    <div className="flex items-center justify-between text-sm mt-1">
+                      <span className="font-medium text-slate-700">Food Cost %:</span>
+                      <span
+                        className={`font-mono ${
+                          createRecipeCostSummary.foodCostPercentage <= 30
+                            ? 'text-green-700'
+                            : createRecipeCostSummary.foodCostPercentage <= 35
+                              ? 'text-yellow-700'
+                              : 'text-red-700'
+                        }`}
+                      >
+                        {formatPercentage(createRecipeCostSummary.foodCostPercentage)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="rounded-md border border-slate-200">
                   <Table>
                     <TableHeader>
@@ -378,11 +470,22 @@ export const MenuItemsPage = () => {
                         <TableHead>Ingredient</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Unit</TableHead>
+                        <TableHead className="text-right">Unit Cost</TableHead>
+                        <TableHead className="text-right">Line Total</TableHead>
                         <TableHead className="text-right">Remove</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {renderRecipeRows(createRecipes, createForm, activeIngredients)}
+                      <TableRow className="border-t-2 bg-slate-50">
+                        <TableCell colSpan={4} className="text-right font-medium text-slate-900">
+                          Recipe Total:
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-slate-900 font-mono">
+                          {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </div>
@@ -432,6 +535,46 @@ export const MenuItemsPage = () => {
                     <Input id="edit-menu-name" {...editForm.register('name')} />
                   </FormField>
 
+                  <FormField
+                    label="Selling Price"
+                    htmlFor="edit-menu-selling-price"
+                    error={editForm.formState.errors.sellingPrice?.message}
+                  >
+                    <Input
+                      id="edit-menu-selling-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      {...editForm.register('sellingPrice', { valueAsNumber: true })}
+                    />
+                  </FormField>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-slate-700">Recipe Cost:</span>
+                      <span className="font-mono text-slate-900">
+                        {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
+                      </span>
+                    </div>
+                    {editRecipeCostSummary.foodCostPercentage > 0 && (
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="font-medium text-slate-700">Food Cost %:</span>
+                        <span
+                          className={`font-mono ${
+                            editRecipeCostSummary.foodCostPercentage <= 30
+                              ? 'text-green-700'
+                              : editRecipeCostSummary.foodCostPercentage <= 35
+                                ? 'text-yellow-700'
+                                : 'text-red-700'
+                          }`}
+                        >
+                          {formatPercentage(editRecipeCostSummary.foodCostPercentage)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="rounded-md border border-slate-200">
                     <Table>
                       <TableHeader>
@@ -439,11 +582,22 @@ export const MenuItemsPage = () => {
                           <TableHead>Ingredient</TableHead>
                           <TableHead>Quantity</TableHead>
                           <TableHead>Unit</TableHead>
+                          <TableHead className="text-right">Unit Cost</TableHead>
+                          <TableHead className="text-right">Line Total</TableHead>
                           <TableHead className="text-right">Remove</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {renderRecipeRows(editRecipes, editForm, activeIngredients)}
+                        <TableRow className="border-t-2 bg-slate-50">
+                          <TableCell colSpan={4} className="text-right font-medium text-slate-900">
+                            Recipe Total:
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-slate-900 font-mono">
+                            {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </div>
