@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Ingredient } from '@domain/costing';
-import { calculateRecipeCostWithPercentage } from '@domain/costing';
+import { calculateFoodCostPercentage } from '@domain/costing';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -115,17 +115,57 @@ export const MenuItemsPage = () => {
   });
   const editRecipes = useFieldArray({ control: editForm.control, name: 'recipes' });
 
-  const watchedCreateRecipes = createForm.watch('recipes') || [];
   const createSellingPrice = createForm.watch('sellingPrice');
-  const createRecipeCostSummary = useMemo(() => {
-    return calculateRecipeCostWithPercentage(watchedCreateRecipes, ingredients, createSellingPrice);
-  }, [watchedCreateRecipes, createSellingPrice, ingredients]);
 
-  const watchedEditRecipes = editForm.watch('recipes') || [];
+  // Calculate recipe cost dynamically by watching individual recipe fields
+  const calculateDynamicRecipeCost = (recipes: typeof createRecipes, form: typeof createForm) => {
+    let totalRecipeCost = 0;
+
+    recipes.fields.forEach((_, index) => {
+      const ingredientId = form.watch(`recipes.${index}.ingredientId`);
+      const quantity = form.watch(`recipes.${index}.quantity`) || 0;
+      const ingredient = ingredients.find((ing) => ing.id === ingredientId);
+
+      if (ingredient && quantity > 0) {
+        totalRecipeCost += ingredient.unitCost * quantity;
+      }
+    });
+
+    return {
+      totalRecipeCost,
+      foodCostPercentage: createSellingPrice
+        ? calculateFoodCostPercentage(totalRecipeCost, createSellingPrice)
+        : 0
+    };
+  };
+
+  const createRecipeCostSummary = calculateDynamicRecipeCost(createRecipes, createForm);
+
   const editSellingPrice = editForm.watch('sellingPrice');
-  const editRecipeCostSummary = useMemo(() => {
-    return calculateRecipeCostWithPercentage(watchedEditRecipes, ingredients, editSellingPrice);
-  }, [watchedEditRecipes, editSellingPrice, ingredients]);
+
+  // Calculate edit recipe cost dynamically by watching individual recipe fields
+  const calculateDynamicEditRecipeCost = (recipes: typeof editRecipes, form: typeof editForm) => {
+    let totalRecipeCost = 0;
+
+    recipes.fields.forEach((_, index) => {
+      const ingredientId = form.watch(`recipes.${index}.ingredientId`);
+      const quantity = form.watch(`recipes.${index}.quantity`) || 0;
+      const ingredient = ingredients.find((ing) => ing.id === ingredientId);
+
+      if (ingredient && quantity > 0) {
+        totalRecipeCost += ingredient.unitCost * quantity;
+      }
+    });
+
+    return {
+      totalRecipeCost,
+      foodCostPercentage: editSellingPrice
+        ? calculateFoodCostPercentage(totalRecipeCost, editSellingPrice)
+        : 0
+    };
+  };
+
+  const editRecipeCostSummary = calculateDynamicEditRecipeCost(editRecipes, editForm);
 
   useEffect(() => {
     if (activeIngredients.length && !createForm.getValues('recipes').length) {
