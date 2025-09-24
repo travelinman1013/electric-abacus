@@ -1,95 +1,98 @@
-# Next Session Development Prompt for Taco Ray v2
+# Next Session: Post-Login UI Testing & Validation
 
-## Project Overview
-Taco Ray v2 is a React + Firebase + TypeScript monorepo for restaurant weekly operations management. **The core finalization workflow has been completed** with enhanced UX, confirmation dialogs, comprehensive error handling, ingredient version tracking, and full PDF export functionality.
+## Current Status
+✅ Firebase infrastructure is fully operational - Authentication and Firestore services enabled
+✅ Seed script runs successfully and populates database with test data
+✅ Core codebase issues resolved (path resolution, SDK configuration)
+✅ Documentation updated with current project state
 
-## Current State (Sep 2025)
-### ✅ **COMPLETED FEATURES**
-- **Enhanced Finalization UX**: Confirmation dialog with week summary preview before finalization
-- **Comprehensive Error Handling**: User-friendly messages for all failure scenarios (missing data, permissions, network issues)
-- **Ingredient Version Tracking**: Visual indicators in cost snapshot table with amber highlighting for missing versions
-- **Professional PDF Export**: Complete implementation using @react-pdf/renderer with cost breakdowns and metadata
-- **Radix UI Integration**: Accessible dialog component with proper keyboard navigation
-- **Testing Infrastructure**: All tests passing (6/6 unit, 9/9 E2E) with ≥90% domain coverage
+## Demo Credentials (Seeded in Firestore)
+- **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
+- **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
 
-### 🧪 **Testing Status**
-- **Unit Tests**: ✅ Domain (≥90% coverage) + Web component tests (6/6 passing)
-- **E2E Tests**: ✅ Playwright smoke suite (9/9 passing across browsers)
-- **Linting**: ✅ ESLint flat config (module warning resolved)
-- **PDF Export**: ✅ Service implemented with 87% test coverage
+## Primary Objectives
 
-## Remaining Development Priorities
+### 1. **Login & Authentication Flow Testing**
+- Start dev server with `npm run dev` and test login with both demo accounts
+- Verify authentication state management and role-based routing works correctly
+- Ensure profile data loads properly from Firestore after successful login
+- Test logout functionality and auth state persistence
 
-### **Priority 1: GitHub Actions CI Pipeline**
-**Goal**: Automate testing and deployment pipeline
-**Tasks**:
-- Configure GitHub Actions workflow in `.github/workflows/ci.yml`
-- Run `npm run test:unit`, `npm run test:e2e`, and `npm run lint` on pull requests
-- Set up Firebase deployment automation
-- Add environment variable management for CI/CD
+### 2. **Post-Login UI Functionality Validation**
+Systematically test each authenticated screen with seeded data:
 
-### **Priority 2: TypeScript/ESLint Type Safety**
-**Goal**: Resolve React Query type safety issues
-**Tasks**:
-- Fix TypeScript unsafe assignment errors in `apps/web/src/app/features/weeks/week-review-page.tsx`
-- Improve type safety in PDF export service `apps/web/src/app/services/pdf-export.tsx`
-- Consider adding proper type definitions for React Query hook returns
-- Ensure pre-commit hooks pass without `--no-verify`
+**Week Management**
+- Week list page should show `2025-W39` (draft status) from seed data
+- Week selection and navigation should work smoothly
+- Verify role-based permissions (owner vs team member access)
 
-### **Priority 3: Firebase Emulator Documentation**
-**Goal**: Enable local Firestore rule testing
-**Tasks**:
-- Create setup guide for Firebase emulator in development
-- Document how to run Firestore security rule tests locally
-- Add scripts for emulator startup/shutdown in package.json
-- Verify `packages/firebase/tests/firestore.rules.test.ts` executes properly
+**Sales Entry**
+- Sales page should load with current week's sales structure
+- Test daily sales input (Mon-Sun) with form validation
+- Verify data persistence to Firestore `weeks/{weekId}/sales/daily`
 
-### **Priority 4: Performance & Bundle Optimization**
-**Goal**: Optimize application performance
-**Tasks**:
-- Analyze bundle size with webpack-bundle-analyzer
-- Implement code splitting for PDF export functionality
-- Add lazy loading for non-critical components
-- Optimize React Query cache configuration
+**Inventory Tracking**
+- Inventory page should display seeded ingredients: seasoned-beef, cheddar-cheese, flour-tortillas
+- Test inventory input forms (begin/received/end values)
+- Verify calculations and data persistence
 
-### **Priority 5: Architecture Documentation**
-**Goal**: Complete technical documentation
-**Tasks**:
-- Create architecture diagrams showing data flow
-- Document deployment procedures and environment setup
-- Add contributing guide for new developers
-- Create troubleshooting guide for common issues
+**Ingredient Management**
+- Ingredients page should list seeded ingredients with pricing/units
+- Test CRUD operations on ingredients
+- Verify ingredient versioning system works correctly
 
-## Key File Locations
-- **Finalization Logic**: `apps/web/src/app/services/firestore/weeks.ts:252-345` (finalizeWeek transaction)
-- **Enhanced UI**: `apps/web/src/app/features/weeks/week-review-page.tsx` (confirmation dialog, error handling)
-- **PDF Export**: `apps/web/src/app/services/pdf-export.tsx` (professional report generation)
-- **Dialog Component**: `apps/web/src/app/components/ui/dialog.tsx` (Radix UI integration)
-- **Tests**: `apps/web/tests/e2e/finalize-week.spec.ts` (E2E), `apps/web/src/app/features/weeks/week-review-page.test.tsx` (component)
+**Week Finalization (Owner Only)**
+- Week review page should show cost calculations and summary
+- Test finalization workflow with confirmation dialog
+- Verify PDF export functionality
+- Ensure proper role restrictions (team members cannot finalize)
 
-## Development Commands
-```bash
-npm run dev          # Start development server
-npm run test:unit    # Run unit tests (6/6 passing)
-npm run test:e2e     # Run E2E tests (9/9 passing)
-npm run lint         # Run ESLint (needs type safety fixes)
-npm run seed         # Populate Firebase (requires .env setup)
-```
+### 3. **Data Integration & State Management**
+- Verify React Query hooks are working correctly with live Firestore data
+- Test optimistic updates and error handling in forms
+- Ensure data consistency across different screens when navigating
+- Check loading states and error boundaries are functioning
+
+### 4. **UI/UX Polish**
+- Verify Tailwind styling and shadcn components render correctly
+- Test responsive design across different screen sizes
+- Ensure consistent navigation and user feedback
+- Validate form validation messages and user guidance
 
 ## Technical Notes
-- **React Query**: Hook returns may have complex error types causing TypeScript issues
-- **Firebase Config**: Web app config in `apps/web/.env`, admin config in root `.env`
-- **PDF Generation**: Uses @react-pdf/renderer with professional styling and metadata
-- **Testing**: Comprehensive coverage with isolated configs preventing conflicts
 
-## Success Criteria for Next Session
-1. ✅ GitHub Actions CI pipeline running automated tests
-2. ✅ TypeScript/ESLint issues resolved without bypassing pre-commit hooks
-3. ✅ Firebase emulator documentation and local testing setup
-4. 🎯 Begin performance optimization and bundle analysis
+### Key Files to Monitor:
+- `apps/web/src/app/components/auth/` - Authentication components
+- `apps/web/src/app/(authenticated)/` - Protected route pages
+- `packages/firebase/src/client.ts` - Firestore service layer
+- `apps/web/src/app/hooks/` - React Query hooks
 
-## Important Context
-- All core business functionality is complete and tested
-- Focus should be on DevOps, type safety, and performance optimization
-- The application is production-ready for the core finalization workflow
-- Next phase is operational excellence and developer experience improvements
+### Expected Behavior:
+- All authenticated pages should load without console errors
+- Data should be fetched correctly from seeded Firestore collections
+- Form submissions should update Firestore in real-time
+- Role-based access controls should be enforced on frontend and backend
+
+### If Issues Are Found:
+1. Check browser console for JavaScript errors
+2. Verify Firestore security rules in Firebase Console
+3. Test network requests in browser dev tools
+4. Confirm React Query cache behavior and data flow
+
+## Success Criteria
+- [ ] Both demo accounts can log in successfully
+- [ ] All authenticated pages render without errors
+- [ ] Seeded data displays correctly throughout the application
+- [ ] Form inputs successfully update Firestore
+- [ ] Role-based permissions work as expected
+- [ ] Week finalization flow (owner only) functions correctly
+- [ ] No critical console errors or broken functionality
+
+## Next Steps After Testing
+Once UI validation is complete, the remaining tasks are:
+- GitHub Actions CI pipeline setup
+- Firebase emulator documentation for local development
+- Production deployment preparation
+
+---
+*Generated after successful Firebase seed script resolution - ready for comprehensive post-login testing*

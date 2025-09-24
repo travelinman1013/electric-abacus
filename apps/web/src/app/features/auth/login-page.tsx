@@ -8,6 +8,7 @@ import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { useAuthContext } from '../../providers/auth-provider';
+import { debugFirebaseConnection } from '../../utils/debug-firebase';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -25,6 +26,7 @@ export const LoginPage = () => {
   const location = useLocation();
   const { signIn } = useAuthContext();
   const [formError, setFormError] = useState<string | null>(null);
+  const [debugTesting, setDebugTesting] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -36,14 +38,67 @@ export const LoginPage = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setFormError(null);
+    console.log('🚀 Login attempt started', { email: values.email });
+
     try {
+      console.log('🔐 Calling signIn with:', { email: values.email });
       await signIn(values.email, values.password);
+      console.log('✅ Sign in successful, redirecting...');
+
       const redirectPath =
         (location.state as LocationState | undefined)?.from?.pathname ?? '/weeks';
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      console.error('Failed to sign in', error);
-      setFormError('We could not sign you in. Double-check your email and password.');
+      console.error('❌ Failed to sign in', error);
+
+      // Extract more specific error information
+      const firebaseError = error as { code?: string; message?: string };
+      const errorCode = firebaseError.code;
+      const errorMessage = firebaseError.message;
+      console.error('Error details:', { errorCode, errorMessage, fullError: error });
+
+      // Provide more specific error messages based on Firebase Auth error codes
+      let userMessage = 'We could not sign you in. Double-check your email and password.';
+
+      if (errorCode === 'auth/user-not-found') {
+        userMessage = 'No account found with this email address.';
+      } else if (errorCode === 'auth/wrong-password') {
+        userMessage = 'Incorrect password. Please try again.';
+      } else if (errorCode === 'auth/invalid-email') {
+        userMessage = 'Please enter a valid email address.';
+      } else if (errorCode === 'auth/user-disabled') {
+        userMessage = 'This account has been disabled. Contact support.';
+      } else if (errorCode === 'auth/too-many-requests') {
+        userMessage = 'Too many failed attempts. Please try again later.';
+      } else if (errorCode === 'auth/network-request-failed') {
+        userMessage = 'Network error. Please check your internet connection.';
+      }
+
+      setFormError(userMessage);
+    }
+  };
+
+  const handleDebugTest = async () => {
+    setDebugTesting(true);
+    setFormError(null);
+    console.log('🔧 Running Firebase debug test...');
+
+    try {
+      const result = await debugFirebaseConnection();
+      if (result.success) {
+        console.log('🎉 Debug test successful - Firebase is working!');
+        // Auto-fill the form with the test credentials since they work
+        form.setValue('email', 'regan.owner@tacocasa.test');
+        form.setValue('password', 'OwnerPass123!');
+      } else {
+        console.error('❌ Debug test failed');
+        setFormError('Firebase connection test failed. Check console for details.');
+      }
+    } catch (error) {
+      console.error('❌ Debug test error:', error);
+      setFormError('Debug test encountered an error. Check console for details.');
+    } finally {
+      setDebugTesting(false);
     }
   };
 
@@ -63,7 +118,7 @@ export const LoginPage = () => {
           </div>
         ) : null}
 
-        <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+        <form className="space-y-5" onSubmit={(e) => void form.handleSubmit(onSubmit)(e)} noValidate>
           <FormField
             label="Email"
             htmlFor="email"
@@ -97,9 +152,19 @@ export const LoginPage = () => {
           <Button
             type="submit"
             className="w-full"
-            disabled={form.formState.isSubmitting}
+            disabled={form.formState.isSubmitting || debugTesting}
           >
             {form.formState.isSubmitting ? 'Signing in...' : 'Sign in'}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => void handleDebugTest()}
+            disabled={form.formState.isSubmitting || debugTesting}
+          >
+            {debugTesting ? 'Testing Firebase...' : '🔧 Test Firebase Connection'}
           </Button>
         </form>
 

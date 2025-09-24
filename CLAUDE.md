@@ -43,11 +43,12 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - PRs should describe user impact, testing evidence (`npm run test:unit`, `npm run test:e2e`), and reference related issues.
 - Attach screenshots or recordings for UI-facing changes and note required environment variables if deployment blocking.
 
-## Remaining Development Notes
+## Next Steps
 
-- Step 1 polish mostly complete: workspace scripts vetted, Tailwind/shadcn scaffolded, README refreshed. Vitest UI suite now includes a WeekList smoke test; Playwright placeholder exists but needs real coverage and runner fix.
-- Step 2 complete: routed UI, auth guards, CRUD screens, enhanced finalization flow with confirmation dialog, comprehensive error handling, and full PDF export functionality.
-- Step 3 remaining: GitHub Actions CI, deployment runbooks, architecture docs, and Firebase emulator documentation.
+- **Post-Login Testing**: Verify all authenticated routes and features work correctly
+- **CI/CD Pipeline**: Set up GitHub Actions for automated testing and deployment
+- **Firebase Emulator**: Configure local development with Firebase emulators
+- **Production Deployment**: Deploy to Firebase Hosting with proper environment configuration
 
 ### Latest Session Highlights (Feb 2025)
 
@@ -67,24 +68,24 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - **Firestore Rules**: ✅ Comprehensive security tests written (requires emulator setup)
 - **WeekReviewPage**: ✅ Component tests cover finalization, auth, loading, and error states
 
-### Latest Session (Sep 2025) - Firebase Setup Complete
+### Latest Session (Sep 2025) - Authentication Fixed
 
-- **FIXED**: Seed script path resolution to find root `.env` file correctly
-- **FIXED**: Firebase Admin SDK initialization to include explicit projectId
 - **COMPLETED**: Firebase Authentication and Firestore services enabled in console
-- **VERIFIED**: Seed script runs successfully and populates Firestore with test data
-- **STATUS**: Core Firebase infrastructure is working; authentication and database seeded
+- **FIXED**: Firebase configuration mismatch in client `.env` file (API key and measurement ID)
+- **ADDED**: Comprehensive authentication error logging and debugging tools
+- **VERIFIED**: Seed script populates Firestore with test users and data
+- **STATUS**: Authentication flow now working; login page functional with debug tools
 
-### Demo Credentials (from seed script)
+### Demo Credentials
 
 - **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
 - **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
 
-### Outstanding Issues
+### Current Status
 
-- Post-login UI functionality testing and validation needed
-- Firestore rule tests require Firebase emulator to be running locally for execution
-- GitHub Actions CI pipeline not yet configured for automated testing
+- **Authentication**: ✅ Working with detailed error handling and debug tools
+- **Firebase Setup**: ✅ Properly configured and seeded
+- **Dev Environment**: ✅ Running on `http://localhost:5173/`
 
 ## Security & Configuration Tips
 

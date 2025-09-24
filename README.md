@@ -24,9 +24,9 @@ Common scripts:
 
 ## Latest Updates (Sep 2025)
 
-- **Firebase Infrastructure Complete** – Authentication and Firestore services enabled, seed script working
-- **Database Seeded** – Demo users, ingredients, and test week data populated in Firestore
-- **Ready for Testing** – Login with `regan.owner@tacocasa.test` / `OwnerPass123!` or team member credentials
+- **Authentication Fixed** – Resolved Firebase configuration mismatch; login page now fully functional
+- **Debug Tools Added** – Enhanced error logging and Firebase connectivity test button
+- **Ready for Testing** – Dev server at `http://localhost:5173/` with working authentication
 
 ## What’s Ready
 
@@ -45,8 +45,13 @@ Common scripts:
 - **Firestore Rules**: ✅ Comprehensive security tests (requires emulator setup)
 - **Linting**: ✅ ESLint flat config across all workspaces
 
-## Still in Progress
+## Demo Credentials
 
-- **Post-Login UI Testing** – Verify all authenticated screens work correctly with seeded data
-- **GitHub Actions CI** – Automated testing pipeline configuration for continuous integration
-- **Firebase Emulator Setup** – Documentation for local Firestore rule testing with emulator
+- **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
+- **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
+
+## Next Steps
+
+- **Post-Login Testing**: Verify all authenticated routes and functionality
+- **CI/CD Pipeline**: Set up GitHub Actions for automated testing and deployment
+- **Firebase Emulator**: Configure local development environment

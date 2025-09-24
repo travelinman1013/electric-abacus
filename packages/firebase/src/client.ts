@@ -27,6 +27,18 @@ const requireApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
-export const getClientAuth = (): Auth => getAuth(requireApp());
+export const getClientAuth = (): Auth => {
+  console.log('🔐 getClientAuth called');
+  const app = requireApp();
+  const auth = getAuth(app);
+  console.log('🔐 Auth instance created:', !!auth);
+  return auth;
+};
 
-export const getClientFirestore = (): Firestore => getFirestore(requireApp());
+export const getClientFirestore = (): Firestore => {
+  console.log('🔥 getClientFirestore called');
+  const app = requireApp();
+  const firestore = getFirestore(app);
+  console.log('🔥 Firestore instance created:', !!firestore);
+  return firestore;
+};

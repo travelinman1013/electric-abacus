@@ -46,6 +46,7 @@
     ]
   },
   "dependencies": {
+    "@modelcontextprotocol/server-puppeteer": "^2025.5.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "firebase": "^12.3.0"
   }
