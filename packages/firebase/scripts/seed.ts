@@ -5,7 +5,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 import { getAdminAuth, getAdminFirestore, initFirebaseAdmin } from '../src/admin';
 
-const envPath = path.resolve(process.cwd(), '.env');
+const envPath = path.resolve(process.cwd(), '..', '..', '.env');
 dotenv.config({ path: envPath });
 
 type SeedUserInput = {
@@ -38,29 +38,28 @@ const main = async () => {
       email: 'regan.owner@tacocasa.test',
       displayName: 'Regan Owner',
       password: 'OwnerPass123!',
-      role: 'owner'
+      role: 'owner',
     },
     {
       email: 'taylor.team@tacocasa.test',
       displayName: 'Taylor Team Member',
       password: 'TeamPass123!',
-      role: 'teamMember'
-    }
+      role: 'teamMember',
+    },
   ];
 
   const userIds: Record<string, string> = {};
 
   for (const user of users) {
-    const existing = await auth
-      .getUserByEmail(user.email)
-      .catch(() => undefined);
+    const existing = await auth.getUserByEmail(user.email).catch(() => undefined);
 
-    const uid = existing?.uid
-      ?? (
+    const uid =
+      existing?.uid ??
+      (
         await auth.createUser({
           email: user.email,
           displayName: user.displayName,
-          password: user.password
+          password: user.password,
         })
       ).uid;
 
@@ -69,7 +68,7 @@ const main = async () => {
     await db.doc(`users/${uid}`).set({
       displayName: user.displayName,
       role: user.role,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
   }
 
@@ -80,7 +79,7 @@ const main = async () => {
       unitOfMeasure: 'lb',
       unitsPerCase: 20,
       casePrice: 120,
-      unitCost: Number((120 / 20).toFixed(4))
+      unitCost: Number((120 / 20).toFixed(4)),
     },
     {
       id: 'cheddar-cheese',
@@ -88,7 +87,7 @@ const main = async () => {
       unitOfMeasure: 'lb',
       unitsPerCase: 10,
       casePrice: 58,
-      unitCost: Number((58 / 10).toFixed(4))
+      unitCost: Number((58 / 10).toFixed(4)),
     },
     {
       id: 'flour-tortillas',
@@ -96,8 +95,8 @@ const main = async () => {
       unitOfMeasure: 'case',
       unitsPerCase: 288,
       casePrice: 75,
-      unitCost: Number((75 / 288).toFixed(4))
-    }
+      unitCost: Number((75 / 288).toFixed(4)),
+    },
   ];
 
   for (const ingredient of ingredients) {
@@ -108,7 +107,7 @@ const main = async () => {
       casePrice: ingredient.casePrice,
       unitCost: ingredient.unitCost,
       isActive: true,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
 
     const versionId = `${new Date().getFullYear()}-v1`;
@@ -117,7 +116,7 @@ const main = async () => {
       unitsPerCase: ingredient.unitsPerCase,
       unitCost: ingredient.unitCost,
       effectiveFrom: Timestamp.now(),
-      effectiveTo: null
+      effectiveTo: null,
     });
   }
 
@@ -126,7 +125,7 @@ const main = async () => {
     status: 'draft',
     createdAt: Timestamp.now(),
     finalizedAt: null,
-    finalizedBy: null
+    finalizedBy: null,
   });
 
   await db.doc(`weeks/${weekId}/sales/daily`).set({
@@ -136,14 +135,14 @@ const main = async () => {
     thu: 0,
     fri: 0,
     sat: 0,
-    sun: 0
+    sun: 0,
   });
 
   for (const ingredient of ingredients) {
     await db.doc(`weeks/${weekId}/inventory/${ingredient.id}`).set({
       begin: 0,
       received: 0,
-      end: 0
+      end: 0,
     });
   }
 

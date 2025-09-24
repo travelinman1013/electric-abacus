@@ -67,17 +67,22 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - **Firestore Rules**: ✅ Comprehensive security tests written (requires emulator setup)
 - **WeekReviewPage**: ✅ Component tests cover finalization, auth, loading, and error states
 
-### Latest Session (Sep 2025) - Dev Server Fixes
+### Latest Session (Sep 2025) - Firebase Setup Complete
 
-- **FIXED**: Vite alias conflict between `@firebase/services` and Firebase SDK modules
-- **FIXED**: Node.js compatibility error (`os.platform is not a function`) in browser
-- **CREATED**: Separate client-only Firebase exports via `packages/firebase/src/client-only.ts`
-- **UPDATED**: All import paths from `@firebase/services` to `@taco/firebase`
-- **STATUS**: Dev server loads with login screen, but authentication needs debugging
+- **FIXED**: Seed script path resolution to find root `.env` file correctly
+- **FIXED**: Firebase Admin SDK initialization to include explicit projectId
+- **COMPLETED**: Firebase Authentication and Firestore services enabled in console
+- **VERIFIED**: Seed script runs successfully and populates Firestore with test data
+- **STATUS**: Core Firebase infrastructure is working; authentication and database seeded
+
+### Demo Credentials (from seed script)
+
+- **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
+- **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
 
 ### Outstanding Issues
 
-- **AUTHENTICATION**: Demo login credentials not working, needs investigation
+- Post-login UI functionality testing and validation needed
 - Firestore rule tests require Firebase emulator to be running locally for execution
 - GitHub Actions CI pipeline not yet configured for automated testing
 

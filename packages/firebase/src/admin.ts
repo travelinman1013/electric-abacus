@@ -25,8 +25,9 @@ export const initFirebaseAdmin = (config: FirebaseAdminConfig): App => {
     credential: cert({
       projectId: config.projectId,
       clientEmail: config.clientEmail,
-      privateKey: config.privateKey.replace(/\\n/g, '\n')
-    })
+      privateKey: config.privateKey.replace(/\\n/g, '\n'),
+    }),
+    projectId: config.projectId,
   });
 
   return adminApp;
