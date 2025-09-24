@@ -115,17 +115,17 @@ export const MenuItemsPage = () => {
   });
   const editRecipes = useFieldArray({ control: editForm.control, name: 'recipes' });
 
+  const watchedCreateRecipes = createForm.watch('recipes') || [];
+  const createSellingPrice = createForm.watch('sellingPrice');
   const createRecipeCostSummary = useMemo(() => {
-    const recipes = createForm.watch('recipes') || [];
-    const sellingPrice = createForm.watch('sellingPrice');
-    return calculateRecipeCostWithPercentage(recipes, ingredients, sellingPrice);
-  }, [createForm.watch('recipes'), createForm.watch('sellingPrice'), ingredients]);
+    return calculateRecipeCostWithPercentage(watchedCreateRecipes, ingredients, createSellingPrice);
+  }, [watchedCreateRecipes, createSellingPrice, ingredients]);
 
+  const watchedEditRecipes = editForm.watch('recipes') || [];
+  const editSellingPrice = editForm.watch('sellingPrice');
   const editRecipeCostSummary = useMemo(() => {
-    const recipes = editForm.watch('recipes') || [];
-    const sellingPrice = editForm.watch('sellingPrice');
-    return calculateRecipeCostWithPercentage(recipes, ingredients, sellingPrice);
-  }, [editForm.watch('recipes'), editForm.watch('sellingPrice'), ingredients]);
+    return calculateRecipeCostWithPercentage(watchedEditRecipes, ingredients, editSellingPrice);
+  }, [watchedEditRecipes, editSellingPrice, ingredients]);
 
   useEffect(() => {
     if (activeIngredients.length && !createForm.getValues('recipes').length) {
@@ -240,7 +240,6 @@ export const MenuItemsPage = () => {
           <TableCell>
             <Select
               {...form.register(`recipes.${index}.ingredientId` as const)}
-              defaultValue={field.ingredientId}
             >
               <option value="">Select ingredient</option>
               {ingredientsList.map((ingredient) => (
@@ -272,13 +271,15 @@ export const MenuItemsPage = () => {
           </TableCell>
           <TableCell className="text-right text-sm text-slate-600 font-mono">
             {(() => {
-              const ingredient = ingredientsList.find((ing) => ing.id === field.ingredientId);
+              const ingredientId = form.watch(`recipes.${index}.ingredientId`);
+              const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
               return ingredient ? formatCurrency(ingredient.unitCost) : '—';
             })()}
           </TableCell>
           <TableCell className="text-right text-sm text-slate-900 font-mono font-medium">
             {(() => {
-              const ingredient = ingredientsList.find((ing) => ing.id === field.ingredientId);
+              const ingredientId = form.watch(`recipes.${index}.ingredientId`);
+              const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
               const quantity = form.watch(`recipes.${index}.quantity`) || 0;
               if (ingredient && quantity > 0) {
                 return formatCurrency(ingredient.unitCost * quantity);
