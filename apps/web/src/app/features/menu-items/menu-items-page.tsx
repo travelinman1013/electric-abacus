@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,17 +15,24 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
 import { useIngredients } from '../../hooks/use-ingredients';
 import {
   useDeleteMenuItem,
   useMenuItemWithRecipes,
   useMenuItems,
-  useUpsertMenuItem
+  useUpsertMenuItem,
 } from '../../hooks/use-menu-items';
 
 const recipeSchema = z.object({
@@ -33,7 +40,7 @@ const recipeSchema = z.object({
   quantity: z
     .number({ invalid_type_error: 'Enter a quantity' })
     .positive('Quantity must be greater than zero'),
-  unitOfMeasure: z.string().min(1, 'Unit is required')
+  unitOfMeasure: z.string().min(1, 'Unit is required'),
 });
 
 const menuItemSchema = z.object({
@@ -43,10 +50,24 @@ const menuItemSchema = z.object({
     .number({ invalid_type_error: 'Enter a valid price' })
     .nonnegative('Price cannot be negative')
     .optional(),
-  recipes: z.array(recipeSchema).min(1, 'Add at least one ingredient')
+  recipes: z.array(recipeSchema).min(1, 'Add at least one ingredient'),
 });
 
 type MenuItemFormValues = z.infer<typeof menuItemSchema>;
+
+const recipesEqual = (left: MenuItemFormValues['recipes'], right: MenuItemFormValues['recipes']) =>
+  left.length === right.length &&
+  left.every((recipe, index) => {
+    const other = right[index];
+    if (!other) {
+      return false;
+    }
+    return (
+      recipe.ingredientId === other.ingredientId &&
+      recipe.quantity === other.quantity &&
+      recipe.unitOfMeasure === other.unitOfMeasure
+    );
+  });
 
 const formatIngredientList = (ingredients: string[]) =>
   ingredients.length ? ingredients.join(', ') : 'No recipe yet';
@@ -59,7 +80,7 @@ const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 const buildDefaultRecipe = (ingredient?: Ingredient) => ({
   ingredientId: ingredient?.id ?? '',
   quantity: 1,
-  unitOfMeasure: ingredient?.unitOfMeasure ?? 'unit'
+  unitOfMeasure: ingredient?.unitOfMeasure ?? 'unit',
 });
 
 export const MenuItemsPage = () => {
@@ -67,31 +88,33 @@ export const MenuItemsPage = () => {
     data: menuItems = [],
     isLoading: menuItemsLoading,
     isError: menuItemsError,
-    error: menuItemsErrorObject
+    error: menuItemsErrorObject,
   } = useMenuItems();
   const {
     data: ingredients = [],
     isLoading: ingredientsLoading,
     isError: ingredientsError,
-    error: ingredientsErrorObject
+    error: ingredientsErrorObject,
   } = useIngredients();
   const upsertMenuItemMutation = useUpsertMenuItem();
   const deleteMenuItemMutation = useDeleteMenuItem();
 
-  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [formMessage, setFormMessage] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
   const [editingMenuItemId, setEditingMenuItemId] = useState<string | null>(null);
 
   const editingMenuItem = useMenuItemWithRecipes(editingMenuItemId);
 
   const activeIngredients = useMemo(
     () => ingredients.filter((ingredient) => ingredient.isActive),
-    [ingredients]
+    [ingredients],
   );
 
   const ingredientNameById = useMemo(() => {
     return new Map(ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
   }, [ingredients]);
-
 
   const createForm = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),
@@ -99,8 +122,8 @@ export const MenuItemsPage = () => {
       name: '',
       isActive: true,
       sellingPrice: undefined,
-      recipes: []
-    }
+      recipes: [],
+    },
   });
   const createRecipes = useFieldArray({ control: createForm.control, name: 'recipes' });
 
@@ -110,8 +133,8 @@ export const MenuItemsPage = () => {
       name: '',
       isActive: true,
       sellingPrice: undefined,
-      recipes: []
-    }
+      recipes: [],
+    },
   });
   const editRecipes = useFieldArray({ control: editForm.control, name: 'recipes' });
 
@@ -135,7 +158,7 @@ export const MenuItemsPage = () => {
       totalRecipeCost,
       foodCostPercentage: createSellingPrice
         ? calculateFoodCostPercentage(totalRecipeCost, createSellingPrice)
-        : 0
+        : 0,
     };
   };
 
@@ -161,7 +184,7 @@ export const MenuItemsPage = () => {
       totalRecipeCost,
       foodCostPercentage: editSellingPrice
         ? calculateFoodCostPercentage(totalRecipeCost, editSellingPrice)
-        : 0
+        : 0,
     };
   };
 
@@ -173,31 +196,77 @@ export const MenuItemsPage = () => {
         name: '',
         isActive: true,
         sellingPrice: undefined,
-        recipes: [buildDefaultRecipe(activeIngredients[0])]
+        recipes: [buildDefaultRecipe(activeIngredients[0])],
       });
     }
   }, [activeIngredients, createForm]);
 
+  const { reset: resetEditForm, getValues: getEditFormValues } = editForm;
+  const { replace: replaceEditRecipes } = editRecipes;
+  const { isDirty: editFormIsDirty } = editForm.formState;
+  const lastSyncedMenuItemIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (editingMenuItem.data) {
-      editForm.reset({
-        name: editingMenuItem.data.item.name,
-        isActive: editingMenuItem.data.item.isActive,
-        sellingPrice: editingMenuItem.data.item.sellingPrice,
-        recipes: editingMenuItem.data.recipes.map((recipe) => ({
+    if (!editingMenuItemId) {
+      resetEditForm({ name: '', isActive: true, sellingPrice: undefined, recipes: [] });
+      replaceEditRecipes([]);
+      lastSyncedMenuItemIdRef.current = null;
+      return;
+    }
+
+    if (!editingMenuItem.data) {
+      return;
+    }
+
+    const isNewSelection = lastSyncedMenuItemIdRef.current !== editingMenuItemId;
+
+    if (!isNewSelection && editFormIsDirty) {
+      return;
+    }
+
+    const desiredRecipes = editingMenuItem.data.recipes.length
+      ? editingMenuItem.data.recipes.map((recipe) => ({
           ingredientId: recipe.ingredientId,
           quantity: recipe.quantity,
-          unitOfMeasure: recipe.unitOfMeasure
+          unitOfMeasure: recipe.unitOfMeasure,
         }))
-      });
-      if (!editingMenuItem.data.recipes.length && activeIngredients.length) {
-        editRecipes.replace([buildDefaultRecipe(activeIngredients[0])]);
-      }
-    } else if (!editingMenuItemId) {
-      editForm.reset({ name: '', isActive: true, sellingPrice: undefined, recipes: [] });
-      editRecipes.replace([]);
+      : activeIngredients.length
+        ? [buildDefaultRecipe(activeIngredients[0])]
+        : [];
+
+    const currentValues = getEditFormValues();
+    const normalizedSellingPrice = Number.isFinite(currentValues.sellingPrice)
+      ? currentValues.sellingPrice
+      : undefined;
+
+    const shouldSync =
+      currentValues.name !== editingMenuItem.data.item.name ||
+      (currentValues.isActive ?? true) !== (editingMenuItem.data.item.isActive ?? true) ||
+      (normalizedSellingPrice ?? undefined) !==
+        (editingMenuItem.data.item.sellingPrice ?? undefined) ||
+      !recipesEqual(currentValues.recipes, desiredRecipes);
+
+    if (!shouldSync) {
+      return;
     }
-  }, [editingMenuItem.data, editingMenuItemId, activeIngredients, editForm, editRecipes]);
+
+    resetEditForm({
+      name: editingMenuItem.data.item.name,
+      isActive: editingMenuItem.data.item.isActive,
+      sellingPrice: editingMenuItem.data.item.sellingPrice,
+      recipes: desiredRecipes,
+    });
+    replaceEditRecipes(desiredRecipes);
+    lastSyncedMenuItemIdRef.current = editingMenuItemId;
+  }, [
+    activeIngredients,
+    editingMenuItem.data,
+    editingMenuItemId,
+    getEditFormValues,
+    editFormIsDirty,
+    replaceEditRecipes,
+    resetEditForm,
+  ]);
 
   const handleCreate = createForm.handleSubmit(async (values) => {
     setFormMessage(null);
@@ -206,13 +275,18 @@ export const MenuItemsPage = () => {
         item: {
           name: values.name,
           isActive: values.isActive ?? true,
-          sellingPrice: values.sellingPrice
+          sellingPrice: values.sellingPrice,
         },
-        recipes: values.recipes
+        recipes: values.recipes,
       });
       setFormMessage({ type: 'success', message: 'Menu item created' });
       const defaultRecipe = activeIngredients[0] ? [buildDefaultRecipe(activeIngredients[0])] : [];
-      createForm.reset({ name: '', isActive: true, sellingPrice: undefined, recipes: defaultRecipe });
+      createForm.reset({
+        name: '',
+        isActive: true,
+        sellingPrice: undefined,
+        recipes: defaultRecipe,
+      });
       createRecipes.replace(defaultRecipe);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create menu item.';
@@ -231,9 +305,9 @@ export const MenuItemsPage = () => {
           id: editingMenuItemId,
           name: values.name,
           isActive: values.isActive ?? true,
-          sellingPrice: values.sellingPrice
+          sellingPrice: values.sellingPrice,
         },
-        recipes: values.recipes
+        recipes: values.recipes,
       });
       setFormMessage({ type: 'success', message: 'Menu item updated' });
     } catch (error) {
@@ -259,8 +333,12 @@ export const MenuItemsPage = () => {
   const handleAddRecipeRow = (target: 'create' | 'edit') => {
     const form = target === 'create' ? createForm : editForm;
     const array = target === 'create' ? createRecipes : editRecipes;
-    const usedIngredientIds = new Set(form.getValues('recipes').map((recipe) => recipe.ingredientId));
-    const nextIngredient = activeIngredients.find((ingredient) => !usedIngredientIds.has(ingredient.id));
+    const usedIngredientIds = new Set(
+      form.getValues('recipes').map((recipe) => recipe.ingredientId),
+    );
+    const nextIngredient = activeIngredients.find(
+      (ingredient) => !usedIngredientIds.has(ingredient.id),
+    );
     if (!nextIngredient) {
       return;
     }
@@ -270,7 +348,7 @@ export const MenuItemsPage = () => {
   const renderRecipeRows = (
     array: typeof createRecipes,
     form: typeof createForm,
-    ingredientsList: Ingredient[]
+    ingredientsList: Ingredient[],
   ) => {
     const errors = form.formState.errors.recipes ?? [];
     return array.fields.map((field, index) => {
@@ -278,9 +356,7 @@ export const MenuItemsPage = () => {
       return (
         <TableRow key={field.id ?? index}>
           <TableCell>
-            <Select
-              {...form.register(`recipes.${index}.ingredientId` as const)}
-            >
+            <Select {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select ingredient</option>
               {ingredientsList.map((ingredient) => (
                 <option key={ingredient.id} value={ingredient.id}>
@@ -357,7 +433,8 @@ export const MenuItemsPage = () => {
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold text-slate-900">Menu items & recipes</h1>
         <p className="text-sm text-slate-500">
-          Keep menu items in sync with ingredient recipes. Costs roll up automatically in the review step.
+          Keep menu items in sync with ingredient recipes. Costs roll up automatically in the review
+          step.
         </p>
       </header>
 
@@ -383,7 +460,9 @@ export const MenuItemsPage = () => {
           <CardHeader className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <CardTitle>Menu catalog</CardTitle>
-              <CardDescription>Deactivate items to hide them from costing and reporting.</CardDescription>
+              <CardDescription>
+                Deactivate items to hide them from costing and reporting.
+              </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="overflow-x-auto">
@@ -414,8 +493,10 @@ export const MenuItemsPage = () => {
                         {editingMenuItemId === item.id && editingMenuItem.data
                           ? formatIngredientList(
                               editingMenuItem.data.recipes.map(
-                                (recipe) => ingredientNameById.get(recipe.ingredientId) ?? recipe.ingredientId
-                              )
+                                (recipe) =>
+                                  ingredientNameById.get(recipe.ingredientId) ??
+                                  recipe.ingredientId,
+                              ),
                             )
                           : 'Select to view recipe'}
                       </TableCell>
@@ -550,7 +631,9 @@ export const MenuItemsPage = () => {
                   type="submit"
                   className="w-full"
                   disabled={
-                    upsertMenuItemMutation.isPending || createForm.formState.isSubmitting || !activeIngredients.length
+                    upsertMenuItemMutation.isPending ||
+                    createForm.formState.isSubmitting ||
+                    !activeIngredients.length
                   }
                 >
                   {upsertMenuItemMutation.isPending ? 'Saving...' : 'Save menu item'}
@@ -659,7 +742,11 @@ export const MenuItemsPage = () => {
                   </Button>
 
                   <div className="flex items-center justify-between gap-3">
-                    <Button type="button" variant="ghost" onClick={() => setEditingMenuItemId(null)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setEditingMenuItemId(null)}
+                    >
                       Cancel
                     </Button>
                     <Button
