@@ -13,6 +13,10 @@ vi.mock('../../hooks/use-menu-items', () => ({
   useDeleteMenuItem: vi.fn(),
 }));
 
+vi.mock('../../services/firestore', () => ({
+  getMenuItemWithRecipes: vi.fn(),
+}));
+
 import { MenuItemsPage } from './menu-items-page';
 import { useIngredients } from '../../hooks/use-ingredients';
 import {
@@ -21,12 +25,14 @@ import {
   useUpsertMenuItem,
   useDeleteMenuItem,
 } from '../../hooks/use-menu-items';
+import { getMenuItemWithRecipes } from '../../services/firestore';
 
 const mockUseIngredients = vi.mocked(useIngredients);
 const mockUseMenuItems = vi.mocked(useMenuItems);
 const mockUseMenuItemWithRecipes = vi.mocked(useMenuItemWithRecipes);
 const mockUseUpsertMenuItem = vi.mocked(useUpsertMenuItem);
 const mockUseDeleteMenuItem = vi.mocked(useDeleteMenuItem);
+const mockGetMenuItemWithRecipes = vi.mocked(getMenuItemWithRecipes);
 
 describe('MenuItemsPage editing', () => {
   beforeEach(() => {
@@ -96,6 +102,8 @@ describe('MenuItemsPage editing', () => {
         },
       ],
     } as const;
+
+    mockGetMenuItemWithRecipes.mockResolvedValue(menuItemDetail);
 
     mockUseMenuItemWithRecipes.mockImplementation((menuItemId?: string) => ({
       data: menuItemId ? menuItemDetail : null,

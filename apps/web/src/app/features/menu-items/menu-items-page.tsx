@@ -3,8 +3,8 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import type { Ingredient } from '@domain/costing';
-import { calculateFoodCostPercentage } from '@domain/costing';
+import type { Ingredient, RecipeCostSummary } from '@domain/costing';
+import { calculateFoodCostPercentage, calculateRecipeCostWithPercentage } from '@domain/costing';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -34,6 +34,7 @@ import {
   useMenuItems,
   useUpsertMenuItem,
 } from '../../hooks/use-menu-items';
+import { getMenuItemWithRecipes } from '../../services/firestore';
 
 const recipeSchema = z.object({
   ingredientId: z.string().min(1, 'Choose an ingredient'),
@@ -83,6 +84,23 @@ const buildDefaultRecipe = (ingredient?: Ingredient) => ({
   unitOfMeasure: ingredient?.unitOfMeasure ?? 'unit',
 });
 
+const recipeTableContainerClasses = 'overflow-x-auto rounded-md border border-slate-200';
+const recipeTableClasses = 'min-w-[960px]';
+const catalogTableClasses = 'min-w-[960px]';
+
+const foodCostPercentageClass = (percentage: number) => {
+  if (percentage <= 0) {
+    return 'text-slate-500';
+  }
+  if (percentage <= 30) {
+    return 'text-green-700';
+  }
+  if (percentage <= 35) {
+    return 'text-yellow-700';
+  }
+  return 'text-red-700';
+};
+
 export const MenuItemsPage = () => {
   const {
     data: menuItems = [],
@@ -115,6 +133,82 @@ export const MenuItemsPage = () => {
   const ingredientNameById = useMemo(() => {
     return new Map(ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
   }, [ingredients]);
+
+  const [catalogCostSummaries, setCatalogCostSummaries] =
+    useState<Record<string, RecipeCostSummary>>({});
+
+  useEffect(() => {
+    if (!menuItems.length) {
+      setCatalogCostSummaries((current) => (Object.keys(current).length ? {} : current));
+      return;
+    }
+
+    if (!ingredients.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadSummaries = async () => {
+      try {
+        const results = await Promise.all(
+          menuItems.map(async (item) => {
+            const detail = await getMenuItemWithRecipes(item.id);
+            if (!detail) {
+              return null;
+            }
+            const summary = calculateRecipeCostWithPercentage(
+              detail.recipes,
+              ingredients,
+              detail.item.sellingPrice,
+            );
+            return [detail.item.id, summary] as const;
+          }),
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setCatalogCostSummaries((current) => {
+          const next: Record<string, RecipeCostSummary> = {};
+          results.forEach((entry) => {
+            if (!entry) {
+              return;
+            }
+            const [id, summary] = entry;
+            next[id] = summary;
+          });
+
+          const currentKeys = Object.keys(current);
+          const nextKeys = Object.keys(next);
+          const isSame =
+            currentKeys.length === nextKeys.length &&
+            currentKeys.every((key) => {
+              const currentSummary = current[key];
+              const nextSummary = next[key];
+              return (
+                nextSummary &&
+                currentSummary.totalRecipeCost === nextSummary.totalRecipeCost &&
+                currentSummary.foodCostPercentage === nextSummary.foodCostPercentage
+              );
+            });
+
+          return isSame ? current : next;
+        });
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load menu item recipe summaries', error);
+        }
+      }
+    };
+
+    void loadSummaries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ingredients, menuItems]);
 
   const createForm = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),
@@ -355,8 +449,8 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell>
-            <Select {...form.register(`recipes.${index}.ingredientId` as const)}>
+          <TableCell className="min-w-[220px]">
+            <Select className="w-full" {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select ingredient</option>
               {ingredientsList.map((ingredient) => (
                 <option key={ingredient.id} value={ingredient.id}>
@@ -368,7 +462,7 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell>
+          <TableCell className="w-[150px] min-w-[150px]">
             <Input
               type="number"
               step="0.01"
@@ -379,20 +473,20 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs">{error.quantity.message}</p>
             ) : null}
           </TableCell>
-          <TableCell>
-            <Input {...form.register(`recipes.${index}.unitOfMeasure` as const)} />
+          <TableCell className="w-[170px] min-w-[170px]">
+            <Input className="w-full" {...form.register(`recipes.${index}.unitOfMeasure` as const)} />
             {error?.unitOfMeasure?.message ? (
               <p className="text-destructive text-xs">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="text-right font-mono text-sm text-slate-600">
+          <TableCell className="w-[140px] whitespace-nowrap text-right font-mono text-sm text-slate-600">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
               return ingredient ? formatCurrency(ingredient.unitCost) : '—';
             })()}
           </TableCell>
-          <TableCell className="text-right font-mono text-sm font-medium text-slate-900">
+          <TableCell className="w-[140px] whitespace-nowrap text-right font-mono text-sm font-medium text-slate-900">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
@@ -403,7 +497,7 @@ export const MenuItemsPage = () => {
               return '—';
             })()}
           </TableCell>
-          <TableCell className="text-right">
+          <TableCell className="w-[100px] whitespace-nowrap text-right">
             <Button
               type="button"
               size="sm"
@@ -471,54 +565,79 @@ export const MenuItemsPage = () => {
                 Loading menu items...
               </div>
             ) : (
-              <Table>
+              <Table className={catalogTableClasses}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Recipe</TableHead>
+                    <TableHead className="text-right">Recipe Total</TableHead>
+                    <TableHead className="text-right">Selling Price</TableHead>
+                    <TableHead className="text-right">Food Cost %</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {menuItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={item.isActive ? 'success' : 'warning'}>
-                          {item.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-500">
-                        {editingMenuItemId === item.id && editingMenuItem.data
-                          ? formatIngredientList(
-                              editingMenuItem.data.recipes.map(
-                                (recipe) =>
+                  {menuItems.map((item) => {
+                    const recipeSummary = catalogCostSummaries[item.id];
+                    const foodCostDisplay =
+                      recipeSummary && recipeSummary.foodCostPercentage > 0
+                        ? formatPercentage(recipeSummary.foodCostPercentage)
+                        : '—';
+                    const foodCostTextClass =
+                      recipeSummary && recipeSummary.foodCostPercentage > 0
+                        ? foodCostPercentageClass(recipeSummary.foodCostPercentage)
+                        : 'text-slate-500';
+
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.isActive ? 'success' : 'warning'}>
+                            {item.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-500">
+                          {editingMenuItemId === item.id && editingMenuItem.data
+                            ? formatIngredientList(
+                                editingMenuItem.data.recipes.map((recipe) =>
                                   ingredientNameById.get(recipe.ingredientId) ??
                                   recipe.ingredientId,
-                              ),
-                            )
-                          : 'Select to view recipe'}
-                      </TableCell>
-                      <TableCell className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant={editingMenuItemId === item.id ? 'secondary' : 'ghost'}
-                          onClick={() => setEditingMenuItemId(item.id)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(item.id)}
-                          disabled={deleteMenuItemMutation.isPending}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                                ),
+                              )
+                            : 'Select to view recipe'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm text-slate-600">
+                          {recipeSummary ? formatCurrency(recipeSummary.totalRecipeCost) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm text-slate-600">
+                          {typeof item.sellingPrice === 'number'
+                            ? formatCurrency(item.sellingPrice)
+                            : '—'}
+                        </TableCell>
+                        <TableCell className={`text-right font-mono text-sm ${foodCostTextClass}`}>
+                          {foodCostDisplay}
+                        </TableCell>
+                        <TableCell className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant={editingMenuItemId === item.id ? 'secondary' : 'ghost'}
+                            onClick={() => setEditingMenuItemId(item.id)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deleteMenuItemMutation.isPending}
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -571,13 +690,9 @@ export const MenuItemsPage = () => {
                     <div className="mt-1 flex items-center justify-between text-sm">
                       <span className="font-medium text-slate-700">Food Cost %:</span>
                       <span
-                        className={`font-mono ${
-                          createRecipeCostSummary.foodCostPercentage <= 30
-                            ? 'text-green-700'
-                            : createRecipeCostSummary.foodCostPercentage <= 35
-                              ? 'text-yellow-700'
-                              : 'text-red-700'
-                        }`}
+                        className={`font-mono ${foodCostPercentageClass(
+                          createRecipeCostSummary.foodCostPercentage,
+                        )}`}
                       >
                         {formatPercentage(createRecipeCostSummary.foodCostPercentage)}
                       </span>
@@ -585,16 +700,16 @@ export const MenuItemsPage = () => {
                   )}
                 </div>
 
-                <div className="rounded-md border border-slate-200">
-                  <Table>
+                <div className={recipeTableContainerClasses}>
+                  <Table className={recipeTableClasses}>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Ingredient</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Unit</TableHead>
-                        <TableHead className="text-right">Unit Cost</TableHead>
-                        <TableHead className="text-right">Line Total</TableHead>
-                        <TableHead className="text-right">Remove</TableHead>
+                        <TableHead className="min-w-[220px]">Ingredient</TableHead>
+                        <TableHead className="w-[150px] min-w-[150px]">Quantity</TableHead>
+                        <TableHead className="w-[170px] min-w-[170px]">Unit</TableHead>
+                        <TableHead className="w-[140px] whitespace-nowrap text-right">Unit Cost</TableHead>
+                        <TableHead className="w-[140px] whitespace-nowrap text-right">Line Total</TableHead>
+                        <TableHead className="w-[100px] whitespace-nowrap text-right">Remove</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -685,13 +800,9 @@ export const MenuItemsPage = () => {
                       <div className="mt-1 flex items-center justify-between text-sm">
                         <span className="font-medium text-slate-700">Food Cost %:</span>
                         <span
-                          className={`font-mono ${
-                            editRecipeCostSummary.foodCostPercentage <= 30
-                              ? 'text-green-700'
-                              : editRecipeCostSummary.foodCostPercentage <= 35
-                                ? 'text-yellow-700'
-                                : 'text-red-700'
-                          }`}
+                          className={`font-mono ${foodCostPercentageClass(
+                            editRecipeCostSummary.foodCostPercentage,
+                          )}`}
                         >
                           {formatPercentage(editRecipeCostSummary.foodCostPercentage)}
                         </span>
@@ -699,19 +810,19 @@ export const MenuItemsPage = () => {
                     )}
                   </div>
 
-                  <div className="rounded-md border border-slate-200">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Ingredient</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Unit</TableHead>
-                          <TableHead className="text-right">Unit Cost</TableHead>
-                          <TableHead className="text-right">Line Total</TableHead>
-                          <TableHead className="text-right">Remove</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                <div className={recipeTableContainerClasses}>
+                  <Table className={recipeTableClasses}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[220px]">Ingredient</TableHead>
+                        <TableHead className="w-[150px] min-w-[150px]">Quantity</TableHead>
+                        <TableHead className="w-[170px] min-w-[170px]">Unit</TableHead>
+                        <TableHead className="w-[140px] whitespace-nowrap text-right">Unit Cost</TableHead>
+                        <TableHead className="w-[140px] whitespace-nowrap text-right">Line Total</TableHead>
+                        <TableHead className="w-[100px] whitespace-nowrap text-right">Remove</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {renderRecipeRows(editRecipes, editForm, activeIngredients)}
                         <TableRow className="border-t-2 bg-slate-50">
                           <TableCell colSpan={4} className="text-right font-medium text-slate-900">
