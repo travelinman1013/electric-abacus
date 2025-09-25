@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
+import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
 import {
   Table,
@@ -40,7 +41,11 @@ const recipeSchema = z.object({
   ingredientId: z.string().min(1, 'Choose an ingredient'),
   quantity: z
     .number({ invalid_type_error: 'Enter a quantity' })
-    .positive('Quantity must be greater than zero'),
+    .positive('Quantity must be greater than zero')
+    .refine((val) => {
+      const decimalPlaces = (val.toString().split('.')[1] || '').length;
+      return decimalPlaces <= 2;
+    }, 'Quantity cannot have more than 2 decimal places'),
   unitOfMeasure: z.string().min(1, 'Unit is required'),
 });
 
@@ -507,7 +512,7 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="w-2/5 pr-2">
+          <TableCell className="w-1/3 pr-2">
             <Select className="w-full text-sm" {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
@@ -520,13 +525,14 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-1/6 px-1">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              className="w-full text-sm"
-              {...form.register(`recipes.${index}.quantity` as const, { valueAsNumber: true })}
+          <TableCell className="w-1/5 px-2">
+            <NumberInput
+              className="w-full"
+              inputClassName="text-base"
+              increment={0.25}
+              min={0}
+              value={form.watch(`recipes.${index}.quantity`) || 0}
+              onChange={(value) => form.setValue(`recipes.${index}.quantity`, value)}
             />
             {error?.quantity?.message ? (
               <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
@@ -772,8 +778,8 @@ export const MenuItemsPage = () => {
                   <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-2/5">Ingredient</TableHead>
-                        <TableHead className="w-1/6">Qty</TableHead>
+                        <TableHead className="w-1/3">Ingredient</TableHead>
+                        <TableHead className="w-1/5 text-center">Qty</TableHead>
                         <TableHead className="w-1/6">Unit</TableHead>
                         <TableHead className="w-1/6 text-right">Total</TableHead>
                         <TableHead className="w-1/6 text-right"></TableHead>
@@ -881,8 +887,8 @@ export const MenuItemsPage = () => {
                   <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-2/5">Ingredient</TableHead>
-                        <TableHead className="w-1/6">Qty</TableHead>
+                        <TableHead className="w-1/3">Ingredient</TableHead>
+                        <TableHead className="w-1/5 text-center">Qty</TableHead>
                         <TableHead className="w-1/6">Unit</TableHead>
                         <TableHead className="w-1/6 text-right">Total</TableHead>
                         <TableHead className="w-1/6 text-right"></TableHead>
