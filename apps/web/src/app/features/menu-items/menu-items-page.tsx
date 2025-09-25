@@ -512,7 +512,7 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="pr-2 min-w-[12rem]">
+          <TableCell className="font-medium align-middle">
             <Select className="w-full text-sm" {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
@@ -525,9 +525,9 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="align-top">
+          <TableCell className="align-middle text-right">
             <NumberInput
-              className="w-24"
+              className="text-right"
               inputClassName="text-base text-right"
               increment={0.25}
               min={0}
@@ -538,9 +538,9 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="px-1">
+          <TableCell className="align-middle">
             <Input
-              className="w-full text-sm bg-slate-50 cursor-not-allowed"
+              className="w-[90px] text-right text-sm bg-slate-50 cursor-not-allowed"
               readOnly
               {...form.register(`recipes.${index}.unitOfMeasure` as const)}
             />
@@ -548,7 +548,7 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="text-right font-mono text-xs px-1 align-top whitespace-nowrap">
+          <TableCell className="text-right font-medium align-middle">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
@@ -570,7 +570,7 @@ export const MenuItemsPage = () => {
               return '—';
             })()}
           </TableCell>
-          <TableCell className="whitespace-nowrap text-right pl-1 align-top">
+          <TableCell className="w-[1%] whitespace-nowrap text-right align-middle">
             <Button
               type="button"
               size="sm"
@@ -778,11 +778,11 @@ export const MenuItemsPage = () => {
                   <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[12rem]">Ingredient</TableHead>
-                        <TableHead className="w-24 text-right">Qty</TableHead>
-                        <TableHead className="whitespace-nowrap">Unit</TableHead>
+                        <TableHead>Ingredient</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit</TableHead>
                         <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="whitespace-nowrap text-right">Remove</TableHead>
+                        <TableHead className="w-[1%] whitespace-nowrap"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -887,11 +887,11 @@ export const MenuItemsPage = () => {
                   <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[12rem]">Ingredient</TableHead>
-                        <TableHead className="w-24 text-right">Qty</TableHead>
-                        <TableHead className="whitespace-nowrap">Unit</TableHead>
+                        <TableHead>Ingredient</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit</TableHead>
                         <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="whitespace-nowrap text-right">Remove</TableHead>
+                        <TableHead className="w-[1%] whitespace-nowrap"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -63,3 +63,5 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - Firestore for data persistence
 - Domain package contains pure business logic
 - Strict TypeScript with full type safety
+- DON'T  " Now I need to check the development server to see the current
+  state:"
