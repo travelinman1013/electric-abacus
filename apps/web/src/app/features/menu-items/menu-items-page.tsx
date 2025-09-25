@@ -84,9 +84,9 @@ const buildDefaultRecipe = (ingredient?: Ingredient) => ({
   unitOfMeasure: ingredient?.unitOfMeasure ?? 'unit',
 });
 
-const recipeTableContainerClasses = 'overflow-x-auto rounded-md border border-slate-200';
-const recipeTableClasses = 'min-w-[960px]';
-const catalogTableClasses = 'min-w-[960px]';
+const recipeTableContainerClasses = 'rounded-md border border-slate-200';
+const recipeTableClasses = 'w-full';
+const catalogTableClasses = 'w-full';
 
 const foodCostPercentageClass = (percentage: number) => {
   if (percentage <= 0) {
@@ -449,9 +449,9 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="min-w-[220px]">
-            <Select className="w-full" {...form.register(`recipes.${index}.ingredientId` as const)}>
-              <option value="">Select ingredient</option>
+          <TableCell className="w-2/5 pr-2">
+            <Select className="w-full text-sm" {...form.register(`recipes.${index}.ingredientId` as const)}>
+              <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
                 <option key={ingredient.id} value={ingredient.id}>
                   {ingredient.name}
@@ -459,34 +459,28 @@ export const MenuItemsPage = () => {
               ))}
             </Select>
             {error?.ingredientId?.message ? (
-              <p className="text-destructive text-xs">{error.ingredientId.message}</p>
+              <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-[150px] min-w-[150px]">
+          <TableCell className="w-1/6 px-1">
             <Input
               type="number"
               step="0.01"
               min="0"
+              className="w-full text-sm"
               {...form.register(`recipes.${index}.quantity` as const, { valueAsNumber: true })}
             />
             {error?.quantity?.message ? (
-              <p className="text-destructive text-xs">{error.quantity.message}</p>
+              <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-[170px] min-w-[170px]">
-            <Input className="w-full" {...form.register(`recipes.${index}.unitOfMeasure` as const)} />
+          <TableCell className="w-1/6 px-1">
+            <Input className="w-full text-sm" {...form.register(`recipes.${index}.unitOfMeasure` as const)} />
             {error?.unitOfMeasure?.message ? (
-              <p className="text-destructive text-xs">{error.unitOfMeasure.message}</p>
+              <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-[140px] whitespace-nowrap text-right font-mono text-sm text-slate-600">
-            {(() => {
-              const ingredientId = form.watch(`recipes.${index}.ingredientId`);
-              const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
-              return ingredient ? formatCurrency(ingredient.unitCost) : '—';
-            })()}
-          </TableCell>
-          <TableCell className="w-[140px] whitespace-nowrap text-right font-mono text-sm font-medium text-slate-900">
+          <TableCell className="w-1/6 text-right font-mono text-xs px-1">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
@@ -497,13 +491,14 @@ export const MenuItemsPage = () => {
               return '—';
             })()}
           </TableCell>
-          <TableCell className="w-[100px] whitespace-nowrap text-right">
+          <TableCell className="w-1/6 text-right pl-1">
             <Button
               type="button"
               size="sm"
               variant="ghost"
               onClick={() => array.remove(index)}
               disabled={array.fields.length === 1}
+              className="text-xs px-2 py-1"
             >
               Remove
             </Button>
@@ -549,8 +544,8 @@ export const MenuItemsPage = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <Card>
+      <div className="grid gap-6 xl:grid-cols-[1fr_480px] lg:grid-cols-1 lg:items-start">
+        <Card className="w-full">
           <CardHeader className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <CardTitle>Menu catalog</CardTitle>
@@ -559,7 +554,7 @@ export const MenuItemsPage = () => {
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
+          <CardContent>
             {loading ? (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
                 Loading menu items...
@@ -647,7 +642,7 @@ export const MenuItemsPage = () => {
           </CardFooter>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
           <Card>
             <CardHeader>
               <CardTitle>Create menu item</CardTitle>
@@ -700,25 +695,24 @@ export const MenuItemsPage = () => {
                   )}
                 </div>
 
-                <div className={recipeTableContainerClasses}>
-                  <Table className={recipeTableClasses}>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[220px]">Ingredient</TableHead>
-                        <TableHead className="w-[150px] min-w-[150px]">Quantity</TableHead>
-                        <TableHead className="w-[170px] min-w-[170px]">Unit</TableHead>
-                        <TableHead className="w-[140px] whitespace-nowrap text-right">Unit Cost</TableHead>
-                        <TableHead className="w-[140px] whitespace-nowrap text-right">Line Total</TableHead>
-                        <TableHead className="w-[100px] whitespace-nowrap text-right">Remove</TableHead>
+                        <TableHead className="w-2/5">Ingredient</TableHead>
+                        <TableHead className="w-1/6">Qty</TableHead>
+                        <TableHead className="w-1/6">Unit</TableHead>
+                        <TableHead className="w-1/6 text-right">Total</TableHead>
+                        <TableHead className="w-1/6 text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {renderRecipeRows(createRecipes, createForm, activeIngredients)}
                       <TableRow className="border-t-2 bg-slate-50">
-                        <TableCell colSpan={4} className="text-right font-medium text-slate-900">
+                        <TableCell colSpan={3} className="text-right font-medium text-slate-900 text-sm">
                           Recipe Total:
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-slate-900">
+                        <TableCell className="text-right font-mono font-bold text-slate-900 text-sm">
                           {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
                         </TableCell>
                         <TableCell />
@@ -810,25 +804,24 @@ export const MenuItemsPage = () => {
                     )}
                   </div>
 
-                <div className={recipeTableContainerClasses}>
-                  <Table className={recipeTableClasses}>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[220px]">Ingredient</TableHead>
-                        <TableHead className="w-[150px] min-w-[150px]">Quantity</TableHead>
-                        <TableHead className="w-[170px] min-w-[170px]">Unit</TableHead>
-                        <TableHead className="w-[140px] whitespace-nowrap text-right">Unit Cost</TableHead>
-                        <TableHead className="w-[140px] whitespace-nowrap text-right">Line Total</TableHead>
-                        <TableHead className="w-[100px] whitespace-nowrap text-right">Remove</TableHead>
+                        <TableHead className="w-2/5">Ingredient</TableHead>
+                        <TableHead className="w-1/6">Qty</TableHead>
+                        <TableHead className="w-1/6">Unit</TableHead>
+                        <TableHead className="w-1/6 text-right">Total</TableHead>
+                        <TableHead className="w-1/6 text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                         {renderRecipeRows(editRecipes, editForm, activeIngredients)}
                         <TableRow className="border-t-2 bg-slate-50">
-                          <TableCell colSpan={4} className="text-right font-medium text-slate-900">
+                          <TableCell colSpan={3} className="text-right font-medium text-slate-900 text-sm">
                             Recipe Total:
                           </TableCell>
-                          <TableCell className="text-right font-mono font-bold text-slate-900">
+                          <TableCell className="text-right font-mono font-bold text-slate-900 text-sm">
                             {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
                           </TableCell>
                           <TableCell />
