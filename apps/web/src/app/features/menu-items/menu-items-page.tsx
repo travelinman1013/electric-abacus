@@ -512,7 +512,7 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="w-1/3 pr-2">
+          <TableCell className="pr-2 min-w-[12rem]">
             <Select className="w-full text-sm" {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
@@ -525,10 +525,10 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-1/5 px-2">
+          <TableCell className="align-top">
             <NumberInput
-              className="w-full"
-              inputClassName="text-base"
+              className="w-24"
+              inputClassName="text-base text-right"
               increment={0.25}
               min={0}
               value={form.watch(`recipes.${index}.quantity`) || 0}
@@ -538,7 +538,7 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-1/6 px-1">
+          <TableCell className="px-1">
             <Input
               className="w-full text-sm bg-slate-50 cursor-not-allowed"
               readOnly
@@ -548,7 +548,7 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="w-1/6 text-right font-mono text-xs px-1">
+          <TableCell className="text-right font-mono text-xs px-1 align-top whitespace-nowrap">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
@@ -570,7 +570,7 @@ export const MenuItemsPage = () => {
               return '—';
             })()}
           </TableCell>
-          <TableCell className="w-1/6 text-right pl-1">
+          <TableCell className="whitespace-nowrap text-right pl-1 align-top">
             <Button
               type="button"
               size="sm"
@@ -778,11 +778,11 @@ export const MenuItemsPage = () => {
                   <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-1/3">Ingredient</TableHead>
-                        <TableHead className="w-1/5 text-center">Qty</TableHead>
-                        <TableHead className="w-1/6">Unit</TableHead>
-                        <TableHead className="w-1/6 text-right">Total</TableHead>
-                        <TableHead className="w-1/6 text-right"></TableHead>
+                        <TableHead className="min-w-[12rem]">Ingredient</TableHead>
+                        <TableHead className="w-24 text-right">Qty</TableHead>
+                        <TableHead className="whitespace-nowrap">Unit</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="whitespace-nowrap text-right">Remove</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -887,11 +887,11 @@ export const MenuItemsPage = () => {
                   <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-1/3">Ingredient</TableHead>
-                        <TableHead className="w-1/5 text-center">Qty</TableHead>
-                        <TableHead className="w-1/6">Unit</TableHead>
-                        <TableHead className="w-1/6 text-right">Total</TableHead>
-                        <TableHead className="w-1/6 text-right"></TableHead>
+                        <TableHead className="min-w-[12rem]">Ingredient</TableHead>
+                        <TableHead className="w-24 text-right">Qty</TableHead>
+                        <TableHead className="whitespace-nowrap">Unit</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="whitespace-nowrap text-right">Remove</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
