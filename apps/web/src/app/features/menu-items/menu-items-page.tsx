@@ -365,7 +365,7 @@ export const MenuItemsPage = () => {
               ))}
             </Select>
             {error?.ingredientId?.message ? (
-              <p className="text-xs text-destructive">{error.ingredientId.message}</p>
+              <p className="text-destructive text-xs">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
           <TableCell>
@@ -376,23 +376,23 @@ export const MenuItemsPage = () => {
               {...form.register(`recipes.${index}.quantity` as const, { valueAsNumber: true })}
             />
             {error?.quantity?.message ? (
-              <p className="text-xs text-destructive">{error.quantity.message}</p>
+              <p className="text-destructive text-xs">{error.quantity.message}</p>
             ) : null}
           </TableCell>
           <TableCell>
             <Input {...form.register(`recipes.${index}.unitOfMeasure` as const)} />
             {error?.unitOfMeasure?.message ? (
-              <p className="text-xs text-destructive">{error.unitOfMeasure.message}</p>
+              <p className="text-destructive text-xs">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="text-right text-sm text-slate-600 font-mono">
+          <TableCell className="text-right font-mono text-sm text-slate-600">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
               return ingredient ? formatCurrency(ingredient.unitCost) : '—';
             })()}
           </TableCell>
-          <TableCell className="text-right text-sm text-slate-900 font-mono font-medium">
+          <TableCell className="text-right font-mono text-sm font-medium text-slate-900">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
@@ -439,7 +439,7 @@ export const MenuItemsPage = () => {
       </header>
 
       {combinedError ? (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
           {errorMessage}
         </div>
       ) : null}
@@ -448,7 +448,7 @@ export const MenuItemsPage = () => {
           className={
             formMessage.type === 'success'
               ? 'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700'
-              : 'rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive'
+              : 'border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
           }
         >
           {formMessage.message}
@@ -568,7 +568,7 @@ export const MenuItemsPage = () => {
                     </span>
                   </div>
                   {createRecipeCostSummary.foodCostPercentage > 0 && (
-                    <div className="flex items-center justify-between text-sm mt-1">
+                    <div className="mt-1 flex items-center justify-between text-sm">
                       <span className="font-medium text-slate-700">Food Cost %:</span>
                       <span
                         className={`font-mono ${
@@ -603,7 +603,7 @@ export const MenuItemsPage = () => {
                         <TableCell colSpan={4} className="text-right font-medium text-slate-900">
                           Recipe Total:
                         </TableCell>
-                        <TableCell className="text-right font-bold text-slate-900 font-mono">
+                        <TableCell className="text-right font-mono font-bold text-slate-900">
                           {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
                         </TableCell>
                         <TableCell />
@@ -613,7 +613,7 @@ export const MenuItemsPage = () => {
                 </div>
 
                 {createForm.formState.errors.recipes?.root?.message ? (
-                  <p className="text-xs text-destructive">
+                  <p className="text-destructive text-xs">
                     {createForm.formState.errors.recipes.root.message}
                   </p>
                 ) : null}
@@ -682,7 +682,7 @@ export const MenuItemsPage = () => {
                       </span>
                     </div>
                     {editRecipeCostSummary.foodCostPercentage > 0 && (
-                      <div className="flex items-center justify-between text-sm mt-1">
+                      <div className="mt-1 flex items-center justify-between text-sm">
                         <span className="font-medium text-slate-700">Food Cost %:</span>
                         <span
                           className={`font-mono ${
@@ -717,7 +717,7 @@ export const MenuItemsPage = () => {
                           <TableCell colSpan={4} className="text-right font-medium text-slate-900">
                             Recipe Total:
                           </TableCell>
-                          <TableCell className="text-right font-bold text-slate-900 font-mono">
+                          <TableCell className="text-right font-mono font-bold text-slate-900">
                             {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
                           </TableCell>
                           <TableCell />
@@ -727,7 +727,7 @@ export const MenuItemsPage = () => {
                   </div>
 
                   {editForm.formState.errors.recipes?.root?.message ? (
-                    <p className="text-xs text-destructive">
+                    <p className="text-destructive text-xs">
                       {editForm.formState.errors.recipes.root.message}
                     </p>
                   ) : null}

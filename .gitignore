@@ -8,3 +8,15 @@ apps/web/dist/
 coverage/
 playwright-report/
 .test-results/
+
+# Service account files
+TacoRayServiceAccount.json
+*ServiceAccount.json
+
+# Temporary files
+tmp-*.mjs
+logs/
+firebase-debug.log
+*.txt
+*.pdf
+*.tsbuildinfo

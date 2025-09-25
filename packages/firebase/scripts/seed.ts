@@ -72,6 +72,9 @@ const main = async () => {
     });
   }
 
+  const ozToLb = (ounces: number) => Number((ounces / 16).toFixed(4));
+
+  // Ingredient mix approximates the Taco Casa portion sheet so seeded data feels real.
   const ingredients = [
     {
       id: 'seasoned-beef',
@@ -82,20 +85,108 @@ const main = async () => {
       unitCost: Number((120 / 20).toFixed(4)),
     },
     {
+      id: 'refried-beans',
+      name: 'Refried Beans',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 30,
+      casePrice: 52,
+      unitCost: Number((52 / 30).toFixed(4)),
+    },
+    {
+      id: 'taco-shell-55',
+      name: '5.5" Taco Shell',
+      unitOfMeasure: 'each',
+      unitsPerCase: 200,
+      casePrice: 42,
+      unitCost: Number((42 / 200).toFixed(4)),
+    },
+    {
+      id: 'tostada-shell',
+      name: 'Tostada Shell',
+      unitOfMeasure: 'each',
+      unitsPerCase: 150,
+      casePrice: 45,
+      unitCost: Number((45 / 150).toFixed(4)),
+    },
+    {
+      id: 'flour-tortilla-10in',
+      name: '10" Flour Tortilla',
+      unitOfMeasure: 'each',
+      unitsPerCase: 144,
+      casePrice: 36,
+      unitCost: Number((36 / 144).toFixed(4)),
+    },
+    {
+      id: 'burger-bun',
+      name: '4" Sandwich Bun',
+      unitOfMeasure: 'each',
+      unitsPerCase: 96,
+      casePrice: 18,
+      unitCost: Number((18 / 96).toFixed(4)),
+    },
+    {
       id: 'cheddar-cheese',
-      name: 'Cheddar Cheese',
+      name: 'Shredded Cheddar Cheese',
       unitOfMeasure: 'lb',
       unitsPerCase: 10,
       casePrice: 58,
       unitCost: Number((58 / 10).toFixed(4)),
     },
     {
-      id: 'flour-tortillas',
-      name: 'Flour Tortillas',
-      unitOfMeasure: 'case',
-      unitsPerCase: 288,
-      casePrice: 75,
-      unitCost: Number((75 / 288).toFixed(4)),
+      id: 'shredded-lettuce',
+      name: 'Shredded Lettuce',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 20,
+      casePrice: 24,
+      unitCost: Number((24 / 20).toFixed(4)),
+    },
+    {
+      id: 'taco-sauce',
+      name: 'Red Taco Sauce',
+      unitOfMeasure: 'oz',
+      unitsPerCase: 512,
+      casePrice: 38,
+      unitCost: Number((38 / 512).toFixed(4)),
+    },
+    {
+      id: 'sour-cream',
+      name: 'Sour Cream',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 24,
+      casePrice: 36,
+      unitCost: Number((36 / 24).toFixed(4)),
+    },
+    {
+      id: 'diced-tomatoes',
+      name: 'Diced Tomatoes',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 25,
+      casePrice: 32,
+      unitCost: Number((32 / 25).toFixed(4)),
+    },
+    {
+      id: 'chili-base',
+      name: 'Seasoned Chili',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 30,
+      casePrice: 55,
+      unitCost: Number((55 / 30).toFixed(4)),
+    },
+    {
+      id: 'diced-onions',
+      name: 'Diced Onions',
+      unitOfMeasure: 'lb',
+      unitsPerCase: 20,
+      casePrice: 18,
+      unitCost: Number((18 / 20).toFixed(4)),
+    },
+    {
+      id: 'corn-chips',
+      name: 'Corn Chips',
+      unitOfMeasure: 'each',
+      unitsPerCase: 500,
+      casePrice: 12,
+      unitCost: Number((12 / 500).toFixed(4)),
     },
   ];
 
@@ -118,6 +209,143 @@ const main = async () => {
       effectiveFrom: Timestamp.now(),
       effectiveTo: null,
     });
+  }
+
+  const menuItems = [
+    {
+      id: 'soft-taco',
+      name: 'Soft Taco',
+      sellingPrice: 2.29,
+      recipes: [
+        { ingredientId: 'taco-shell-55', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'seasoned-beef', quantity: ozToLb(1.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'shredded-lettuce', quantity: ozToLb(0.75), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.25), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+      ],
+    },
+    {
+      id: 'taco-burger',
+      name: 'Taco Burger',
+      sellingPrice: 3.49,
+      recipes: [
+        { ingredientId: 'burger-bun', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'seasoned-beef', quantity: ozToLb(1.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'shredded-lettuce', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.25), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+        { ingredientId: 'diced-tomatoes', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+      ],
+    },
+    {
+      id: 'bean-tostada',
+      name: 'Bean Tostada',
+      sellingPrice: 3.29,
+      recipes: [
+        { ingredientId: 'tostada-shell', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'refried-beans', quantity: ozToLb(2.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'shredded-lettuce', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.25), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+        { ingredientId: 'diced-tomatoes', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+      ],
+    },
+    {
+      id: 'beef-tostada',
+      name: 'Beef Tostada',
+      sellingPrice: 3.79,
+      recipes: [
+        { ingredientId: 'tostada-shell', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'refried-beans', quantity: ozToLb(2.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'seasoned-beef', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'shredded-lettuce', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.25), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+        { ingredientId: 'diced-tomatoes', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+      ],
+    },
+    {
+      id: 'refried-beans-side',
+      name: 'Refried Beans',
+      sellingPrice: 2.19,
+      recipes: [
+        { ingredientId: 'refried-beans', quantity: ozToLb(4), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.5, unitOfMeasure: 'oz' },
+      ],
+    },
+    {
+      id: 'tostada-grande',
+      name: 'Tostada Grande',
+      sellingPrice: 4.49,
+      recipes: [
+        { ingredientId: 'tostada-shell', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'refried-beans', quantity: ozToLb(3), unitOfMeasure: 'lb' },
+        { ingredientId: 'seasoned-beef', quantity: ozToLb(1.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'shredded-lettuce', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'sour-cream', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+        { ingredientId: 'diced-tomatoes', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+      ],
+    },
+    {
+      id: 'bean-burrito',
+      name: 'Bean Burrito',
+      sellingPrice: 2.69,
+      recipes: [
+        { ingredientId: 'flour-tortilla-10in', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'refried-beans', quantity: ozToLb(2.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+      ],
+    },
+    {
+      id: 'combo-burrito',
+      name: 'Combo Burrito',
+      sellingPrice: 3.69,
+      recipes: [
+        { ingredientId: 'flour-tortilla-10in', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'refried-beans', quantity: ozToLb(2.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'seasoned-beef', quantity: ozToLb(1.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(1), unitOfMeasure: 'lb' },
+        { ingredientId: 'taco-sauce', quantity: 0.25, unitOfMeasure: 'oz' },
+      ],
+    },
+    {
+      id: 'chili-burrito',
+      name: 'Chili Burrito',
+      sellingPrice: 3.99,
+      recipes: [
+        { ingredientId: 'flour-tortilla-10in', quantity: 1, unitOfMeasure: 'each' },
+        { ingredientId: 'refried-beans', quantity: ozToLb(4), unitOfMeasure: 'lb' },
+        { ingredientId: 'chili-base', quantity: ozToLb(3), unitOfMeasure: 'lb' },
+        { ingredientId: 'cheddar-cheese', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'diced-onions', quantity: ozToLb(0.5), unitOfMeasure: 'lb' },
+        { ingredientId: 'corn-chips', quantity: 2, unitOfMeasure: 'each' },
+      ],
+    },
+  ];
+
+  for (const menuItem of menuItems) {
+    await db.doc(`menuItems/${menuItem.id}`).set({
+      name: menuItem.name,
+      isActive: true,
+      sellingPrice: menuItem.sellingPrice,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    for (const recipe of menuItem.recipes) {
+      const recipeId = recipe.ingredientId;
+      await db.doc(`menuItems/${menuItem.id}/recipes/${recipeId}`).set({
+        ingredientId: recipe.ingredientId,
+        quantity: recipe.quantity,
+        unitOfMeasure: recipe.unitOfMeasure,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+    }
   }
 
   const weekId = '2025-W39';
