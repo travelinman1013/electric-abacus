@@ -30,7 +30,12 @@ import {
 
 const ingredientSchema = z.object({
   name: z.string().min(2, 'Name is required'),
-  unitOfMeasure: z.string().min(1, 'Unit of measure required'),
+  inventoryUnit: z.string().min(1, 'Inventory unit required'),
+  recipeUnit: z.string().optional(),
+  conversionFactor: z
+    .number({ invalid_type_error: 'Enter a valid conversion factor' })
+    .positive('Must be greater than zero')
+    .optional(),
   unitsPerCase: z
     .number({ invalid_type_error: 'Enter the units per case' })
     .positive('Must be greater than zero'),
@@ -71,7 +76,9 @@ export const IngredientsPage = () => {
     resolver: zodResolver(ingredientSchema),
     defaultValues: {
       name: '',
-      unitOfMeasure: 'lb',
+      inventoryUnit: 'lb',
+      recipeUnit: '',
+      conversionFactor: undefined,
       unitsPerCase: 1,
       casePrice: 0,
       category: 'food' as IngredientCategory,
@@ -83,7 +90,9 @@ export const IngredientsPage = () => {
     resolver: zodResolver(ingredientSchema),
     defaultValues: {
       name: '',
-      unitOfMeasure: 'lb',
+      inventoryUnit: 'lb',
+      recipeUnit: '',
+      conversionFactor: undefined,
       unitsPerCase: 1,
       casePrice: 0,
       category: 'food' as IngredientCategory,
@@ -95,7 +104,9 @@ export const IngredientsPage = () => {
     if (editingIngredient.data) {
       editForm.reset({
         name: editingIngredient.data.name,
-        unitOfMeasure: editingIngredient.data.unitOfMeasure,
+        inventoryUnit: editingIngredient.data.inventoryUnit,
+        recipeUnit: editingIngredient.data.recipeUnit || '',
+        conversionFactor: editingIngredient.data.conversionFactor,
         unitsPerCase: editingIngredient.data.unitsPerCase,
         casePrice: editingIngredient.data.casePrice,
         category: editingIngredient.data.category,
@@ -117,7 +128,9 @@ export const IngredientsPage = () => {
       setFormSuccess('Ingredient created');
       createForm.reset({
         name: '',
-        unitOfMeasure: values.unitOfMeasure,
+        inventoryUnit: values.inventoryUnit,
+        recipeUnit: '',
+        conversionFactor: undefined,
         unitsPerCase: values.unitsPerCase,
         casePrice: values.casePrice,
         isActive: true
@@ -202,7 +215,7 @@ export const IngredientsPage = () => {
                           {ingredient.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{ingredient.unitOfMeasure}</TableCell>
+                      <TableCell>{ingredient.inventoryUnit}</TableCell>
                       <TableCell className="text-right">{ingredient.unitsPerCase}</TableCell>
                       <TableCell className="text-right">{formatCurrency(ingredient.casePrice)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(ingredient.unitCost)}</TableCell>
@@ -263,12 +276,41 @@ export const IngredientsPage = () => {
                 </FormField>
 
                 <FormField
-                  label="Unit of measure"
-                  htmlFor="new-unit"
+                  label="Inventory Unit"
+                  htmlFor="new-inventory-unit"
                   required
-                  error={createForm.formState.errors.unitOfMeasure?.message}
+                  error={createForm.formState.errors.inventoryUnit?.message}
                 >
-                  <Input id="new-unit" {...createForm.register('unitOfMeasure')} />
+                  <Input id="new-inventory-unit" {...createForm.register('inventoryUnit')} />
+                </FormField>
+
+                <FormField
+                  label="Recipe Unit"
+                  htmlFor="new-recipe-unit"
+                  error={createForm.formState.errors.recipeUnit?.message}
+                >
+                  <Input
+                    id="new-recipe-unit"
+                    placeholder="e.g., oz, fl oz, each"
+                    {...createForm.register('recipeUnit')}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Conversion Factor"
+                  htmlFor="new-conversion-factor"
+                  helpText="How many recipe units are in one inventory unit?"
+                  error={createForm.formState.errors.conversionFactor?.message}
+                >
+                  <Input
+                    id="new-conversion-factor"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g., 16 (for 16 oz per lb)"
+                    disabled={!createForm.watch('recipeUnit')}
+                    {...createForm.register('conversionFactor', { valueAsNumber: true })}
+                  />
                 </FormField>
 
                 <FormField
@@ -355,12 +397,41 @@ export const IngredientsPage = () => {
                   </FormField>
 
                   <FormField
-                    label="Unit of measure"
-                    htmlFor="edit-unit"
+                    label="Inventory Unit"
+                    htmlFor="edit-inventory-unit"
                     required
-                    error={editForm.formState.errors.unitOfMeasure?.message}
+                    error={editForm.formState.errors.inventoryUnit?.message}
                   >
-                    <Input id="edit-unit" {...editForm.register('unitOfMeasure')} />
+                    <Input id="edit-inventory-unit" {...editForm.register('inventoryUnit')} />
+                  </FormField>
+
+                  <FormField
+                    label="Recipe Unit"
+                    htmlFor="edit-recipe-unit"
+                    error={editForm.formState.errors.recipeUnit?.message}
+                  >
+                    <Input
+                      id="edit-recipe-unit"
+                      placeholder="e.g., oz, fl oz, each"
+                      {...editForm.register('recipeUnit')}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Conversion Factor"
+                    htmlFor="edit-conversion-factor"
+                    helpText="How many recipe units are in one inventory unit?"
+                    error={editForm.formState.errors.conversionFactor?.message}
+                  >
+                    <Input
+                      id="edit-conversion-factor"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="e.g., 16 (for 16 oz per lb)"
+                      disabled={!editForm.watch('recipeUnit')}
+                      {...editForm.register('conversionFactor', { valueAsNumber: true })}
+                    />
                   </FormField>
 
                   <FormField

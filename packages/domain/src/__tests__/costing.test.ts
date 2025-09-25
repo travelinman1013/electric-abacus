@@ -141,7 +141,7 @@ describe('calculateRecipeCost', () => {
     {
       id: 'ground-beef',
       name: 'Ground Beef',
-      unitOfMeasure: 'lb',
+      inventoryUnit: 'lb',
       unitsPerCase: 10,
       casePrice: 50,
       unitCost: 5.0,
@@ -151,7 +151,9 @@ describe('calculateRecipeCost', () => {
     {
       id: 'cheddar-cheese',
       name: 'Cheddar Cheese',
-      unitOfMeasure: 'lb',
+      inventoryUnit: 'lb',
+      recipeUnit: 'oz',
+      conversionFactor: 16,
       unitsPerCase: 5,
       casePrice: 25,
       unitCost: 5.0,
@@ -161,7 +163,7 @@ describe('calculateRecipeCost', () => {
     {
       id: 'taco-wrapper',
       name: 'Taco Wrapper',
-      unitOfMeasure: 'each',
+      inventoryUnit: 'each',
       unitsPerCase: 100,
       casePrice: 10,
       unitCost: 0.1,
@@ -209,6 +211,47 @@ describe('calculateRecipeCost', () => {
     expect(result.totalRecipeCost).toBe(0);
     expect(result.ingredients[0].lineCost).toBe(0);
   });
+
+  it('handles unit conversion correctly', () => {
+    const recipeWithConversion: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'ground-beef', quantity: 4, unitOfMeasure: 'lb' }, // Use inventory unit
+      { id: '2', ingredientId: 'cheddar-cheese', quantity: 2, unitOfMeasure: 'oz' }, // Use recipe unit
+      { id: '3', ingredientId: 'taco-wrapper', quantity: 1, unitOfMeasure: 'each' }
+    ];
+
+    const result = calculateRecipeCost(recipeWithConversion, testIngredients);
+
+    // Ground beef: 4 * 5.0 = 20.00 (no conversion)
+    // Cheddar cheese: 2 * (5.0 / 16) = 2 * 0.3125 = 0.625 (conversion applied)
+    // Taco wrapper: 1 * 0.1 = 0.1 (no conversion)
+    // Total: 20.725
+    expect(result.totalRecipeCost).toBeCloseTo(20.725, 4);
+    expect(result.ingredients[1].unitCost).toBeCloseTo(0.3125, 4); // Converted unit cost for cheese
+    expect(result.ingredients[1].lineCost).toBeCloseTo(0.625, 4); // 2 oz * $0.3125/oz
+  });
+
+  it('falls back to inventory unit when recipe uses different unit than expected', () => {
+    const recipeWithWrongUnit: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'cheddar-cheese', quantity: 0.125, unitOfMeasure: 'lb' } // Use lb instead of oz
+    ];
+
+    const result = calculateRecipeCost(recipeWithWrongUnit, testIngredients);
+
+    // Should use inventory unit cost directly: 0.125 * 5.0 = 0.625
+    expect(result.totalRecipeCost).toBeCloseTo(0.625, 4);
+    expect(result.ingredients[0].unitCost).toBe(5.0); // Original unit cost
+  });
+
+  it('handles ingredients without conversion factors', () => {
+    const recipeWithNoConversion: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'ground-beef', quantity: 0.25, unitOfMeasure: 'lb' }
+    ];
+
+    const result = calculateRecipeCost(recipeWithNoConversion, testIngredients);
+
+    expect(result.totalRecipeCost).toBeCloseTo(1.25, 4); // 0.25 * 5.0
+    expect(result.ingredients[0].unitCost).toBe(5.0);
+  });
 });
 
 describe('calculateFoodCostPercentage', () => {
@@ -233,7 +276,7 @@ describe('calculateRecipeCostWithPercentage', () => {
     {
       id: 'ground-beef',
       name: 'Ground Beef',
-      unitOfMeasure: 'lb',
+      inventoryUnit: 'lb',
       unitsPerCase: 10,
       casePrice: 50,
       unitCost: 5.0,

@@ -22,7 +22,9 @@ export type IngredientCategory = 'food' | 'paper' | 'other';
 export interface Ingredient {
   id: string;
   name: string;
-  unitOfMeasure: string;
+  inventoryUnit: string;
+  recipeUnit?: string;
+  conversionFactor?: number;
   unitsPerCase: number;
   casePrice: number;
   unitCost: number;

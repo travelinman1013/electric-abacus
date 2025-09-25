@@ -22,7 +22,9 @@ import { ensureId } from './ids';
 export interface CreateIngredientInput {
   id?: string;
   name: string;
-  unitOfMeasure: string;
+  inventoryUnit: string;
+  recipeUnit?: string;
+  conversionFactor?: number;
   unitsPerCase: number;
   casePrice: number;
   category?: IngredientCategory;
@@ -50,7 +52,9 @@ export const listIngredients = async (): Promise<Ingredient[]> => {
     const ingredient: Ingredient = {
       id: docSnapshot.id,
       name: data.name,
-      unitOfMeasure: data.unitOfMeasure,
+      inventoryUnit: data.inventoryUnit ?? data.unitOfMeasure ?? 'unit',
+      recipeUnit: data.recipeUnit,
+      conversionFactor: data.conversionFactor,
       unitsPerCase: data.unitsPerCase,
       casePrice: data.casePrice,
       unitCost: data.unitCost,
@@ -97,7 +101,9 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
 
     transaction.set(ingredientRef, {
       name: input.name,
-      unitOfMeasure: input.unitOfMeasure,
+      inventoryUnit: input.inventoryUnit,
+      recipeUnit: input.recipeUnit,
+      conversionFactor: input.conversionFactor,
       unitsPerCase: input.unitsPerCase,
       casePrice: input.casePrice,
       unitCost,
@@ -121,7 +127,9 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
   return {
     id: ingredientId,
     name: input.name,
-    unitOfMeasure: input.unitOfMeasure,
+    inventoryUnit: input.inventoryUnit,
+    recipeUnit: input.recipeUnit,
+    conversionFactor: input.conversionFactor,
     unitsPerCase: input.unitsPerCase,
     casePrice: input.casePrice,
     unitCost,
@@ -148,7 +156,9 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
 
     transaction.update(ingredientRef, {
       name: input.name,
-      unitOfMeasure: input.unitOfMeasure,
+      inventoryUnit: input.inventoryUnit,
+      recipeUnit: input.recipeUnit,
+      conversionFactor: input.conversionFactor,
       unitsPerCase: input.unitsPerCase,
       casePrice: input.casePrice,
       unitCost,
@@ -204,7 +214,9 @@ export const getIngredient = async (ingredientId: string): Promise<Ingredient | 
   return {
     id: ingredientId,
     name: data.name,
-    unitOfMeasure: data.unitOfMeasure,
+    inventoryUnit: data.inventoryUnit ?? data.unitOfMeasure ?? 'unit',
+    recipeUnit: data.recipeUnit,
+    conversionFactor: data.conversionFactor,
     unitsPerCase: data.unitsPerCase,
     casePrice: data.casePrice,
     unitCost: data.unitCost,

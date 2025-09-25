@@ -128,16 +128,26 @@ export const calculateRecipeCost = (
 
   const ingredientCosts: RecipeIngredientCost[] = recipes.map((recipe) => {
     const ingredient = ingredientMap.get(recipe.ingredientId);
-    const unitCost = ingredient ? clampNonNegative(ensureNumber(ingredient.unitCost)) : 0;
+    const baseUnitCost = ingredient ? clampNonNegative(ensureNumber(ingredient.unitCost)) : 0;
     const quantity = clampNonNegative(ensureNumber(recipe.quantity));
-    const lineCost = quantity * unitCost;
+
+    // Calculate effective unit cost considering unit conversion
+    let effectiveUnitCost = baseUnitCost;
+    if (ingredient && ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+      // If recipe uses the recipe unit and conversion factor exists
+      if (recipe.unitOfMeasure === ingredient.recipeUnit) {
+        effectiveUnitCost = baseUnitCost / ingredient.conversionFactor;
+      }
+    }
+
+    const lineCost = quantity * effectiveUnitCost;
 
     return {
       ingredientId: recipe.ingredientId,
       ingredientName: ingredient?.name ?? 'Unknown Ingredient',
       quantity,
       unitOfMeasure: recipe.unitOfMeasure,
-      unitCost,
+      unitCost: effectiveUnitCost,
       lineCost: Number(lineCost.toFixed(4)),
       category: ingredient?.category ?? 'other'
     } satisfies RecipeIngredientCost;

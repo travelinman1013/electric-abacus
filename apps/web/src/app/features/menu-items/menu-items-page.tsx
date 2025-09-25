@@ -81,11 +81,9 @@ const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 const buildDefaultRecipe = (ingredient?: Ingredient) => ({
   ingredientId: ingredient?.id ?? '',
   quantity: 1,
-  unitOfMeasure: ingredient?.unitOfMeasure ?? 'unit',
+  unitOfMeasure: ingredient?.recipeUnit ?? ingredient?.inventoryUnit ?? 'unit',
 });
 
-const recipeTableContainerClasses = 'rounded-md border border-slate-200';
-const recipeTableClasses = 'w-full';
 const catalogTableClasses = 'w-full';
 
 const foodCostPercentageClass = (percentage: number) => {
@@ -244,7 +242,17 @@ export const MenuItemsPage = () => {
       const ingredient = ingredients.find((ing) => ing.id === ingredientId);
 
       if (ingredient && quantity > 0) {
-        totalRecipeCost += ingredient.unitCost * quantity;
+        let effectiveUnitCost = ingredient.unitCost;
+
+        // Apply conversion if recipe uses recipe unit
+        const recipeUnit = form.watch(`recipes.${index}.unitOfMeasure`);
+        if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+          if (recipeUnit === ingredient.recipeUnit) {
+            effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
+          }
+        }
+
+        totalRecipeCost += effectiveUnitCost * quantity;
       }
     });
 
@@ -270,7 +278,17 @@ export const MenuItemsPage = () => {
       const ingredient = ingredients.find((ing) => ing.id === ingredientId);
 
       if (ingredient && quantity > 0) {
-        totalRecipeCost += ingredient.unitCost * quantity;
+        let effectiveUnitCost = ingredient.unitCost;
+
+        // Apply conversion if recipe uses recipe unit
+        const recipeUnit = form.watch(`recipes.${index}.unitOfMeasure`);
+        if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+          if (recipeUnit === ingredient.recipeUnit) {
+            effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
+          }
+        }
+
+        totalRecipeCost += effectiveUnitCost * quantity;
       }
     });
 
@@ -424,6 +442,46 @@ export const MenuItemsPage = () => {
     }
   };
 
+  // Effect to auto-update unit when ingredient changes for create form
+  useEffect(() => {
+    const subscription = createForm.watch((value, { name }) => {
+      if (name && name.includes('ingredientId')) {
+        const match = name.match(/recipes\.(\d+)\.ingredientId/);
+        if (match) {
+          const index = parseInt(match[1], 10);
+          const ingredientId = value.recipes?.[index]?.ingredientId;
+          const ingredient = ingredients.find(ing => ing.id === ingredientId);
+
+          if (ingredient) {
+            const unitToUse = ingredient.recipeUnit ?? ingredient.inventoryUnit;
+            createForm.setValue(`recipes.${index}.unitOfMeasure`, unitToUse);
+          }
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [createForm, ingredients]);
+
+  // Effect to auto-update unit when ingredient changes for edit form
+  useEffect(() => {
+    const subscription = editForm.watch((value, { name }) => {
+      if (name && name.includes('ingredientId')) {
+        const match = name.match(/recipes\.(\d+)\.ingredientId/);
+        if (match) {
+          const index = parseInt(match[1], 10);
+          const ingredientId = value.recipes?.[index]?.ingredientId;
+          const ingredient = ingredients.find(ing => ing.id === ingredientId);
+
+          if (ingredient) {
+            const unitToUse = ingredient.recipeUnit ?? ingredient.inventoryUnit;
+            editForm.setValue(`recipes.${index}.unitOfMeasure`, unitToUse);
+          }
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [editForm, ingredients]);
+
   const handleAddRecipeRow = (target: 'create' | 'edit') => {
     const form = target === 'create' ? createForm : editForm;
     const array = target === 'create' ? createRecipes : editRecipes;
@@ -475,7 +533,11 @@ export const MenuItemsPage = () => {
             ) : null}
           </TableCell>
           <TableCell className="w-1/6 px-1">
-            <Input className="w-full text-sm" {...form.register(`recipes.${index}.unitOfMeasure` as const)} />
+            <Input
+              className="w-full text-sm bg-slate-50 cursor-not-allowed"
+              readOnly
+              {...form.register(`recipes.${index}.unitOfMeasure` as const)}
+            />
             {error?.unitOfMeasure?.message ? (
               <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
             ) : null}
@@ -485,8 +547,19 @@ export const MenuItemsPage = () => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
               const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
               const quantity = form.watch(`recipes.${index}.quantity`) || 0;
+              const recipeUnit = form.watch(`recipes.${index}.unitOfMeasure`);
+
               if (ingredient && quantity > 0) {
-                return formatCurrency(ingredient.unitCost * quantity);
+                let effectiveUnitCost = ingredient.unitCost;
+
+                // Apply conversion if recipe uses recipe unit
+                if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+                  if (recipeUnit === ingredient.recipeUnit) {
+                    effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
+                  }
+                }
+
+                return formatCurrency(effectiveUnitCost * quantity);
               }
               return '—';
             })()}
