@@ -30,6 +30,16 @@ export interface CreateIngredientInput {
   casePrice: number;
   category?: IngredientCategory;
   isActive?: boolean;
+  // Batch ingredient fields
+  isBatch?: boolean;
+  recipeIngredients?: Array<{
+    id: string;
+    ingredientId: string;
+    quantity: number;
+    unitOfMeasure: string;
+  }>;
+  yield?: number;
+  yieldUnit?: string;
 }
 
 export interface UpdateIngredientInput extends CreateIngredientInput {
@@ -70,7 +80,12 @@ export const listIngredients = async (): Promise<Ingredient[]> => {
       unitCost: data.unitCost,
       isActive: data.isActive ?? true,
       category: data.category ?? 'food',
-      currentVersionId: data.currentVersionId ?? undefined
+      currentVersionId: data.currentVersionId ?? undefined,
+      // Batch ingredient fields
+      isBatch: data.isBatch ?? false,
+      recipeIngredients: data.recipeIngredients,
+      yield: data.yield,
+      yieldUnit: data.yieldUnit
     };
     return ingredient;
   });
@@ -100,7 +115,8 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
   const ingredientId = ensureId(input.id, input.name);
   const ingredientRef = doc(firestore, 'ingredients', ingredientId);
 
-  const unitCost = toUnitCost(input.casePrice, input.unitsPerCase);
+  // For batch ingredients, unit cost will be calculated dynamically, but we still need to store case price and units per case
+  const unitCost = input.isBatch ? 0 : toUnitCost(input.casePrice, input.unitsPerCase);
   const conversionFactor = calculateConversionFactor(input.inventoryUnit, input.recipeUnit);
   const versionId = `${Date.now()}`;
 
@@ -110,7 +126,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
       throw new Error('Ingredient already exists');
     }
 
-    transaction.set(ingredientRef, {
+    const ingredientData: Record<string, any> = {
       name: input.name,
       inventoryUnit: input.inventoryUnit,
       recipeUnit: input.recipeUnit,
@@ -123,7 +139,17 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
       currentVersionId: versionId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
+    };
+
+    // Add batch-specific fields if this is a batch ingredient
+    if (input.isBatch) {
+      ingredientData.isBatch = true;
+      ingredientData.recipeIngredients = input.recipeIngredients || [];
+      ingredientData.yield = input.yield;
+      ingredientData.yieldUnit = input.yieldUnit;
+    }
+
+    transaction.set(ingredientRef, ingredientData);
 
     const versionRef = doc(firestore, 'ingredients', ingredientId, 'versions', versionId);
     transaction.set(versionRef, {
@@ -146,7 +172,12 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
     unitCost,
     isActive: input.isActive ?? true,
     category: input.category ?? 'food',
-    currentVersionId: versionId
+    currentVersionId: versionId,
+    // Batch ingredient fields
+    isBatch: input.isBatch ?? false,
+    recipeIngredients: input.recipeIngredients,
+    yield: input.yield,
+    yieldUnit: input.yieldUnit
   } satisfies Ingredient;
 };
 
@@ -155,7 +186,8 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
   const ingredientRef = doc(firestore, 'ingredients', input.id);
   const versionsRef = collection(firestore, 'ingredients', input.id, 'versions');
 
-  const unitCost = toUnitCost(input.casePrice, input.unitsPerCase);
+  // For batch ingredients, unit cost will be calculated dynamically
+  const unitCost = input.isBatch ? 0 : toUnitCost(input.casePrice, input.unitsPerCase);
   const conversionFactor = calculateConversionFactor(input.inventoryUnit, input.recipeUnit);
   const newVersionId = `${Date.now()}`;
 
@@ -166,7 +198,7 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
     }
     const data = snapshot.data();
 
-    transaction.update(ingredientRef, {
+    const updateData: Record<string, any> = {
       name: input.name,
       inventoryUnit: input.inventoryUnit,
       recipeUnit: input.recipeUnit,
@@ -178,7 +210,23 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
       category: input.category ?? 'food',
       currentVersionId: newVersionId,
       updatedAt: serverTimestamp()
-    });
+    };
+
+    // Add batch-specific fields if this is a batch ingredient
+    if (input.isBatch) {
+      updateData.isBatch = true;
+      updateData.recipeIngredients = input.recipeIngredients || [];
+      updateData.yield = input.yield;
+      updateData.yieldUnit = input.yieldUnit;
+    } else {
+      // Clear batch fields if converting from batch to regular ingredient
+      updateData.isBatch = false;
+      updateData.recipeIngredients = null;
+      updateData.yield = null;
+      updateData.yieldUnit = null;
+    }
+
+    transaction.update(ingredientRef, updateData);
 
     const previousVersionId: string | undefined = data.currentVersionId;
     if (previousVersionId) {
@@ -234,6 +282,11 @@ export const getIngredient = async (ingredientId: string): Promise<Ingredient | 
     unitCost: data.unitCost,
     isActive: data.isActive ?? true,
     category: data.category ?? 'food',
-    currentVersionId: data.currentVersionId ?? undefined
+    currentVersionId: data.currentVersionId ?? undefined,
+    // Batch ingredient fields
+    isBatch: data.isBatch ?? false,
+    recipeIngredients: data.recipeIngredients,
+    yield: data.yield,
+    yieldUnit: data.yieldUnit
   } satisfies Ingredient;
 };

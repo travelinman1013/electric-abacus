@@ -144,6 +144,25 @@ export const computeReportSummary = (input: ComputeReportSummaryInput): ReportSu
   } satisfies ReportSummary;
 };
 
+export const calculateBatchIngredientCost = (
+  batchIngredient: Ingredient,
+  allIngredients: Ingredient[]
+): number => {
+  // Validate batch ingredient
+  if (!batchIngredient.isBatch || !batchIngredient.recipeIngredients || !batchIngredient.yield || batchIngredient.yield <= 0) {
+    return 0;
+  }
+
+  // Calculate total cost of the batch recipe
+  const recipeCostSummary = calculateRecipeCost(batchIngredient.recipeIngredients, allIngredients);
+  const totalBatchCost = recipeCostSummary.totalRecipeCost;
+
+  // Calculate cost per unit of yield
+  const costPerYieldUnit = totalBatchCost / batchIngredient.yield;
+
+  return Number(costPerYieldUnit.toFixed(4));
+};
+
 export const calculateRecipeCost = (
   recipes: RecipeIngredient[],
   ingredients: Ingredient[]
@@ -152,26 +171,48 @@ export const calculateRecipeCost = (
 
   const ingredientCosts: RecipeIngredientCost[] = recipes.map((recipe) => {
     const ingredient = ingredientMap.get(recipe.ingredientId);
-    const baseUnitCost = ingredient ? clampNonNegative(ensureNumber(ingredient.unitCost)) : 0;
     const quantity = clampNonNegative(ensureNumber(recipe.quantity));
 
-    // Calculate effective unit cost considering unit conversion
-    let effectiveUnitCost = baseUnitCost;
+    let effectiveUnitCost = 0;
 
-    if (ingredient && ingredient.inventoryUnit) {
-      // Try to get dynamic conversion factor first
-      const dynamicConversionFactor = getConversionFactor(ingredient.inventoryUnit, recipe.unitOfMeasure);
+    if (ingredient) {
+      if (ingredient.isBatch) {
+        // For batch ingredients, calculate cost based on batch recipe
+        const batchCostPerYieldUnit = calculateBatchIngredientCost(ingredient, ingredients);
 
-      if (dynamicConversionFactor !== null) {
-        // Use dynamic conversion
-        effectiveUnitCost = baseUnitCost / dynamicConversionFactor;
-      } else if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
-        // Fall back to stored conversion factor for backward compatibility
-        if (recipe.unitOfMeasure === ingredient.recipeUnit) {
-          effectiveUnitCost = baseUnitCost / ingredient.conversionFactor;
+        // Handle unit conversion from batch yield unit to recipe unit
+        if (ingredient.yieldUnit && ingredient.yieldUnit !== recipe.unitOfMeasure) {
+          const conversionFactor = getConversionFactor(ingredient.yieldUnit, recipe.unitOfMeasure);
+          if (conversionFactor !== null) {
+            effectiveUnitCost = batchCostPerYieldUnit / conversionFactor;
+          } else {
+            // If no conversion possible, assume same unit
+            effectiveUnitCost = batchCostPerYieldUnit;
+          }
+        } else {
+          effectiveUnitCost = batchCostPerYieldUnit;
+        }
+      } else {
+        // Regular ingredient logic
+        const baseUnitCost = clampNonNegative(ensureNumber(ingredient.unitCost));
+        effectiveUnitCost = baseUnitCost;
+
+        if (ingredient.inventoryUnit) {
+          // Try to get dynamic conversion factor first
+          const dynamicConversionFactor = getConversionFactor(ingredient.inventoryUnit, recipe.unitOfMeasure);
+
+          if (dynamicConversionFactor !== null) {
+            // Use dynamic conversion
+            effectiveUnitCost = baseUnitCost / dynamicConversionFactor;
+          } else if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+            // Fall back to stored conversion factor for backward compatibility
+            if (recipe.unitOfMeasure === ingredient.recipeUnit) {
+              effectiveUnitCost = baseUnitCost / ingredient.conversionFactor;
+            }
+          }
+          // If no conversion is possible, use base unit cost (assumes same unit)
         }
       }
-      // If no conversion is possible, use base unit cost (assumes same unit)
     }
 
     const lineCost = quantity * effectiveUnitCost;

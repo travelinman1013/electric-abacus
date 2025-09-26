@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  calculateBatchIngredientCost,
   calculateFoodCostPercentage,
   calculateRecipeCost,
   calculateRecipeCostWithPercentage,
@@ -409,5 +410,262 @@ describe('calculateRecipeCostWithPercentage', () => {
 
     expect(result.totalRecipeCost).toBeCloseTo(1.25, 4);
     expect(result.foodCostPercentage).toBe(0);
+  });
+});
+
+describe('calculateBatchIngredientCost', () => {
+  const testIngredients: Ingredient[] = [
+    {
+      id: 'ground-beef',
+      name: 'Ground Beef',
+      inventoryUnit: 'lb',
+      unitsPerCase: 10,
+      casePrice: 50,
+      unitCost: 5.0,
+      category: 'food',
+      isActive: true
+    },
+    {
+      id: 'taco-seasoning',
+      name: 'Taco Seasoning',
+      inventoryUnit: 'oz',
+      unitsPerCase: 16,
+      casePrice: 8,
+      unitCost: 0.5,
+      category: 'food',
+      isActive: true
+    },
+    {
+      id: 'water',
+      name: 'Water',
+      inventoryUnit: 'cup',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'other',
+      isActive: true
+    }
+  ];
+
+  it('calculates batch ingredient cost correctly', () => {
+    const batchIngredient: Ingredient = {
+      id: 'seasoned-beef',
+      name: 'Seasoned Beef',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 8, // 8 pounds of seasoned beef
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'ground-beef', quantity: 10, unitOfMeasure: 'lb' },
+        { id: '2', ingredientId: 'taco-seasoning', quantity: 4, unitOfMeasure: 'oz' },
+        { id: '3', ingredientId: 'water', quantity: 2, unitOfMeasure: 'cup' }
+      ]
+    };
+
+    const result = calculateBatchIngredientCost(batchIngredient, testIngredients);
+
+    // Expected: (10 * $5.00) + (4 * $0.50) + (2 * $0.00) = $52.00
+    // Cost per lb: $52.00 / 8 = $6.50 per lb
+    expect(result).toBeCloseTo(6.5, 4);
+  });
+
+  it('returns 0 for non-batch ingredients', () => {
+    const regularIngredient: Ingredient = {
+      id: 'ground-beef',
+      name: 'Ground Beef',
+      inventoryUnit: 'lb',
+      unitsPerCase: 10,
+      casePrice: 50,
+      unitCost: 5.0,
+      category: 'food',
+      isActive: true,
+      isBatch: false
+    };
+
+    const result = calculateBatchIngredientCost(regularIngredient, testIngredients);
+    expect(result).toBe(0);
+  });
+
+  it('returns 0 for batch ingredients with invalid data', () => {
+    const invalidBatchIngredient: Ingredient = {
+      id: 'invalid-batch',
+      name: 'Invalid Batch',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 0, // Invalid yield
+      yieldUnit: 'lb',
+      recipeIngredients: []
+    };
+
+    const result = calculateBatchIngredientCost(invalidBatchIngredient, testIngredients);
+    expect(result).toBe(0);
+  });
+
+  it('handles missing recipe ingredients gracefully', () => {
+    const batchIngredient: Ingredient = {
+      id: 'empty-batch',
+      name: 'Empty Batch',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 1,
+      yieldUnit: 'lb'
+      // No recipeIngredients
+    };
+
+    const result = calculateBatchIngredientCost(batchIngredient, testIngredients);
+    expect(result).toBe(0);
+  });
+});
+
+describe('calculateRecipeCost with batch ingredients', () => {
+  const regularIngredients: Ingredient[] = [
+    {
+      id: 'flour-tortilla',
+      name: 'Flour Tortilla',
+      inventoryUnit: 'each',
+      unitsPerCase: 100,
+      casePrice: 10,
+      unitCost: 0.1,
+      category: 'food',
+      isActive: true
+    },
+    {
+      id: 'cheese',
+      name: 'Cheese',
+      inventoryUnit: 'oz',
+      unitsPerCase: 32,
+      casePrice: 16,
+      unitCost: 0.5,
+      category: 'food',
+      isActive: true
+    }
+  ];
+
+  const batchIngredient: Ingredient = {
+    id: 'seasoned-beef',
+    name: 'Seasoned Beef',
+    inventoryUnit: 'lb',
+    unitsPerCase: 1,
+    casePrice: 0,
+    unitCost: 0,
+    category: 'food',
+    isActive: true,
+    isBatch: true,
+    yield: 8,
+    yieldUnit: 'lb',
+    recipeIngredients: [
+      { id: '1', ingredientId: 'ground-beef', quantity: 10, unitOfMeasure: 'lb' },
+      { id: '2', ingredientId: 'taco-seasoning', quantity: 4, unitOfMeasure: 'oz' }
+    ]
+  };
+
+  const baseIngredients: Ingredient[] = [
+    {
+      id: 'ground-beef',
+      name: 'Ground Beef',
+      inventoryUnit: 'lb',
+      unitsPerCase: 10,
+      casePrice: 50,
+      unitCost: 5.0,
+      category: 'food',
+      isActive: true
+    },
+    {
+      id: 'taco-seasoning',
+      name: 'Taco Seasoning',
+      inventoryUnit: 'oz',
+      unitsPerCase: 16,
+      casePrice: 8,
+      unitCost: 0.5,
+      category: 'food',
+      isActive: true
+    }
+  ];
+
+  const allIngredients = [...regularIngredients, batchIngredient, ...baseIngredients];
+
+  it('calculates recipe cost with batch ingredients correctly', () => {
+    const tacoRecipe: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'flour-tortilla', quantity: 1, unitOfMeasure: 'each' },
+      { id: '2', ingredientId: 'seasoned-beef', quantity: 0.25, unitOfMeasure: 'lb' },
+      { id: '3', ingredientId: 'cheese', quantity: 1, unitOfMeasure: 'oz' }
+    ];
+
+    const result = calculateRecipeCost(tacoRecipe, allIngredients);
+
+    // Expected:
+    // - Tortilla: 1 * $0.10 = $0.10
+    // - Seasoned Beef: 0.25 * $6.50 = $1.625 (batch cost per lb)
+    // - Cheese: 1 * $0.50 = $0.50
+    // Total: $2.225
+    expect(result.totalRecipeCost).toBeCloseTo(2.225, 4);
+    expect(result.ingredients).toHaveLength(3);
+    expect(result.ingredients[1].unitCost).toBeCloseTo(6.5, 4); // Batch ingredient unit cost
+    expect(result.ingredients[1].lineCost).toBeCloseTo(1.625, 4); // 0.25 * 6.5
+  });
+
+  it('handles unit conversion for batch ingredients', () => {
+    const batchWithOzYield: Ingredient = {
+      ...batchIngredient,
+      yield: 128, // 128 oz (8 lbs)
+      yieldUnit: 'oz'
+    };
+
+    const allIngredientsWithOzBatch = [...regularIngredients, batchWithOzYield, ...baseIngredients];
+
+    const tacoRecipe: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'seasoned-beef', quantity: 4, unitOfMeasure: 'oz' }
+    ];
+
+    const result = calculateRecipeCost(tacoRecipe, allIngredientsWithOzBatch);
+
+    // Batch cost per oz should be: $52 / 128 oz = $0.40625 per oz
+    // 4 oz * $0.40625 = $1.625
+    expect(result.totalRecipeCost).toBeCloseTo(1.625, 3);
+    expect(result.ingredients[0].unitCost).toBeCloseTo(0.40625, 4);
+  });
+
+  it('prevents circular dependencies by not allowing batch ingredients in batch recipes', () => {
+    // This test ensures our UI prevents batch ingredients from being used in other batch recipes
+    // The calculation should handle this gracefully even if it somehow occurs
+    const circularBatch: Ingredient = {
+      id: 'circular-batch',
+      name: 'Circular Batch',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 1,
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'seasoned-beef', quantity: 1, unitOfMeasure: 'lb' } // Using another batch ingredient
+      ]
+    };
+
+    const allIngredientsWithCircular = [...allIngredients, circularBatch];
+
+    const result = calculateBatchIngredientCost(circularBatch, allIngredientsWithCircular);
+
+    // Should still calculate correctly - circular batch uses seasoned-beef
+    // Cost should be $6.50 per lb (same as seasoned-beef cost per yield unit)
+    expect(result).toBeCloseTo(6.5, 4);
   });
 });

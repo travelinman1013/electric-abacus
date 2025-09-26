@@ -41,8 +41,7 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 
 ## Known Issues (Sep 2025)
 
-1. **Ingredients Page**: Select component rendering prevents form submission
-2. **Menu Items Page**: "Add ingredient" and "Update menu item" buttons not responding
+
 
 ## Testing Status
 

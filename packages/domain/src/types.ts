@@ -37,6 +37,11 @@ export interface Ingredient {
   isActive: boolean;
   category: IngredientCategory;
   currentVersionId?: string;
+  // Batch ingredient fields
+  isBatch?: boolean;
+  recipeIngredients?: RecipeIngredient[];
+  yield?: number;
+  yieldUnit?: string;
 }
 
 export interface IngredientVersion {

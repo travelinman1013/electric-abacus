@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Ingredient, IngredientCategory } from '@domain/costing';
 import { getConversionFactor, ALLOWED_UNITS, UNIT_LABELS, getCompatibleUnits, type AllowedUnit } from '@domain/units';
+import { calculateRecipeCost } from '@domain/costing';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -18,6 +19,7 @@ import {
   CardTitle
 } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
+import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import {
@@ -28,6 +30,15 @@ import {
   useSetIngredientActive,
   useUpdateIngredient
 } from '../../hooks/use-ingredients';
+
+const recipeIngredientSchema = z.object({
+  id: z.string(),
+  ingredientId: z.string().min(1, 'Choose an ingredient'),
+  quantity: z
+    .number({ invalid_type_error: 'Enter a quantity' })
+    .positive('Quantity must be greater than zero'),
+  unitOfMeasure: z.string().min(1, 'Unit is required'),
+});
 
 const ingredientSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -40,7 +51,24 @@ const ingredientSchema = z.object({
     .number({ invalid_type_error: 'Enter the case price' })
     .nonnegative('Case price cannot be negative'),
   category: z.enum(['food', 'paper', 'other']).optional(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  // Batch ingredient fields
+  isBatch: z.boolean().optional(),
+  recipeIngredients: z.array(recipeIngredientSchema).optional(),
+  yield: z
+    .number({ invalid_type_error: 'Enter the batch yield' })
+    .positive('Yield must be greater than zero')
+    .optional(),
+  yieldUnit: z.string().optional(),
+}).refine((data) => {
+  // If it's a batch ingredient, require batch-specific fields
+  if (data.isBatch) {
+    return data.recipeIngredients && data.recipeIngredients.length > 0 && data.yield && data.yieldUnit;
+  }
+  return true;
+}, {
+  message: "Batch ingredients require recipe ingredients, yield, and yield unit",
+  path: ["isBatch"]
 });
 
 type IngredientFormValues = z.infer<typeof ingredientSchema>;
@@ -75,6 +103,40 @@ const getRecipeUnitOptions = (inventoryUnit: string): AllowedUnit[] => {
   return getCompatibleUnits(inventoryUnit);
 };
 
+const buildDefaultRecipeIngredient = (ingredient?: Ingredient) => ({
+  id: Math.random().toString(36).substr(2, 9),
+  ingredientId: ingredient?.id ?? '',
+  quantity: 1,
+  unitOfMeasure: ingredient?.recipeUnit ?? ingredient?.inventoryUnit ?? 'unit',
+});
+
+const calculateBatchCost = (
+  recipeIngredients: IngredientFormValues['recipeIngredients'] = [],
+  allIngredients: Ingredient[],
+  batchYield: number | undefined
+) => {
+  if (!recipeIngredients.length || !batchYield || batchYield <= 0) {
+    return { totalCost: 0, costPerUnit: 0 };
+  }
+
+  // Convert form recipe ingredients to the format expected by calculateRecipeCost
+  const recipes = recipeIngredients.map(ri => ({
+    id: ri.id,
+    ingredientId: ri.ingredientId,
+    quantity: ri.quantity,
+    unitOfMeasure: ri.unitOfMeasure
+  }));
+
+  const costSummary = calculateRecipeCost(recipes, allIngredients);
+  const totalCost = costSummary.totalRecipeCost;
+  const costPerUnit = totalCost / batchYield;
+
+  return {
+    totalCost,
+    costPerUnit: Number(costPerUnit.toFixed(4))
+  };
+};
+
 export const IngredientsPage = () => {
   const {
     data: ingredients = [],
@@ -102,7 +164,11 @@ export const IngredientsPage = () => {
       unitsPerCase: 1,
       casePrice: 0,
       category: 'food' as IngredientCategory,
-      isActive: true
+      isActive: true,
+      isBatch: false,
+      recipeIngredients: [],
+      yield: undefined,
+      yieldUnit: ''
     }
   });
 
@@ -115,8 +181,22 @@ export const IngredientsPage = () => {
       unitsPerCase: 1,
       casePrice: 0,
       category: 'food' as IngredientCategory,
-      isActive: true
+      isActive: true,
+      isBatch: false,
+      recipeIngredients: [],
+      yield: undefined,
+      yieldUnit: ''
     }
+  });
+
+  const createRecipeIngredients = useFieldArray({
+    control: createForm.control,
+    name: 'recipeIngredients'
+  });
+
+  const editRecipeIngredients = useFieldArray({
+    control: editForm.control,
+    name: 'recipeIngredients'
   });
 
   useEffect(() => {
@@ -128,7 +208,11 @@ export const IngredientsPage = () => {
         unitsPerCase: editingIngredient.data.unitsPerCase,
         casePrice: editingIngredient.data.casePrice,
         category: editingIngredient.data.category,
-        isActive: editingIngredient.data.isActive
+        isActive: editingIngredient.data.isActive,
+        isBatch: editingIngredient.data.isBatch || false,
+        recipeIngredients: editingIngredient.data.recipeIngredients || [],
+        yield: editingIngredient.data.yield,
+        yieldUnit: editingIngredient.data.yieldUnit || ''
       });
     }
   }, [editingIngredient.data, editForm]);
@@ -159,10 +243,157 @@ export const IngredientsPage = () => {
     return () => subscription.unsubscribe();
   }, [editForm]);
 
+  // Initialize recipe ingredients when batch is toggled on for create form
+  useEffect(() => {
+    const subscription = createForm.watch((value, { name }) => {
+      if (name === 'isBatch' && value.isBatch && createRecipeIngredients.fields.length === 0) {
+        if (availableForBatch.length > 0) {
+          createRecipeIngredients.append(buildDefaultRecipeIngredient(availableForBatch[0]));
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [createForm, createRecipeIngredients, availableForBatch]);
+
+  // Initialize recipe ingredients when batch is toggled on for edit form
+  useEffect(() => {
+    const subscription = editForm.watch((value, { name }) => {
+      if (name === 'isBatch' && value.isBatch && editRecipeIngredients.fields.length === 0) {
+        if (availableForBatch.length > 0) {
+          editRecipeIngredients.append(buildDefaultRecipeIngredient(availableForBatch[0]));
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [editForm, editRecipeIngredients, availableForBatch]);
+
   const sortedIngredients = useMemo(
     () => [...ingredients].sort((a, b) => a.name.localeCompare(b.name)),
     [ingredients]
   );
+
+  // Filter out batch ingredients from the recipe ingredients list to prevent circular dependencies
+  const availableForBatch = useMemo(
+    () => ingredients.filter(ingredient => !ingredient.isBatch && ingredient.isActive),
+    [ingredients]
+  );
+
+  // Calculate batch cost for create form
+  const createBatchCost = useMemo(() => {
+    const isBatch = createForm.watch('isBatch');
+    if (!isBatch) return { totalCost: 0, costPerUnit: 0 };
+
+    const recipeIngredients = createForm.watch('recipeIngredients');
+    const batchYield = createForm.watch('yield');
+
+    return calculateBatchCost(recipeIngredients, availableForBatch, batchYield);
+  }, [createForm.watch('isBatch'), createForm.watch('recipeIngredients'), createForm.watch('yield'), availableForBatch]);
+
+  // Calculate batch cost for edit form
+  const editBatchCost = useMemo(() => {
+    const isBatch = editForm.watch('isBatch');
+    if (!isBatch) return { totalCost: 0, costPerUnit: 0 };
+
+    const recipeIngredients = editForm.watch('recipeIngredients');
+    const batchYield = editForm.watch('yield');
+
+    return calculateBatchCost(recipeIngredients, availableForBatch, batchYield);
+  }, [editForm.watch('isBatch'), editForm.watch('recipeIngredients'), editForm.watch('yield'), availableForBatch]);
+
+  const handleAddRecipeIngredient = (fieldArray: typeof createRecipeIngredients) => {
+    const nextIngredient = availableForBatch.find(
+      (ingredient) => !fieldArray.fields.some((field) => field.ingredientId === ingredient.id)
+    );
+    if (!nextIngredient) {
+      return;
+    }
+    fieldArray.append(buildDefaultRecipeIngredient(nextIngredient));
+  };
+
+  const renderRecipeRows = (
+    fieldArray: typeof createRecipeIngredients,
+    form: typeof createForm,
+    ingredientsList: Ingredient[],
+  ) => {
+    const errors = form.formState.errors.recipeIngredients ?? [];
+    return fieldArray.fields.map((field, index) => {
+      const error = errors[index];
+      return (
+        <TableRow key={field.id ?? index}>
+          <TableCell className="font-medium align-middle min-w-[140px]">
+            <Select className="w-full text-sm" {...form.register(`recipeIngredients.${index}.ingredientId` as const)}>
+              <option value="">Select</option>
+              {ingredientsList.map((ingredient) => (
+                <option key={ingredient.id} value={ingredient.id}>
+                  {ingredient.name}
+                </option>
+              ))}
+            </Select>
+            {error?.ingredientId?.message ? (
+              <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
+            ) : null}
+          </TableCell>
+          <TableCell className="align-middle text-right">
+            <NumberInput
+              className="text-right"
+              inputClassName="text-base text-right"
+              increment={0.25}
+              min={0}
+              value={form.watch(`recipeIngredients.${index}.quantity`) || 0}
+              onChange={(value) => form.setValue(`recipeIngredients.${index}.quantity`, value)}
+            />
+            {error?.quantity?.message ? (
+              <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
+            ) : null}
+          </TableCell>
+          <TableCell className="align-middle">
+            <Input
+              className="w-[90px] text-right text-sm bg-slate-50 cursor-not-allowed"
+              readOnly
+              {...form.register(`recipeIngredients.${index}.unitOfMeasure` as const)}
+            />
+            {error?.unitOfMeasure?.message ? (
+              <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
+            ) : null}
+          </TableCell>
+          <TableCell className="text-right font-medium align-middle">
+            {(() => {
+              const ingredientId = form.watch(`recipeIngredients.${index}.ingredientId`);
+              const ingredient = ingredientsList.find((ing) => ing.id === ingredientId);
+              const quantity = form.watch(`recipeIngredients.${index}.quantity`) || 0;
+              const recipeUnit = form.watch(`recipeIngredients.${index}.unitOfMeasure`);
+
+              if (ingredient && quantity > 0) {
+                let effectiveUnitCost = ingredient.unitCost;
+
+                // Apply conversion if recipe uses recipe unit
+                if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+                  if (recipeUnit === ingredient.recipeUnit) {
+                    effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
+                  }
+                }
+
+                return formatCurrency(effectiveUnitCost * quantity);
+              }
+              return '—';
+            })()}
+          </TableCell>
+          <TableCell className="w-[1%] whitespace-nowrap text-right align-middle">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => fieldArray.remove(index)}
+              disabled={fieldArray.fields.length === 1}
+              className="text-xs px-2 py-1"
+            >
+              Remove
+            </Button>
+          </TableCell>
+        </TableRow>
+      );
+    });
+  };
 
   const handleCreate = createForm.handleSubmit(async (values) => {
     setFormError(null);
@@ -382,34 +613,139 @@ export const IngredientsPage = () => {
                 </FormField>
 
                 <FormField
-                  label="Units per case"
-                  htmlFor="new-units"
-                  required
-                  error={createForm.formState.errors.unitsPerCase?.message}
+                  label="Batch Recipe"
+                  htmlFor="new-is-batch"
+                  helpText="Check this if this ingredient is made from other ingredients in batches"
                 >
-                  <Input
-                    id="new-units"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    {...createForm.register('unitsPerCase', { valueAsNumber: true })}
-                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="new-is-batch"
+                      {...createForm.register('isBatch')}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="new-is-batch" className="text-sm font-medium">
+                      This is a batch recipe
+                    </label>
+                  </div>
                 </FormField>
 
-                <FormField
-                  label="Case price"
-                  htmlFor="new-case-price"
-                  required
-                  error={createForm.formState.errors.casePrice?.message}
-                >
-                  <Input
-                    id="new-case-price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    {...createForm.register('casePrice', { valueAsNumber: true })}
-                  />
-                </FormField>
+                {createForm.watch('isBatch') && (
+                  <>
+                    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="font-medium text-slate-700">Batch Cost:</span>
+                        <span className="font-mono text-slate-900">
+                          {formatCurrency(createBatchCost.totalCost)}
+                        </span>
+                      </div>
+                      {createBatchCost.costPerUnit > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">Cost per {createForm.watch('yieldUnit') || 'unit'}:</span>
+                          <span className="font-mono text-slate-900">
+                            {formatCurrency(createBatchCost.costPerUnit)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        label="Batch Yield"
+                        htmlFor="new-yield"
+                        required
+                        error={createForm.formState.errors.yield?.message}
+                      >
+                        <Input
+                          id="new-yield"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...createForm.register('yield', { valueAsNumber: true })}
+                        />
+                      </FormField>
+
+                      <FormField
+                        label="Yield Unit"
+                        htmlFor="new-yield-unit"
+                        required
+                        error={createForm.formState.errors.yieldUnit?.message}
+                      >
+                        <Select id="new-yield-unit" {...createForm.register('yieldUnit')}>
+                          <option value="">Select unit</option>
+                          {ALLOWED_UNITS.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {formatUnitOption(unit)}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormField>
+                    </div>
+
+                    <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-slate-700">Recipe Ingredients</h4>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAddRecipeIngredient(createRecipeIngredients)}
+                          disabled={availableForBatch.length === createRecipeIngredients.fields.length}
+                        >
+                          Add Ingredient
+                        </Button>
+                      </div>
+                      <Table className="min-w-full text-xs sm:text-sm">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-auto min-w-[140px]">Ingredient</TableHead>
+                            <TableHead className="w-24 text-right">Quantity</TableHead>
+                            <TableHead className="w-20 text-right">Unit</TableHead>
+                            <TableHead className="w-24 text-right">Line Cost</TableHead>
+                            <TableHead className="w-16 text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {renderRecipeRows(createRecipeIngredients, createForm, availableForBatch)}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
+
+                {!createForm.watch('isBatch') && (
+                  <>
+                    <FormField
+                      label="Units per case"
+                      htmlFor="new-units"
+                      required
+                      error={createForm.formState.errors.unitsPerCase?.message}
+                    >
+                      <Input
+                        id="new-units"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...createForm.register('unitsPerCase', { valueAsNumber: true })}
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Case price"
+                      htmlFor="new-case-price"
+                      required
+                      error={createForm.formState.errors.casePrice?.message}
+                    >
+                      <Input
+                        id="new-case-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...createForm.register('casePrice', { valueAsNumber: true })}
+                      />
+                    </FormField>
+                  </>
+                )}
 
                 <Button
                   type="submit"
