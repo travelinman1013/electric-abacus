@@ -13,6 +13,27 @@ import { getConversionFactor } from './lib/units';
 
 export { getConversionFactor };
 
+// Re-export types for convenience
+export type {
+  Ingredient,
+  IngredientCategory,
+  IngredientVersion,
+  MenuItem,
+  RecipeIngredient,
+  RecipeIngredientCost,
+  RecipeCostSummary,
+  ReportSummary,
+  Week,
+  WeekStatus,
+  WeeklyCostSnapshotEntry,
+  WeeklyInventoryEntry,
+  WeeklySales,
+  UserProfile,
+  UserRole,
+  ComputeReportSummaryInput,
+  CostOfSalesBreakdown
+} from './types';
+
 const ensureNumber = (value: number): number => {
   if (!Number.isFinite(value)) {
     return 0;

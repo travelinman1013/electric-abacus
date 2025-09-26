@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Ingredient, IngredientCategory } from '@domain/costing';
-import { getConversionFactor } from '@domain/costing';
+import { getConversionFactor, ALLOWED_UNITS, UNIT_LABELS, getCompatibleUnits, type AllowedUnit } from '@domain/units';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -64,6 +64,17 @@ const formatConversionFactor = (inventoryUnit: string, recipeUnit: string) => {
   return factor.toString();
 };
 
+const formatUnitOption = (unit: AllowedUnit) => {
+  return `${unit} - ${UNIT_LABELS[unit]}`;
+};
+
+const getRecipeUnitOptions = (inventoryUnit: string): AllowedUnit[] => {
+  if (!inventoryUnit) {
+    return [];
+  }
+  return getCompatibleUnits(inventoryUnit);
+};
+
 export const IngredientsPage = () => {
   const {
     data: ingredients = [],
@@ -121,6 +132,32 @@ export const IngredientsPage = () => {
       });
     }
   }, [editingIngredient.data, editForm]);
+
+  // Clear recipe unit when inventory unit changes to incompatible category in create form
+  useEffect(() => {
+    const subscription = createForm.watch((value, { name }) => {
+      if (name === 'inventoryUnit') {
+        const currentRecipeUnit = createForm.getValues('recipeUnit');
+        if (currentRecipeUnit && !getRecipeUnitOptions(value.inventoryUnit).includes(currentRecipeUnit as AllowedUnit)) {
+          createForm.setValue('recipeUnit', '');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [createForm]);
+
+  // Clear recipe unit when inventory unit changes to incompatible category in edit form
+  useEffect(() => {
+    const subscription = editForm.watch((value, { name }) => {
+      if (name === 'inventoryUnit') {
+        const currentRecipeUnit = editForm.getValues('recipeUnit');
+        if (currentRecipeUnit && !getRecipeUnitOptions(value.inventoryUnit).includes(currentRecipeUnit as AllowedUnit)) {
+          editForm.setValue('recipeUnit', '');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [editForm]);
 
   const sortedIngredients = useMemo(
     () => [...ingredients].sort((a, b) => a.name.localeCompare(b.name)),
@@ -225,11 +262,11 @@ export const IngredientsPage = () => {
                       <TableCell className="text-right">{ingredient.unitsPerCase}</TableCell>
                       <TableCell className="text-right">{formatCurrency(ingredient.casePrice)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(ingredient.unitCost)}</TableCell>
-                      <TableCell className="flex justify-end gap-2">
+                      <TableCell className="flex gap-2 justify-end">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleToggleActive(ingredient)}
+                          onClick={() => void handleToggleActive(ingredient)}
                           disabled={setActiveMutation.isPending}
                         >
                           {ingredient.isActive ? 'Deactivate' : 'Activate'}
@@ -260,7 +297,7 @@ export const IngredientsPage = () => {
               <CardDescription>Add new cost inputs to the catalog.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4" onSubmit={handleCreate} noValidate>
+              <form className="space-y-4" onSubmit={(e) => void handleCreate(e)} noValidate>
                 {formError && !editingIngredientId ? (
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     {formError}
@@ -287,7 +324,13 @@ export const IngredientsPage = () => {
                   required
                   error={createForm.formState.errors.inventoryUnit?.message}
                 >
-                  <Input id="new-inventory-unit" {...createForm.register('inventoryUnit')} />
+                  <Select id="new-inventory-unit" {...createForm.register('inventoryUnit')}>
+                    {ALLOWED_UNITS.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {formatUnitOption(unit)}
+                      </option>
+                    ))}
+                  </Select>
                 </FormField>
 
                 <FormField
@@ -295,11 +338,22 @@ export const IngredientsPage = () => {
                   htmlFor="new-recipe-unit"
                   error={createForm.formState.errors.recipeUnit?.message}
                 >
-                  <Input
+                  <Select
                     id="new-recipe-unit"
-                    placeholder="e.g., oz, fl oz, each"
                     {...createForm.register('recipeUnit')}
-                  />
+                    onChange={(e) => {
+                      createForm.setValue('recipeUnit', e.target.value);
+                    }}
+                  >
+                    <option value="">
+                      {createForm.watch('inventoryUnit') ? 'Select recipe unit' : 'Select inventory unit first'}
+                    </option>
+                    {getRecipeUnitOptions(createForm.watch('inventoryUnit')).map((unit) => (
+                      <option key={unit} value={unit}>
+                        {formatUnitOption(unit)}
+                      </option>
+                    ))}
+                  </Select>
                 </FormField>
 
                 <FormField
@@ -388,7 +442,7 @@ export const IngredientsPage = () => {
                   </div>
                 ) : null}
 
-                <form className="space-y-4" onSubmit={handleUpdate} noValidate>
+                <form className="space-y-4" onSubmit={(e) => void handleUpdate(e)} noValidate>
                   <FormField
                     label="Name"
                     htmlFor="edit-name"
@@ -404,7 +458,13 @@ export const IngredientsPage = () => {
                     required
                     error={editForm.formState.errors.inventoryUnit?.message}
                   >
-                    <Input id="edit-inventory-unit" {...editForm.register('inventoryUnit')} />
+                    <Select id="edit-inventory-unit" {...editForm.register('inventoryUnit')}>
+                      {ALLOWED_UNITS.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {formatUnitOption(unit)}
+                        </option>
+                      ))}
+                    </Select>
                   </FormField>
 
                   <FormField
@@ -412,11 +472,22 @@ export const IngredientsPage = () => {
                     htmlFor="edit-recipe-unit"
                     error={editForm.formState.errors.recipeUnit?.message}
                   >
-                    <Input
+                    <Select
                       id="edit-recipe-unit"
-                      placeholder="e.g., oz, fl oz, each"
                       {...editForm.register('recipeUnit')}
-                    />
+                      onChange={(e) => {
+                        editForm.setValue('recipeUnit', e.target.value);
+                      }}
+                    >
+                      <option value="">
+                        {editForm.watch('inventoryUnit') ? 'Select recipe unit' : 'Select inventory unit first'}
+                      </option>
+                      {getRecipeUnitOptions(editForm.watch('inventoryUnit')).map((unit) => (
+                        <option key={unit} value={unit}>
+                          {formatUnitOption(unit)}
+                        </option>
+                      ))}
+                    </Select>
                   </FormField>
 
                   <FormField
