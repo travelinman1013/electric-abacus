@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
+import { cn } from '../../lib/utils';
 import { useIngredients } from '../../hooks/use-ingredients';
 import {
   useDeleteMenuItem,
@@ -124,6 +125,7 @@ export const MenuItemsPage = () => {
     message: string;
   } | null>(null);
   const [editingMenuItemId, setEditingMenuItemId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const editingMenuItem = useMenuItemWithRecipes(editingMenuItemId);
 
@@ -396,6 +398,7 @@ export const MenuItemsPage = () => {
         recipes: values.recipes,
       });
       setFormMessage({ type: 'success', message: 'Menu item created' });
+      setIsCreating(false);
       const defaultRecipe = activeIngredients[0] ? [buildDefaultRecipe(activeIngredients[0])] : [];
       createForm.reset({
         name: '',
@@ -622,14 +625,26 @@ export const MenuItemsPage = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr] 2xl:grid-cols-[3fr_2fr] lg:grid-cols-1 lg:items-start">
+      <div className={cn('grid gap-6 lg:grid-cols-1 lg:items-start', {
+        'xl:grid-cols-[2fr_1fr] 2xl:grid-cols-[3fr_2fr]': editingMenuItemId || isCreating,
+      })}>
         <Card className="w-full">
-          <CardHeader className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <CardTitle>Menu catalog</CardTitle>
-              <CardDescription>
-                Deactivate items to hide them from costing and reporting.
-              </CardDescription>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Menu catalog</CardTitle>
+                <CardDescription>
+                  Deactivate items to hide them from costing and reporting.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => {
+                  setIsCreating(true);
+                  setEditingMenuItemId(null);
+                }}
+              >
+                Create New Menu Item
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -695,7 +710,10 @@ export const MenuItemsPage = () => {
                           <Button
                             size="sm"
                             variant={editingMenuItemId === item.id ? 'secondary' : 'ghost'}
-                            onClick={() => setEditingMenuItemId(item.id)}
+                            onClick={() => {
+                              setEditingMenuItemId(item.id);
+                              setIsCreating(false);
+                            }}
                           >
                             Edit
                           </Button>
@@ -721,7 +739,8 @@ export const MenuItemsPage = () => {
         </Card>
 
         <div className="space-y-6 w-full">
-          <Card>
+          {isCreating && (
+            <Card>
             <CardHeader>
               <CardTitle>Create menu item</CardTitle>
               <CardDescription>Define an item and its ingredient recipe.</CardDescription>
@@ -814,20 +833,29 @@ export const MenuItemsPage = () => {
                   Add ingredient
                 </Button>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={
-                    upsertMenuItemMutation.isPending ||
-                    createForm.formState.isSubmitting ||
-                    !activeIngredients.length
-                  }
-                >
-                  {upsertMenuItemMutation.isPending ? 'Saving...' : 'Save menu item'}
-                </Button>
+                <div className="flex items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsCreating(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      upsertMenuItemMutation.isPending ||
+                      createForm.formState.isSubmitting ||
+                      !activeIngredients.length
+                    }
+                  >
+                    {upsertMenuItemMutation.isPending ? 'Saving...' : 'Save menu item'}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
+          )}
 
           {editingMenuItemId ? (
             <Card>
