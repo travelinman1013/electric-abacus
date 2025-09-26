@@ -20,6 +20,7 @@ import { Input } from '../../components/ui/input';
 import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { cn } from '../../lib/utils';
 import {
   useCreateIngredient,
   useIngredient,
@@ -126,6 +127,7 @@ export const IngredientsPage = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const editingIngredient = useIngredient(editingIngredientId || undefined);
   const ingredientVersions = useIngredientVersions(editingIngredientId || undefined);
@@ -374,6 +376,7 @@ export const IngredientsPage = () => {
     try {
       await createIngredientMutation.mutateAsync({ ...values, isActive: true });
       setFormSuccess('Ingredient created');
+      setIsCreating(false);
       createForm.reset({
         name: '',
         inventoryUnit: values.inventoryUnit,
@@ -434,11 +437,25 @@ export const IngredientsPage = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+      <div className={cn('grid gap-6 lg:grid-cols-1 lg:items-start', {
+        'xl:grid-cols-[2fr_1fr] 2xl:grid-cols-[3fr_2fr]': editingIngredientId || isCreating,
+      })}>
         <Card>
           <CardHeader>
-            <CardTitle>Current ingredients</CardTitle>
-            <CardDescription>Unit costs update automatically from case price and pack size.</CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Current ingredients</CardTitle>
+                <CardDescription>Unit costs update automatically from case price and pack size.</CardDescription>
+              </div>
+              <Button
+                onClick={() => {
+                  setIsCreating(true);
+                  setEditingIngredientId(null);
+                }}
+              >
+                Create Ingredient
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             {isLoading ? (
@@ -500,7 +517,8 @@ export const IngredientsPage = () => {
         </Card>
 
         <div className="space-y-6">
-          <Card>
+          {isCreating && (
+            <Card>
             <CardHeader>
               <CardTitle>Create ingredient</CardTitle>
               <CardDescription>Add new cost inputs to the catalog.</CardDescription>
@@ -725,16 +743,25 @@ export const IngredientsPage = () => {
                   </>
                 )}
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={createIngredientMutation.isPending || createForm.formState.isSubmitting}
-                >
-                  {createIngredientMutation.isPending ? 'Creating...' : 'Add ingredient'}
-                </Button>
+                <div className="flex items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsCreating(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createIngredientMutation.isPending || createForm.formState.isSubmitting}
+                  >
+                    {createIngredientMutation.isPending ? 'Creating...' : 'Add ingredient'}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
+          )}
 
           {editingIngredientId ? (
             <Card>
