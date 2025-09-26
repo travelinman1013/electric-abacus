@@ -9,7 +9,8 @@ import {
   runTransaction,
   serverTimestamp,
   updateDoc,
-  where
+  where,
+  type DocumentData
 } from 'firebase/firestore';
 
 import type { Ingredient, IngredientCategory, IngredientVersion } from '@domain/costing';
@@ -126,7 +127,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
       throw new Error('Ingredient already exists');
     }
 
-    const ingredientData: Record<string, any> = {
+    const ingredientData: DocumentData = {
       name: input.name,
       inventoryUnit: input.inventoryUnit,
       recipeUnit: input.recipeUnit,
@@ -198,7 +199,7 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
     }
     const data = snapshot.data();
 
-    const updateData: Record<string, any> = {
+    const updateData: DocumentData = {
       name: input.name,
       inventoryUnit: input.inventoryUnit,
       recipeUnit: input.recipeUnit,

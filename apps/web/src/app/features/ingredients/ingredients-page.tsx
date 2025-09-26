@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Ingredient, IngredientCategory } from '@domain/costing';
 import { getConversionFactor, ALLOWED_UNITS, UNIT_LABELS, getCompatibleUnits, type AllowedUnit } from '@domain/units';
@@ -31,47 +29,24 @@ import {
   useUpdateIngredient
 } from '../../hooks/use-ingredients';
 
-const recipeIngredientSchema = z.object({
-  id: z.string(),
-  ingredientId: z.string().min(1, 'Choose an ingredient'),
-  quantity: z
-    .number({ invalid_type_error: 'Enter a quantity' })
-    .positive('Quantity must be greater than zero'),
-  unitOfMeasure: z.string().min(1, 'Unit is required'),
-});
-
-const ingredientSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  inventoryUnit: z.string().min(1, 'Inventory unit required'),
-  recipeUnit: z.string().optional(),
-  unitsPerCase: z
-    .number({ invalid_type_error: 'Enter the units per case' })
-    .positive('Must be greater than zero'),
-  casePrice: z
-    .number({ invalid_type_error: 'Enter the case price' })
-    .nonnegative('Case price cannot be negative'),
-  category: z.enum(['food', 'paper', 'other']).optional(),
-  isActive: z.boolean().optional(),
-  // Batch ingredient fields
-  isBatch: z.boolean().optional(),
-  recipeIngredients: z.array(recipeIngredientSchema).optional(),
-  yield: z
-    .number({ invalid_type_error: 'Enter the batch yield' })
-    .positive('Yield must be greater than zero')
-    .optional(),
-  yieldUnit: z.string().optional(),
-}).refine((data) => {
-  // If it's a batch ingredient, require batch-specific fields
-  if (data.isBatch) {
-    return data.recipeIngredients && data.recipeIngredients.length > 0 && data.yield && data.yieldUnit;
-  }
-  return true;
-}, {
-  message: "Batch ingredients require recipe ingredients, yield, and yield unit",
-  path: ["isBatch"]
-});
-
-type IngredientFormValues = z.infer<typeof ingredientSchema>;
+type IngredientFormValues = {
+  name: string;
+  inventoryUnit: string;
+  recipeUnit?: string;
+  unitsPerCase: number;
+  casePrice: number;
+  category?: IngredientCategory;
+  isActive?: boolean;
+  isBatch?: boolean;
+  recipeIngredients?: {
+    id: string;
+    ingredientId: string;
+    quantity: number;
+    unitOfMeasure: string;
+  }[];
+  yield?: number;
+  yieldUnit?: string;
+};
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -152,11 +127,10 @@ export const IngredientsPage = () => {
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
 
-  const editingIngredient = useIngredient(editingIngredientId);
-  const ingredientVersions = useIngredientVersions(editingIngredientId);
+  const editingIngredient = useIngredient(editingIngredientId || undefined);
+  const ingredientVersions = useIngredientVersions(editingIngredientId || undefined);
 
   const createForm = useForm<IngredientFormValues>({
-    resolver: zodResolver(ingredientSchema),
     defaultValues: {
       name: '',
       inventoryUnit: 'lb',
@@ -173,7 +147,6 @@ export const IngredientsPage = () => {
   });
 
   const editForm = useForm<IngredientFormValues>({
-    resolver: zodResolver(ingredientSchema),
     defaultValues: {
       name: '',
       inventoryUnit: 'lb',
@@ -217,12 +190,23 @@ export const IngredientsPage = () => {
     }
   }, [editingIngredient.data, editForm]);
 
+  const sortedIngredients = useMemo(
+    () => [...ingredients].sort((a, b) => a.name.localeCompare(b.name)),
+    [ingredients]
+  );
+
+  // Filter out batch ingredients from the recipe ingredients list to prevent circular dependencies
+  const availableForBatch = useMemo(
+    () => ingredients.filter(ingredient => !ingredient.isBatch && ingredient.isActive),
+    [ingredients]
+  );
+
   // Clear recipe unit when inventory unit changes to incompatible category in create form
   useEffect(() => {
     const subscription = createForm.watch((value, { name }) => {
       if (name === 'inventoryUnit') {
         const currentRecipeUnit = createForm.getValues('recipeUnit');
-        if (currentRecipeUnit && !getRecipeUnitOptions(value.inventoryUnit).includes(currentRecipeUnit as AllowedUnit)) {
+        if (currentRecipeUnit && value.inventoryUnit && !getRecipeUnitOptions(value.inventoryUnit).includes(currentRecipeUnit as AllowedUnit)) {
           createForm.setValue('recipeUnit', '');
         }
       }
@@ -235,7 +219,7 @@ export const IngredientsPage = () => {
     const subscription = editForm.watch((value, { name }) => {
       if (name === 'inventoryUnit') {
         const currentRecipeUnit = editForm.getValues('recipeUnit');
-        if (currentRecipeUnit && !getRecipeUnitOptions(value.inventoryUnit).includes(currentRecipeUnit as AllowedUnit)) {
+        if (currentRecipeUnit && value.inventoryUnit && !getRecipeUnitOptions(value.inventoryUnit).includes(currentRecipeUnit as AllowedUnit)) {
           editForm.setValue('recipeUnit', '');
         }
       }
@@ -267,38 +251,27 @@ export const IngredientsPage = () => {
     return () => subscription.unsubscribe();
   }, [editForm, editRecipeIngredients, availableForBatch]);
 
-  const sortedIngredients = useMemo(
-    () => [...ingredients].sort((a, b) => a.name.localeCompare(b.name)),
-    [ingredients]
-  );
-
-  // Filter out batch ingredients from the recipe ingredients list to prevent circular dependencies
-  const availableForBatch = useMemo(
-    () => ingredients.filter(ingredient => !ingredient.isBatch && ingredient.isActive),
-    [ingredients]
-  );
-
   // Calculate batch cost for create form
+  const createFormIsBatch = createForm.watch('isBatch');
+  const createFormRecipeIngredients = createForm.watch('recipeIngredients');
+  const createFormYield = createForm.watch('yield');
+
   const createBatchCost = useMemo(() => {
-    const isBatch = createForm.watch('isBatch');
-    if (!isBatch) return { totalCost: 0, costPerUnit: 0 };
+    if (!createFormIsBatch) return { totalCost: 0, costPerUnit: 0 };
 
-    const recipeIngredients = createForm.watch('recipeIngredients');
-    const batchYield = createForm.watch('yield');
-
-    return calculateBatchCost(recipeIngredients, availableForBatch, batchYield);
-  }, [createForm.watch('isBatch'), createForm.watch('recipeIngredients'), createForm.watch('yield'), availableForBatch]);
+    return calculateBatchCost(createFormRecipeIngredients, availableForBatch, createFormYield);
+  }, [createFormIsBatch, createFormRecipeIngredients, createFormYield, availableForBatch]);
 
   // Calculate batch cost for edit form
+  const editFormIsBatch = editForm.watch('isBatch');
+  const editFormRecipeIngredients = editForm.watch('recipeIngredients');
+  const editFormYield = editForm.watch('yield');
+
   const editBatchCost = useMemo(() => {
-    const isBatch = editForm.watch('isBatch');
-    if (!isBatch) return { totalCost: 0, costPerUnit: 0 };
+    if (!editFormIsBatch) return { totalCost: 0, costPerUnit: 0 };
 
-    const recipeIngredients = editForm.watch('recipeIngredients');
-    const batchYield = editForm.watch('yield');
-
-    return calculateBatchCost(recipeIngredients, availableForBatch, batchYield);
-  }, [editForm.watch('isBatch'), editForm.watch('recipeIngredients'), editForm.watch('yield'), availableForBatch]);
+    return calculateBatchCost(editFormRecipeIngredients, availableForBatch, editFormYield);
+  }, [editFormIsBatch, editFormRecipeIngredients, editFormYield, availableForBatch]);
 
   const handleAddRecipeIngredient = (fieldArray: typeof createRecipeIngredients) => {
     const nextIngredient = availableForBatch.find(
@@ -407,7 +380,12 @@ export const IngredientsPage = () => {
         recipeUnit: '',
         unitsPerCase: values.unitsPerCase,
         casePrice: values.casePrice,
-        isActive: true
+        category: 'food' as IngredientCategory,
+        isActive: true,
+        isBatch: false,
+        recipeIngredients: [],
+        yield: undefined,
+        yieldUnit: ''
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create ingredient.';
@@ -590,13 +568,13 @@ export const IngredientsPage = () => {
                 <FormField
                   label="Conversion Factor"
                   htmlFor="new-conversion-factor"
-                  helpText="Automatically calculated when inventory and recipe units are compatible"
+                  description="Automatically calculated when inventory and recipe units are compatible"
                 >
                   <div
                     id="new-conversion-factor"
                     className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
                   >
-                    {formatConversionFactor(createForm.watch('inventoryUnit'), createForm.watch('recipeUnit')) || 'Enter recipe unit to see conversion'}
+                    {formatConversionFactor(createForm.watch('inventoryUnit'), createForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
                   </div>
                 </FormField>
 
@@ -615,7 +593,7 @@ export const IngredientsPage = () => {
                 <FormField
                   label="Batch Recipe"
                   htmlFor="new-is-batch"
-                  helpText="Check this if this ingredient is made from other ingredients in batches"
+                  description="Check this if this ingredient is made from other ingredients in batches"
                 >
                   <div className="flex items-center space-x-2">
                     <input
@@ -630,7 +608,7 @@ export const IngredientsPage = () => {
                   </div>
                 </FormField>
 
-                {createForm.watch('isBatch') && (
+                {createFormIsBatch && (
                   <>
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
                       <div className="flex items-center justify-between text-sm mb-2">
@@ -829,13 +807,13 @@ export const IngredientsPage = () => {
                   <FormField
                     label="Conversion Factor"
                     htmlFor="edit-conversion-factor"
-                    helpText="Automatically calculated when inventory and recipe units are compatible"
+                    description="Automatically calculated when inventory and recipe units are compatible"
                   >
                     <div
                       id="edit-conversion-factor"
                       className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
                     >
-                      {formatConversionFactor(editForm.watch('inventoryUnit'), editForm.watch('recipeUnit')) || 'Enter recipe unit to see conversion'}
+                      {formatConversionFactor(editForm.watch('inventoryUnit'), editForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
                     </div>
                   </FormField>
 
@@ -850,6 +828,110 @@ export const IngredientsPage = () => {
                       <option value="other">Other</option>
                     </Select>
                   </FormField>
+
+                  <FormField
+                    label="Batch Recipe"
+                    htmlFor="edit-is-batch"
+                    description="Check this if this ingredient is made from other ingredients in batches"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="edit-is-batch"
+                        {...editForm.register('isBatch')}
+                        className="rounded border-gray-300"
+                      />
+                      <label htmlFor="edit-is-batch" className="text-sm font-medium">
+                        This is a batch recipe
+                      </label>
+                    </div>
+                  </FormField>
+
+                  {editFormIsBatch && (
+                    <>
+                      <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="font-medium text-slate-700">Batch Cost:</span>
+                          <span className="font-mono text-slate-900">
+                            {formatCurrency(editBatchCost.totalCost)}
+                          </span>
+                        </div>
+                        {editBatchCost.costPerUnit > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-slate-700">Cost per {editForm.watch('yieldUnit') || 'unit'}:</span>
+                            <span className="font-mono text-slate-900">
+                              {formatCurrency(editBatchCost.costPerUnit)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          label="Batch Yield"
+                          htmlFor="edit-yield"
+                          required
+                          error={editForm.formState.errors.yield?.message}
+                        >
+                          <Input
+                            id="edit-yield"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...editForm.register('yield', { valueAsNumber: true })}
+                          />
+                        </FormField>
+
+                        <FormField
+                          label="Yield Unit"
+                          htmlFor="edit-yield-unit"
+                          required
+                          error={editForm.formState.errors.yieldUnit?.message}
+                        >
+                          <Select id="edit-yield-unit" {...editForm.register('yieldUnit')}>
+                            <option value="">Select yield unit</option>
+                            {ALLOWED_UNITS.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {formatUnitOption(unit)}
+                              </option>
+                            ))}
+                          </Select>
+                        </FormField>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">Recipe Ingredients</label>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleAddRecipeIngredient(editRecipeIngredients)}
+                            disabled={editRecipeIngredients.fields.length >= availableForBatch.length}
+                          >
+                            Add Ingredient
+                          </Button>
+                        </div>
+
+                        {editRecipeIngredients.fields.length > 0 && (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Ingredient</TableHead>
+                                <TableHead className="text-right">Quantity</TableHead>
+                                <TableHead>Unit</TableHead>
+                                <TableHead className="text-right">Unit Cost</TableHead>
+                                <TableHead className="text-right">Line Total</TableHead>
+                                <TableHead className="w-10"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {renderRecipeRows(editRecipeIngredients, editForm, availableForBatch)}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   <FormField
                     label="Units per case"
