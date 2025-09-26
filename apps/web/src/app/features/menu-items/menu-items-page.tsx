@@ -89,7 +89,6 @@ const buildDefaultRecipe = (ingredient?: Ingredient) => ({
   unitOfMeasure: ingredient?.recipeUnit ?? ingredient?.inventoryUnit ?? 'unit',
 });
 
-const catalogTableClasses = 'w-full';
 
 const foodCostPercentageClass = (percentage: number) => {
   if (percentage <= 0) {
@@ -512,7 +511,7 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="font-medium align-middle">
+          <TableCell className="font-medium align-middle min-w-[140px]">
             <Select className="w-full text-sm" {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
@@ -623,7 +622,7 @@ export const MenuItemsPage = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_480px] lg:grid-cols-1 lg:items-start">
+      <div className="grid gap-6 xl:grid-cols-[2fr_1fr] 2xl:grid-cols-[3fr_2fr] lg:grid-cols-1 lg:items-start">
         <Card className="w-full">
           <CardHeader className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -639,16 +638,16 @@ export const MenuItemsPage = () => {
                 Loading menu items...
               </div>
             ) : (
-              <Table className={catalogTableClasses}>
+              <Table className="w-full text-xs sm:text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Recipe</TableHead>
-                    <TableHead className="text-right">Recipe Total</TableHead>
-                    <TableHead className="text-right">Selling Price</TableHead>
-                    <TableHead className="text-right">Food Cost %</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-auto min-w-[120px]">Name</TableHead>
+                    <TableHead className="w-24">Status</TableHead>
+                    <TableHead className="max-w-[200px] whitespace-normal">Recipe</TableHead>
+                    <TableHead className="w-24 text-right">Recipe Total</TableHead>
+                    <TableHead className="w-24 text-right">Selling Price</TableHead>
+                    <TableHead className="w-20 text-right">Food Cost %</TableHead>
+                    <TableHead className="w-32 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -671,7 +670,7 @@ export const MenuItemsPage = () => {
                             {item.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-slate-500">
+                        <TableCell className="text-xs sm:text-sm text-slate-500 max-w-[200px] whitespace-normal break-words">
                           {editingMenuItemId === item.id && editingMenuItem.data
                             ? formatIngredientList(
                                 editingMenuItem.data.recipes.map((recipe) =>
@@ -774,14 +773,14 @@ export const MenuItemsPage = () => {
                   )}
                 </div>
 
-                <div className="overflow-x-auto -mx-6 px-6">
-                  <Table className="min-w-full">
+                <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
+                  <Table className="min-w-full text-xs sm:text-sm">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Ingredient</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Unit</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="w-auto min-w-[140px]">Ingredient</TableHead>
+                        <TableHead className="w-20 text-right">Qty</TableHead>
+                        <TableHead className="w-16 text-right">Unit</TableHead>
+                        <TableHead className="w-20 text-right">Total</TableHead>
                         <TableHead className="w-[1%] whitespace-nowrap"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -883,14 +882,14 @@ export const MenuItemsPage = () => {
                     )}
                   </div>
 
-                <div className="overflow-x-auto -mx-6 px-6">
-                  <Table className="min-w-full">
+                <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
+                  <Table className="min-w-full text-xs sm:text-sm">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Ingredient</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Unit</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="w-auto min-w-[140px]">Ingredient</TableHead>
+                        <TableHead className="w-20 text-right">Qty</TableHead>
+                        <TableHead className="w-16 text-right">Unit</TableHead>
+                        <TableHead className="w-20 text-right">Total</TableHead>
                         <TableHead className="w-[1%] whitespace-nowrap"></TableHead>
                       </TableRow>
                     </TableHeader>
