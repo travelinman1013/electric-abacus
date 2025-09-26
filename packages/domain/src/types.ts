@@ -24,6 +24,12 @@ export interface Ingredient {
   name: string;
   inventoryUnit: string;
   recipeUnit?: string;
+  /**
+   * Conversion factor from inventory unit to recipe unit.
+   * This is automatically calculated when both inventoryUnit and recipeUnit are provided.
+   * For backward compatibility, this field may contain manually entered values for existing ingredients.
+   * @deprecated Manual entry - use getConversionFactor() from units library instead
+   */
   conversionFactor?: number;
   unitsPerCase: number;
   casePrice: number;

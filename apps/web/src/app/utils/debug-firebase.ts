@@ -41,9 +41,9 @@ export const debugFirebaseConnection = async () => {
   } catch (error) {
     console.error('❌ Firebase connection test failed:', error);
     console.error('Error details:', {
-      code: (error as any)?.code,
-      message: (error as any)?.message,
-      stack: (error as any)?.stack
+      code: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     });
     return { success: false, error };
   }

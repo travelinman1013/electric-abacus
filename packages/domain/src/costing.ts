@@ -9,6 +9,9 @@ import type {
   WeeklyCostSnapshotEntry,
   WeeklyInventoryEntry
 } from './types';
+import { getConversionFactor } from './lib/units';
+
+export { getConversionFactor };
 
 const ensureNumber = (value: number): number => {
   if (!Number.isFinite(value)) {
@@ -133,11 +136,21 @@ export const calculateRecipeCost = (
 
     // Calculate effective unit cost considering unit conversion
     let effectiveUnitCost = baseUnitCost;
-    if (ingredient && ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
-      // If recipe uses the recipe unit and conversion factor exists
-      if (recipe.unitOfMeasure === ingredient.recipeUnit) {
-        effectiveUnitCost = baseUnitCost / ingredient.conversionFactor;
+
+    if (ingredient && ingredient.inventoryUnit) {
+      // Try to get dynamic conversion factor first
+      const dynamicConversionFactor = getConversionFactor(ingredient.inventoryUnit, recipe.unitOfMeasure);
+
+      if (dynamicConversionFactor !== null) {
+        // Use dynamic conversion
+        effectiveUnitCost = baseUnitCost / dynamicConversionFactor;
+      } else if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
+        // Fall back to stored conversion factor for backward compatibility
+        if (recipe.unitOfMeasure === ingredient.recipeUnit) {
+          effectiveUnitCost = baseUnitCost / ingredient.conversionFactor;
+        }
       }
+      // If no conversion is possible, use base unit cost (assumes same unit)
     }
 
     const lineCost = quantity * effectiveUnitCost;

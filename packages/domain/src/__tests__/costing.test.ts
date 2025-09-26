@@ -252,6 +252,114 @@ describe('calculateRecipeCost', () => {
     expect(result.totalRecipeCost).toBeCloseTo(1.25, 4); // 0.25 * 5.0
     expect(result.ingredients[0].unitCost).toBe(5.0);
   });
+
+  it('uses dynamic unit conversion when available', () => {
+    // Create ingredients with inventoryUnit but no stored conversionFactor
+    const dynamicIngredients: Ingredient[] = [
+      {
+        id: 'flour',
+        name: 'Flour',
+        inventoryUnit: 'lb',
+        unitsPerCase: 50,
+        casePrice: 100,
+        unitCost: 2.0, // $2 per lb
+        category: 'food',
+        isActive: true
+      }
+    ];
+
+    const recipeWithDynamicConversion: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'flour', quantity: 8, unitOfMeasure: 'oz' } // 8 oz of flour
+    ];
+
+    const result = calculateRecipeCost(recipeWithDynamicConversion, dynamicIngredients);
+
+    // Should use dynamic conversion: 1 lb = 16 oz, so 8 oz = 0.5 lb
+    // Cost should be: 8 oz * ($2/lb / 16 oz/lb) = 8 * 0.125 = $1.00
+    expect(result.totalRecipeCost).toBeCloseTo(1.0, 4);
+    expect(result.ingredients[0].unitCost).toBeCloseTo(0.125, 4); // $2/lb / 16 oz/lb = $0.125/oz
+    expect(result.ingredients[0].lineCost).toBeCloseTo(1.0, 4);
+  });
+
+  it('falls back to stored conversion factor when dynamic conversion fails', () => {
+    // Create ingredient with incompatible units but stored conversion factor
+    const fallbackIngredients: Ingredient[] = [
+      {
+        id: 'special-item',
+        name: 'Special Item',
+        inventoryUnit: 'case', // Can't convert case to grams dynamically
+        recipeUnit: 'g',
+        conversionFactor: 500, // 500g per case
+        unitsPerCase: 1,
+        casePrice: 25,
+        unitCost: 25.0, // $25 per case
+        category: 'food',
+        isActive: true
+      }
+    ];
+
+    const recipeWithFallback: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'special-item', quantity: 100, unitOfMeasure: 'g' } // 100g
+    ];
+
+    const result = calculateRecipeCost(recipeWithFallback, fallbackIngredients);
+
+    // Should use stored conversion factor: 100g * ($25/case / 500g/case) = 100 * 0.05 = $5.00
+    expect(result.totalRecipeCost).toBeCloseTo(5.0, 4);
+    expect(result.ingredients[0].unitCost).toBeCloseTo(0.05, 4); // $25/case / 500g/case = $0.05/g
+  });
+
+  it('handles metric to metric dynamic conversions', () => {
+    const metricIngredients: Ingredient[] = [
+      {
+        id: 'vanilla-extract',
+        name: 'Vanilla Extract',
+        inventoryUnit: 'l',
+        unitsPerCase: 12,
+        casePrice: 120,
+        unitCost: 10.0, // $10 per liter
+        category: 'food',
+        isActive: true
+      }
+    ];
+
+    const recipeWithMetric: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'vanilla-extract', quantity: 15, unitOfMeasure: 'ml' } // 15ml
+    ];
+
+    const result = calculateRecipeCost(recipeWithMetric, metricIngredients);
+
+    // 1L = 1000ml, so 15ml * ($10/L / 1000ml/L) = 15 * 0.01 = $0.15
+    expect(result.totalRecipeCost).toBeCloseTo(0.15, 4);
+    expect(result.ingredients[0].unitCost).toBeCloseTo(0.01, 4); // $10/L / 1000ml/L = $0.01/ml
+  });
+
+  it('handles incompatible units gracefully (no conversion possible)', () => {
+    const incompatibleIngredients: Ingredient[] = [
+      {
+        id: 'napkins',
+        name: 'Paper Napkins',
+        inventoryUnit: 'each', // Count unit
+        unitsPerCase: 500,
+        casePrice: 15,
+        unitCost: 0.03, // $0.03 per napkin
+        category: 'paper',
+        isActive: true
+      }
+    ];
+
+    // Try to use weight unit for a count item
+    const recipeWithIncompatible: RecipeIngredient[] = [
+      { id: '1', ingredientId: 'napkins', quantity: 2, unitOfMeasure: 'oz' } // Can't convert each to oz
+    ];
+
+    const result = calculateRecipeCost(recipeWithIncompatible, incompatibleIngredients);
+
+    // Should fall back to base unit cost (assumes same unit)
+    // 2 * $0.03 = $0.06
+    expect(result.totalRecipeCost).toBeCloseTo(0.06, 4);
+    expect(result.ingredients[0].unitCost).toBe(0.03); // Uses base unit cost
+  });
 });
 
 describe('calculateFoodCostPercentage', () => {

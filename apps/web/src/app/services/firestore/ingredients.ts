@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 
 import type { Ingredient, IngredientCategory, IngredientVersion } from '@domain/costing';
+import { getConversionFactor } from '@domain/costing';
 
 import { getClientFirestore } from '@taco/firebase';
 
@@ -40,6 +41,15 @@ const toUnitCost = (casePrice: number, unitsPerCase: number) => {
     throw new Error('Units per case must be greater than zero');
   }
   return Number((casePrice / unitsPerCase).toFixed(4));
+};
+
+const calculateConversionFactor = (inventoryUnit: string, recipeUnit?: string): number | undefined => {
+  if (!recipeUnit) {
+    return undefined;
+  }
+
+  const factor = getConversionFactor(inventoryUnit, recipeUnit);
+  return factor !== null ? factor : undefined;
 };
 
 export const listIngredients = async (): Promise<Ingredient[]> => {
@@ -91,6 +101,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
   const ingredientRef = doc(firestore, 'ingredients', ingredientId);
 
   const unitCost = toUnitCost(input.casePrice, input.unitsPerCase);
+  const conversionFactor = calculateConversionFactor(input.inventoryUnit, input.recipeUnit);
   const versionId = `${Date.now()}`;
 
   await runTransaction(firestore, async (transaction) => {
@@ -103,7 +114,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
       name: input.name,
       inventoryUnit: input.inventoryUnit,
       recipeUnit: input.recipeUnit,
-      conversionFactor: input.conversionFactor,
+      conversionFactor,
       unitsPerCase: input.unitsPerCase,
       casePrice: input.casePrice,
       unitCost,
@@ -129,7 +140,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
     name: input.name,
     inventoryUnit: input.inventoryUnit,
     recipeUnit: input.recipeUnit,
-    conversionFactor: input.conversionFactor,
+    conversionFactor,
     unitsPerCase: input.unitsPerCase,
     casePrice: input.casePrice,
     unitCost,
@@ -145,6 +156,7 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
   const versionsRef = collection(firestore, 'ingredients', input.id, 'versions');
 
   const unitCost = toUnitCost(input.casePrice, input.unitsPerCase);
+  const conversionFactor = calculateConversionFactor(input.inventoryUnit, input.recipeUnit);
   const newVersionId = `${Date.now()}`;
 
   await runTransaction(firestore, async (transaction) => {
@@ -158,7 +170,7 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
       name: input.name,
       inventoryUnit: input.inventoryUnit,
       recipeUnit: input.recipeUnit,
-      conversionFactor: input.conversionFactor,
+      conversionFactor,
       unitsPerCase: input.unitsPerCase,
       casePrice: input.casePrice,
       unitCost,

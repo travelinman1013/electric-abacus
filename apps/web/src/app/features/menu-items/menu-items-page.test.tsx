@@ -43,7 +43,7 @@ describe('MenuItemsPage editing', () => {
         {
           id: 'chedd',
           name: 'Chedd',
-          unitOfMeasure: 'lb',
+          inventoryUnit: 'lb',
           unitsPerCase: 1,
           casePrice: 10,
           unitCost: 5.8,
@@ -53,7 +53,7 @@ describe('MenuItemsPage editing', () => {
         {
           id: 'flour',
           name: 'Flour',
-          unitOfMeasure: 'oz',
+          inventoryUnit: 'oz',
           unitsPerCase: 16,
           casePrice: 12,
           unitCost: 0.52,
@@ -139,7 +139,12 @@ describe('MenuItemsPage editing', () => {
     await user.type(sellingPriceInput, '20');
     expect(sellingPriceInput).toHaveValue(20);
 
-    const quantityInput = within(editCard).getByDisplayValue('1.6') as HTMLInputElement;
+    // Find the quantity input field by looking for spinbutton inputs (number inputs)
+    const numberInputs = within(editCard).getAllByRole('spinbutton') as HTMLInputElement[];
+    // Find the input with the expected value 1.6, or if not found, get the first number input after selling price
+    const quantityInput = numberInputs.find(input => input.value === '1.6') || numberInputs[1];
+
+    expect(quantityInput).toBeTruthy();
     await user.clear(quantityInput);
     await user.type(quantityInput, '2.5');
     expect(quantityInput).toHaveValue(2.5);

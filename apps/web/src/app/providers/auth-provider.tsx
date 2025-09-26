@@ -73,8 +73,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.error('❌ Failed to load user profile', error);
         console.error('Profile loading error details:', {
           uid: firebaseUser.uid,
-          errorCode: (error as any)?.code,
-          errorMessage: (error as any)?.message
+          errorCode: error instanceof Error ? error.message : 'Unknown error',
+          errorMessage: error instanceof Error ? error.message : String(error)
         });
         setState({ user: firebaseUser, profile: null, loading: false });
       }
