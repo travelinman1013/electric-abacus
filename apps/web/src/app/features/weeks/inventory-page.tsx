@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import type { WeeklyInventoryEntry } from '@domain/costing';
+import { computeUsage, type WeeklyInventoryEntry } from '@domain/costing';
 
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -25,6 +25,16 @@ const inventorySchema = z.object({
 });
 
 type InventoryFormValues = z.infer<typeof inventorySchema>;
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const formatCurrency = (value: number) =>
+  currencyFormatter.format(Number.isFinite(value) ? value : 0);
 
 export const InventoryPage = () => {
   const { weekId } = useParams<{ weekId: string }>();
@@ -77,15 +87,36 @@ export const InventoryPage = () => {
   const entries = form.watch('entries') ?? [];
   const isFinalized = week?.status === 'finalized';
 
-  const rows = activeIngredients.map((ingredient, index) => ({
-    ingredient,
-    entry: entries[index] ?? {
+  const rows = activeIngredients.map((ingredient, index) => {
+    const entry = entries[index] ?? {
       ingredientId: ingredient.id,
       begin: 0,
       received: 0,
       end: 0
-    }
-  }));
+    };
+
+    const usage = computeUsage(entry);
+    const unitCost = Number.isFinite(ingredient.unitCost) && ingredient.unitCost >= 0 ? ingredient.unitCost : 0;
+    const costOfSales = usage * unitCost;
+
+    return {
+      ingredient,
+      entry,
+      usage,
+      costOfSales,
+      unitCost,
+      index
+    };
+  });
+
+  const totals = rows.reduce(
+    (acc, row) => {
+      acc.usage += row.usage;
+      acc.costOfSales += row.costOfSales;
+      return acc;
+    },
+    { usage: 0, costOfSales: 0 }
+  );
 
   const onSubmit = form.handleSubmit(async (values) => {
     if (!weekId) {
@@ -123,8 +154,6 @@ export const InventoryPage = () => {
       : ingredientsErrorObject instanceof Error
         ? ingredientsErrorObject.message
         : 'Failed to load inventory data.';
-
-  const usageByRow = rows.map(({ entry }) => Math.max(entry.begin + entry.received - entry.end, 0));
 
   return (
     <div className="space-y-6">
@@ -182,18 +211,22 @@ export const InventoryPage = () => {
                       <TableHead>Begin</TableHead>
                       <TableHead>Received</TableHead>
                       <TableHead>End</TableHead>
-                      <TableHead>Usage</TableHead>
+                      <TableHead className="text-right">Usage</TableHead>
+                      <TableHead className="text-right">Cost of Sales</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map(({ ingredient }, index) => {
+                    {rows.map((row) => {
+                      const { ingredient, index, usage, costOfSales, unitCost } = row;
                       const errors = form.formState.errors.entries?.[index];
                       return (
                         <TableRow key={ingredient.id}>
                           <TableCell className="font-medium text-slate-800">
                             <div className="flex flex-col">
                               <span>{ingredient.name}</span>
-                              <span className="text-xs text-slate-500">{ingredient.unitOfMeasure}</span>
+                              <span className="text-xs text-slate-500">
+                                {ingredient.inventoryUnit} • {formatCurrency(unitCost)}
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -238,14 +271,35 @@ export const InventoryPage = () => {
                               ) : null}
                             </div>
                           </TableCell>
-                          <TableCell className="font-semibold text-slate-700">
-                            {usageByRow[index]?.toFixed(2)}
+                          <TableCell className="text-right font-semibold text-slate-700">
+                            {usage.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-slate-700">
+                            {formatCurrency(costOfSales)}
                           </TableCell>
                         </TableRow>
                       );
                     })}
                   </TableBody>
                 </Table>
+              </div>
+
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Weekly totals
+                </h2>
+                <dl className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs uppercase text-slate-500">Total usage</dt>
+                    <dd className="text-lg font-semibold text-slate-800">{totals.usage.toFixed(2)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase text-slate-500">Total cost of sales</dt>
+                    <dd className="text-lg font-semibold text-emerald-700">
+                      {formatCurrency(totals.costOfSales)}
+                    </dd>
+                  </div>
+                </dl>
               </div>
 
               <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-sm text-slate-500">

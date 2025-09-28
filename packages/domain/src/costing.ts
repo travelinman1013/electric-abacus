@@ -14,6 +14,8 @@ import { getConversionFactor } from './lib/units';
 export { getConversionFactor };
 
 // Re-export types for convenience
+export { WEEK_DAYS } from './types';
+
 export type {
   Ingredient,
   IngredientCategory,
@@ -28,6 +30,8 @@ export type {
   WeeklyCostSnapshotEntry,
   WeeklyInventoryEntry,
   WeeklySales,
+  WeeklySalesDay,
+  WeekDay,
   UserProfile,
   UserRole,
   ComputeReportSummaryInput,

@@ -68,16 +68,20 @@ export interface RecipeIngredient {
   unitOfMeasure: string;
 }
 
+export const WEEK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+
+export type WeekDay = (typeof WEEK_DAYS)[number];
+
+export interface WeeklySalesDay {
+  dailyGross: number;
+  lessSalesTax: number;
+  lessPromo: number;
+}
+
 export interface WeeklySales {
   id: string;
   weekId: string;
-  mon: number;
-  tue: number;
-  wed: number;
-  thu: number;
-  fri: number;
-  sat: number;
-  sun: number;
+  days: Record<WeekDay, WeeklySalesDay>;
 }
 
 export interface WeeklyInventoryEntry {

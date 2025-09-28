@@ -19,9 +19,11 @@ import type {
   WeekStatus,
   WeeklyCostSnapshotEntry,
   WeeklyInventoryEntry,
-  WeeklySales
+  WeeklySales,
+  WeeklySalesDay,
+  WeekDay
 } from '@domain/costing';
-import { computeReportSummary } from '@domain/costing';
+import { WEEK_DAYS, computeReportSummary } from '@domain/costing';
 
 import { getClientAuth, getClientFirestore } from '@taco/firebase';
 
@@ -29,15 +31,23 @@ import { timestampToIsoString, toNonNegativeNumber } from './utils';
 
 const SALES_DOC_ID = 'daily';
 
-const defaultSalesDoc: Omit<WeeklySales, 'id' | 'weekId'> = {
-  mon: 0,
-  tue: 0,
-  wed: 0,
-  thu: 0,
-  fri: 0,
-  sat: 0,
-  sun: 0
+const makeEmptySalesDay = (): WeeklySalesDay => ({
+  dailyGross: 0,
+  lessSalesTax: 0,
+  lessPromo: 0
+});
+
+const makeEmptySalesDays = (): Record<WeekDay, WeeklySalesDay> => {
+  const result = {} as Record<WeekDay, WeeklySalesDay>;
+  WEEK_DAYS.forEach((day) => {
+    result[day] = makeEmptySalesDay();
+  });
+  return result;
 };
+
+const defaultSalesDoc = (): Omit<WeeklySales, 'id' | 'weekId'> => ({
+  days: makeEmptySalesDays()
+});
 
 export const listWeeks = async (): Promise<Week[]> => {
   const firestore = getClientFirestore();
@@ -83,7 +93,7 @@ export const createWeek = async (weekId: string, options?: CreateWeekOptions) =>
     });
 
     transaction.set(salesRef, {
-      ...defaultSalesDoc,
+      ...defaultSalesDoc(),
       updatedAt: serverTimestamp()
     });
   });
@@ -127,6 +137,39 @@ export const getWeek = async (weekId: string): Promise<Week | null> => {
   } satisfies Week;
 };
 
+const parseSalesDay = (raw: unknown): WeeklySalesDay => {
+  const day = makeEmptySalesDay();
+
+  if (typeof raw === 'number') {
+    day.dailyGross = toNonNegativeNumber(raw);
+    return day;
+  }
+
+  if (raw && typeof raw === 'object') {
+    const record = raw as Record<string, unknown>;
+    day.dailyGross = toNonNegativeNumber(
+      record.dailyGross ?? record.grossSales ?? record.netSales ?? 0
+    );
+    day.lessSalesTax = toNonNegativeNumber(
+      record.lessSalesTax ?? record.salesTax ?? record.tax ?? 0
+    );
+    day.lessPromo = toNonNegativeNumber(record.lessPromo ?? record.promo ?? record.promotions ?? 0);
+    return day;
+  }
+
+  return day;
+};
+
+const normalizeSalesDays = (
+  input: Partial<Record<string, WeeklySalesDay>> | null | undefined
+): Record<WeekDay, WeeklySalesDay> => {
+  const normalized = {} as Record<WeekDay, WeeklySalesDay>;
+  WEEK_DAYS.forEach((dayKey) => {
+    normalized[dayKey] = parseSalesDay(input?.[dayKey]);
+  });
+  return normalized;
+};
+
 export const getWeekSales = async (weekId: string): Promise<WeeklySales> => {
   const firestore = getClientFirestore();
   const salesRef = doc(firestore, 'weeks', weekId, 'sales', SALES_DOC_ID);
@@ -136,13 +179,7 @@ export const getWeekSales = async (weekId: string): Promise<WeeklySales> => {
   return {
     id: SALES_DOC_ID,
     weekId,
-    mon: toNonNegativeNumber(data?.mon),
-    tue: toNonNegativeNumber(data?.tue),
-    wed: toNonNegativeNumber(data?.wed),
-    thu: toNonNegativeNumber(data?.thu),
-    fri: toNonNegativeNumber(data?.fri),
-    sat: toNonNegativeNumber(data?.sat),
-    sun: toNonNegativeNumber(data?.sun)
+    days: normalizeSalesDays((data?.days as Partial<Record<string, WeeklySalesDay>>) ?? data ?? {})
   } satisfies WeeklySales;
 };
 
@@ -152,7 +189,7 @@ export const saveWeekSales = async (weekId: string, input: Omit<WeeklySales, 'id
   await setDoc(
     salesRef,
     {
-      ...input,
+      days: normalizeSalesDays(input.days),
       updatedAt: serverTimestamp()
     },
     { merge: true }

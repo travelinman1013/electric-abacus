@@ -52,20 +52,44 @@ const nextWeekId = () => {
   return `${year}-W${String(week).padStart(2, '0')}`;
 };
 
-const actionsForRole = (role: UserRole, week: Week) => {
+type WeekRowAction = {
+  label: string;
+  to: string;
+  variant?: 'default' | 'outline';
+};
+
+const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
   if (role === 'owner') {
-    return week.status === 'draft'
-      ? { label: 'Review & finalize', to: `/weeks/${week.id}/review` }
-      : { label: 'View report', to: `/weeks/${week.id}/review` };
+    return [
+      {
+        label: week.status === 'draft' ? 'Review & finalize' : 'View review',
+        to: `/weeks/${week.id}/review`,
+        variant: 'default'
+      },
+      {
+        label: 'Inventory',
+        to: `/weeks/${week.id}/inventory`,
+        variant: 'outline'
+      }
+    ];
   }
 
   if (role === 'teamMember') {
-    return week.status === 'draft'
-      ? { label: 'Enter data', to: `/weeks/${week.id}/sales` }
-      : { label: 'View sales', to: `/weeks/${week.id}/sales` };
+    return [
+      {
+        label: week.status === 'draft' ? 'Enter sales' : 'View sales',
+        to: `/weeks/${week.id}/sales`,
+        variant: 'default'
+      },
+      {
+        label: 'Inventory',
+        to: `/weeks/${week.id}/inventory`,
+        variant: 'outline'
+      }
+    ];
   }
 
-  return undefined;
+  return [];
 };
 
 export const WeekListPage = () => {
@@ -149,7 +173,7 @@ export const WeekListPage = () => {
                 </TableHeader>
                 <TableBody>
                   {sortedWeeks.map((week) => {
-                    const action = profile ? actionsForRole(profile.role, week) : undefined;
+                    const actions = profile ? actionsForRole(profile.role, week) : [];
                     return (
                       <TableRow key={week.id}>
                         <TableCell className="font-medium text-slate-800">{week.id}</TableCell>
@@ -160,13 +184,23 @@ export const WeekListPage = () => {
                         </TableCell>
                         <TableCell>{formatDate(week.createdAt)}</TableCell>
                         <TableCell className="text-right">
-                          {action ? (
-                            <Link
-                              to={action.to}
-                              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-                            >
-                              {action.label}
-                            </Link>
+                          {actions.length ? (
+                            <div className="flex justify-end gap-2">
+                              {actions.map((action) => (
+                                <Link
+                                  key={`${week.id}-${action.to}`}
+                                  to={action.to}
+                                  className={cn(
+                                    buttonVariants({
+                                      variant: action.variant ?? 'outline',
+                                      size: 'sm'
+                                    })
+                                  )}
+                                >
+                                  {action.label}
+                                </Link>
+                              ))}
+                            </div>
                           ) : null}
                         </TableCell>
                       </TableRow>
