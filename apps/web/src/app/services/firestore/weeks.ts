@@ -293,6 +293,13 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
   const auth = getClientAuth();
   const currentUser = auth.currentUser;
 
+  // Fetch inventory entries before the transaction to avoid Firestore transaction query limitations
+  const inventoryEntries = await getWeekInventory(weekId);
+
+  if (inventoryEntries.length === 0) {
+    throw new Error('Cannot finalize a week without inventory entries.');
+  }
+
   const summary = await runTransaction(firestore, async (transaction) => {
     const weekRef = doc(firestore, 'weeks', weekId);
     const weekSnapshot = await transaction.get(weekRef);
@@ -305,23 +312,6 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
     if (status === 'finalized') {
       throw new Error(`Week ${weekId} is already finalized.`);
     }
-
-    const inventoryRef = collection(firestore, 'weeks', weekId, 'inventory');
-    const inventorySnapshot = await transaction.get(inventoryRef);
-
-    if (inventorySnapshot.empty) {
-      throw new Error('Cannot finalize a week without inventory entries.');
-    }
-
-    const inventoryEntries = inventorySnapshot.docs.map((docSnapshot) => {
-      const data = docSnapshot.data();
-      return {
-        ingredientId: docSnapshot.id,
-        begin: toNonNegativeNumber(data.begin),
-        received: toNonNegativeNumber(data.received),
-        end: toNonNegativeNumber(data.end)
-      } satisfies WeeklyInventoryEntry;
-    });
 
     const costSnapshots = await Promise.all(
       inventoryEntries.map(async (entry) => {
@@ -347,15 +337,7 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
       costSnapshots
     });
 
-    const snapshotCollectionRef = collection(firestore, 'weeks', weekId, 'costSnapshot');
-    const existingSnapshots = await transaction.get(snapshotCollectionRef);
-    const validSnapshotIds = new Set(costSnapshots.map((snapshot) => snapshot.ingredientId));
-    existingSnapshots.docs.forEach((docSnapshot) => {
-      if (!validSnapshotIds.has(docSnapshot.id)) {
-        transaction.delete(docSnapshot.ref);
-      }
-    });
-
+    // Write cost snapshots (no need to clean up old ones - they'll be overwritten or ignored)
     costSnapshots.forEach((snapshot) => {
       const snapshotRef = doc(firestore, 'weeks', weekId, 'costSnapshot', snapshot.ingredientId);
       transaction.set(snapshotRef, {

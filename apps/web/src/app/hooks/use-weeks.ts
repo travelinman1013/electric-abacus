@@ -100,8 +100,7 @@ export const useWeekInventory = (weekId: string | undefined) =>
       }
       return getWeekInventory(weekId);
     },
-    enabled: Boolean(weekId),
-    initialData: []
+    enabled: Boolean(weekId)
   });
 
 export const useSaveWeekInventory = () => {

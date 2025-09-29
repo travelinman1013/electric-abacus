@@ -66,8 +66,10 @@ export const InventoryPage = () => {
     defaultValues: { entries: [] }
   });
 
+  const { reset } = form;
+
   useEffect(() => {
-    if (!activeIngredients.length) {
+    if (!activeIngredients.length || inventoryLoading) {
       return;
     }
 
@@ -81,8 +83,8 @@ export const InventoryPage = () => {
       };
     });
 
-    form.reset({ entries: defaults });
-  }, [activeIngredients, inventoryData, form]);
+    reset({ entries: defaults });
+  }, [activeIngredients, inventoryData, inventoryLoading, reset]);
 
   const entries = form.watch('entries') ?? [];
   const isFinalized = week?.status === 'finalized';

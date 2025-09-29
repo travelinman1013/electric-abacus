@@ -19,8 +19,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
-    borderBottom: 1,
-    borderColor: '#e5e7eb',
+    borderBottom: '1px solid #e5e7eb',
     paddingBottom: 10
   },
   title: {
@@ -52,8 +51,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     backgroundColor: '#f9fafb',
-    border: 1,
-    borderColor: '#e5e7eb',
+    border: '1px solid #e5e7eb',
     borderRadius: 4
   },
   summaryLabel: {
@@ -72,14 +70,12 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#f3f4f6',
-    borderBottom: 1,
-    borderColor: '#d1d5db',
+    borderBottom: '1px solid #d1d5db',
     padding: 8
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottom: 1,
-    borderColor: '#e5e7eb',
+    borderBottom: '1px solid #e5e7eb',
     padding: 8
   },
   tableCell: {
@@ -116,8 +112,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 8,
     color: '#9ca3af',
-    borderTop: 1,
-    borderColor: '#e5e7eb',
+    borderTop: '1px solid #e5e7eb',
     paddingTop: 10
   }
 });

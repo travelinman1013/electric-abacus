@@ -18,7 +18,14 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - `npm run build` – Build for production
 - `npm run lint` – Run ESLint (fails on warnings)
 - `npm run test:unit` – Run unit tests with coverage
+- `npm run test:e2e` – Run Playwright e2e tests (auto-starts dev server)
 - `npm run seed` – Seed Firebase with test data
+
+### Workspace-Specific Commands
+
+- `npm --workspace apps/web run test:watch` – Run unit tests in watch mode
+- `npm --workspace packages/domain run test` – Run domain tests only
+- `npm --workspace packages/firebase run seed` – Seed Firebase data
 
 ## Current Features
 
@@ -30,18 +37,50 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
   - Red: >35% (needs adjustment)
 - **Ingredient Categories**: food, paper, other
 - **Enhanced Tables**: Unit cost and line total columns with recipe totals
+- **Batch Ingredients**: Support for batch recipe costing with yield calculations
 
 ### Core Functionality
 - User authentication with role-based access (owner/teamMember)
 - Weekly inventory tracking with usage calculations
-- Sales data entry and reporting
+- Sales data entry and reporting (food/drink sales with tax/promo deductions)
 - Ingredient management with version history
 - Menu item recipes with cost analysis
 - Week finalization with PDF export
 
-## Known Issues (Sep 2025)
+## Architecture Notes
 
+### Frontend (apps/web)
+- **State Management**: React Query for server state, AuthProvider for auth context
+- **Routing**: React Router v7 with protected routes and role guards
+- **Forms**: React Hook Form with Zod validation
+- **Styling**: Tailwind CSS with custom components (Radix UI primitives)
+- **File Structure**: Feature-based organization under `src/app/features/`
 
+### Domain Package (packages/domain)
+- Pure business logic with no external dependencies
+- Core costing functions:
+  - `computeUsage()` - Calculate inventory usage (begin + received - end)
+  - `computeCostOfSales()` - Calculate cost breakdown by ingredient
+  - `calculateRecipeCost()` - Calculate recipe costs with unit conversions
+  - `calculateFoodCostPercentage()` - Calculate food cost percentage
+  - `calculateBatchIngredientCost()` - Calculate batch ingredient costs
+- Unit conversion system via `getConversionFactor()` for standard units
+
+### Firebase Package (packages/firebase)
+- Admin SDK utilities for seed scripts
+- Firestore data models and type definitions
+- Seed script creates demo users and test data
+
+### Key Data Flows
+1. **Inventory Tracking**: Begin → Received → End → Computed Usage
+2. **Cost Calculation**: Ingredient Cost Snapshots + Usage → Cost of Sales
+3. **Recipe Costing**: Recipe Ingredients + Ingredient Costs → Total Cost + Food Cost %
+4. **Week Finalization**: Inventory + Sales + Costs → PDF Report
+
+### Role-Based Access
+- **Owner**: Full access to all features including ingredients, menu items, and week review
+- **Team Member**: Access to weeks list, sales entry, and inventory tracking
+- Protected routes enforce role restrictions via `RoleGuard` component
 
 ## Testing Status
 
@@ -55,12 +94,10 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 - **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
 - **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
 
-## Architecture Notes
+## Environment Setup
 
-- Uses React Query for server state management
-- Firebase Authentication for user management
-- Firestore for data persistence
-- Domain package contains pure business logic
-- Strict TypeScript with full type safety
-- DON'T  " Now I need to check the development server to see the current
-  state:"
+Copy `.env.example` to `.env` and configure Firebase credentials (if example file exists).
+
+## Known Issues (Sep 2025)
+
+None currently documented.
