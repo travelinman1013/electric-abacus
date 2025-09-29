@@ -19,7 +19,8 @@ const amountSchema = z
   .max(1_000_000, 'That total looks too high');
 
 const salesDaySchema = z.object({
-  dailyGross: amountSchema,
+  foodSales: amountSchema,
+  drinkSales: amountSchema,
   lessSalesTax: amountSchema,
   lessPromo: amountSchema
 });
@@ -39,7 +40,8 @@ type SalesFormValues = z.infer<typeof salesSchema>;
 type SalesFieldKey = keyof WeeklySalesDay;
 
 const salesFields: Array<{ key: SalesFieldKey; label: string }> = [
-  { key: 'dailyGross', label: 'Daily Gross Sales' },
+  { key: 'foodSales', label: 'Food Sales (E)' },
+  { key: 'drinkSales', label: 'Drink Sales (H)' },
   { key: 'lessSalesTax', label: 'Less Sales Tax' },
   { key: 'lessPromo', label: 'Less Promo' }
 ];
@@ -77,7 +79,7 @@ export const calculateDailyNet = (entry?: WeeklySalesDay | null): number => {
   if (!entry) {
     return 0;
   }
-  const gross = toSafeNumber(entry.dailyGross);
+  const gross = toSafeNumber(entry.foodSales) + toSafeNumber(entry.drinkSales);
   const tax = toSafeNumber(entry.lessSalesTax);
   const promo = toSafeNumber(entry.lessPromo);
   return roundToCents(gross - tax - promo);
@@ -85,21 +87,24 @@ export const calculateDailyNet = (entry?: WeeklySalesDay | null): number => {
 
 export const calculateWeeklyTotals = (
   days: Partial<Record<WeekDay, WeeklySalesDay>>
-): { dailyGross: number; lessSalesTax: number; lessPromo: number; netSales: number } => {
+): { grossSales: number; lessSalesTax: number; lessPromo: number; netSales: number } => {
   const totals = WEEK_DAYS.reduce(
     (acc, day) => {
       const entry = days[day];
-      acc.dailyGross += toSafeNumber(entry?.dailyGross);
+      const gross =
+        toSafeNumber(entry?.foodSales) +
+        toSafeNumber(entry?.drinkSales);
+      acc.grossSales += gross;
       acc.lessSalesTax += toSafeNumber(entry?.lessSalesTax);
       acc.lessPromo += toSafeNumber(entry?.lessPromo);
       acc.netSales += calculateDailyNet(entry);
       return acc;
     },
-    { dailyGross: 0, lessSalesTax: 0, lessPromo: 0, netSales: 0 }
+    { grossSales: 0, lessSalesTax: 0, lessPromo: 0, netSales: 0 }
   );
 
   return {
-    dailyGross: roundToCents(totals.dailyGross),
+    grossSales: roundToCents(totals.grossSales),
     lessSalesTax: roundToCents(totals.lessSalesTax),
     lessPromo: roundToCents(totals.lessPromo),
     netSales: roundToCents(totals.netSales)
@@ -109,7 +114,8 @@ export const calculateWeeklyTotals = (
 const createDefaultSalesValues = (): SalesFormValues =>
   WEEK_DAYS.reduce((acc, day) => {
     acc[day] = {
-      dailyGross: 0,
+      foodSales: 0,
+      drinkSales: 0,
       lessSalesTax: 0,
       lessPromo: 0
     } satisfies WeeklySalesDay;
@@ -126,7 +132,8 @@ const hydrateFormValues = (days?: Partial<Record<WeekDay, WeeklySalesDay>>): Sal
     const entry = days[day];
     if (entry) {
       base[day] = {
-        dailyGross: toSafeNumber(entry.dailyGross),
+        foodSales: toSafeNumber(entry.foodSales),
+        drinkSales: toSafeNumber(entry.drinkSales),
         lessSalesTax: toSafeNumber(entry.lessSalesTax),
         lessPromo: toSafeNumber(entry.lessPromo)
       } satisfies WeeklySalesDay;
@@ -290,7 +297,7 @@ export const SalesEntryPage = () => {
                   <div>
                     <dt className="text-xs uppercase text-slate-500">Gross sales</dt>
                     <dd className="text-lg font-semibold text-slate-800">
-                      {formatCurrency(totals.dailyGross)}
+                      {formatCurrency(totals.grossSales)}
                     </dd>
                   </div>
                   <div>

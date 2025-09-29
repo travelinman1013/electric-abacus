@@ -73,7 +73,8 @@ export const WEEK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as co
 export type WeekDay = (typeof WEEK_DAYS)[number];
 
 export interface WeeklySalesDay {
-  dailyGross: number;
+  foodSales: number;
+  drinkSales: number;
   lessSalesTax: number;
   lessPromo: number;
 }

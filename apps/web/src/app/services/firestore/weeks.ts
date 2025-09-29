@@ -32,7 +32,8 @@ import { timestampToIsoString, toNonNegativeNumber } from './utils';
 const SALES_DOC_ID = 'daily';
 
 const makeEmptySalesDay = (): WeeklySalesDay => ({
-  dailyGross: 0,
+  foodSales: 0,
+  drinkSales: 0,
   lessSalesTax: 0,
   lessPromo: 0
 });
@@ -141,15 +142,16 @@ const parseSalesDay = (raw: unknown): WeeklySalesDay => {
   const day = makeEmptySalesDay();
 
   if (typeof raw === 'number') {
-    day.dailyGross = toNonNegativeNumber(raw);
+    day.foodSales = toNonNegativeNumber(raw);
     return day;
   }
 
   if (raw && typeof raw === 'object') {
     const record = raw as Record<string, unknown>;
-    day.dailyGross = toNonNegativeNumber(
-      record.dailyGross ?? record.grossSales ?? record.netSales ?? 0
+    day.foodSales = toNonNegativeNumber(
+      record.foodSales ?? record.dailyGross ?? record.grossSales ?? record.netSales ?? 0
     );
+    day.drinkSales = toNonNegativeNumber(record.drinkSales ?? record.beverageSales ?? 0);
     day.lessSalesTax = toNonNegativeNumber(
       record.lessSalesTax ?? record.salesTax ?? record.tax ?? 0
     );
