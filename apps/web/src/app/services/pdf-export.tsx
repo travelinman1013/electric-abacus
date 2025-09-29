@@ -1,9 +1,11 @@
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
-import type { ReportSummary } from '@domain/costing';
+import type { ReportSummary, WeeklySales, WeekDay } from '@domain/costing';
+import { WEEK_DAYS } from '@domain/costing';
 
 interface PDFExportData {
   weekId: string;
   summary: ReportSummary;
+  sales?: WeeklySales;
   finalizedAt?: string;
   finalizedBy?: string;
   ingredientNames: Record<string, string>;
@@ -131,7 +133,44 @@ const formatDate = (date: string | undefined) => {
   });
 };
 
-const WeekReportDocument = ({ weekId, summary, finalizedAt, finalizedBy, ingredientNames, sourceVersions }: PDFExportData) => (
+const calculateDayGross = (day: { foodSales: number; drinkSales: number }) => {
+  return (day.foodSales || 0) + (day.drinkSales || 0);
+};
+
+const calculateDayNet = (day: { foodSales: number; drinkSales: number; lessSalesTax: number; lessPromo: number }) => {
+  const gross = calculateDayGross(day);
+  return gross - (day.lessSalesTax || 0) - (day.lessPromo || 0);
+};
+
+const dayLabels: Record<WeekDay, string> = {
+  mon: 'Monday',
+  tue: 'Tuesday',
+  wed: 'Wednesday',
+  thu: 'Thursday',
+  fri: 'Friday',
+  sat: 'Saturday',
+  sun: 'Sunday'
+};
+
+const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, ingredientNames, sourceVersions }: PDFExportData) => {
+  // Calculate sales totals
+  const salesTotals = sales?.days ? WEEK_DAYS.reduce((acc, day) => {
+    const dayData = sales.days[day];
+    const gross = calculateDayGross(dayData);
+    const net = calculateDayNet(dayData);
+    acc.grossSales += gross;
+    acc.lessSalesTax += dayData.lessSalesTax || 0;
+    acc.lessPromo += dayData.lessPromo || 0;
+    acc.netSales += net;
+    return acc;
+  }, { grossSales: 0, lessSalesTax: 0, lessPromo: 0, netSales: 0 }) : null;
+
+  // Calculate food cost percentage
+  const foodCostPercentage = salesTotals && salesTotals.grossSales > 0
+    ? ((summary.totals.totalCostOfSales / salesTotals.grossSales) * 100).toFixed(2)
+    : null;
+
+  return (
   <Document>
     <Page size="A4" style={styles.page}>
       {/* Header */}
@@ -159,11 +198,85 @@ const WeekReportDocument = ({ weekId, summary, finalizedAt, finalizedBy, ingredi
             <Text style={styles.summaryValue}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Ingredients</Text>
-            <Text style={styles.summaryValue}>{summary.breakdown.length}</Text>
+            <Text style={styles.summaryLabel}>Food Cost %</Text>
+            <Text style={styles.summaryValue}>
+              {foodCostPercentage ? `${foodCostPercentage}%` : 'N/A'}
+            </Text>
           </View>
         </View>
       </View>
+
+      {/* Sales Summary */}
+      {sales?.days && salesTotals && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Sales Summary</Text>
+          <View style={styles.table}>
+            {/* Table Header */}
+            <View style={styles.tableHeader}>
+              <View style={styles.tableCell}>
+                <Text style={styles.tableHeaderText}>Day</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>Gross Sales</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>Less Tax</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>Less Promo</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>Net Sales</Text>
+              </View>
+            </View>
+
+            {/* Daily Rows */}
+            {WEEK_DAYS.map((day) => {
+              const dayData = sales.days[day];
+              const gross = calculateDayGross(dayData);
+              const net = calculateDayNet(dayData);
+              return (
+                <View key={day} style={styles.tableRow}>
+                  <View style={styles.tableCell}>
+                    <Text>{dayLabels[day]}</Text>
+                  </View>
+                  <View style={styles.tableCellRight}>
+                    <Text>{formatCurrency(gross)}</Text>
+                  </View>
+                  <View style={styles.tableCellRight}>
+                    <Text>{formatCurrency(dayData.lessSalesTax || 0)}</Text>
+                  </View>
+                  <View style={styles.tableCellRight}>
+                    <Text>{formatCurrency(dayData.lessPromo || 0)}</Text>
+                  </View>
+                  <View style={styles.tableCellRight}>
+                    <Text>{formatCurrency(net)}</Text>
+                  </View>
+                </View>
+              );
+            })}
+
+            {/* Totals Row */}
+            <View style={[styles.tableRow, { backgroundColor: '#f3f4f6', fontWeight: 'bold' }]}>
+              <View style={styles.tableCell}>
+                <Text style={styles.tableHeaderText}>TOTAL</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.grossSales)}</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.lessSalesTax)}</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.lessPromo)}</Text>
+              </View>
+              <View style={styles.tableCellRight}>
+                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.netSales)}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Detailed Breakdown */}
       <View style={styles.section}>
@@ -213,13 +326,50 @@ const WeekReportDocument = ({ weekId, summary, finalizedAt, finalizedBy, ingredi
         </View>
       </View>
 
+      {/* Cost Analysis */}
+      {foodCostPercentage && salesTotals && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Cost Analysis</Text>
+          <View style={{ padding: 10, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 4 }}>
+            <Text style={{ fontSize: 10, marginBottom: 5, color: '#6b7280' }}>
+              Food Cost Percentage
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ fontSize: 9, color: '#374151' }}>
+                Total Food Cost: {formatCurrency(summary.totals.totalCostOfSales)}
+              </Text>
+              <Text style={{ fontSize: 9, color: '#6b7280' }}>÷</Text>
+              <Text style={{ fontSize: 9, color: '#374151' }}>
+                Gross Sales: {formatCurrency(salesTotals.grossSales)}
+              </Text>
+              <Text style={{ fontSize: 9, color: '#6b7280' }}>=</Text>
+              <Text style={{
+                fontSize: 14,
+                fontWeight: 'bold',
+                color: parseFloat(foodCostPercentage) < 30
+                  ? '#059669'
+                  : parseFloat(foodCostPercentage) < 35
+                    ? '#d97706'
+                    : '#dc2626'
+              }}>
+                {foodCostPercentage}%
+              </Text>
+            </View>
+            <Text style={{ fontSize: 8, marginTop: 5, color: '#6b7280' }}>
+              Target: &lt;30% (excellent) | 30-35% (acceptable) | &gt;35% (needs attention)
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Footer */}
       <Text style={styles.footer}>
         Taco Ray v2 - Weekly Operations Management System
       </Text>
     </Page>
   </Document>
-);
+  );
+};
 
 export const generateWeekReportPDF = async (data: PDFExportData): Promise<Blob> => {
   const doc = <WeekReportDocument {...data} />;

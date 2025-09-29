@@ -31,9 +31,11 @@ import {
   useWeek,
   useWeekCostSnapshot,
   useWeekInventory,
-  useWeekReport
+  useWeekReport,
+  useWeekSales
 } from '../../hooks/use-weeks';
 import { useAuthContext } from '../../providers/auth-provider';
+import { calculateWeeklyTotals } from './sales-entry-page';
 
 const badgeVariantByStatus: Record<WeekStatus, 'warning' | 'success'> = {
   draft: 'warning',
@@ -54,6 +56,7 @@ export const WeekReviewPage = () => {
   const inventoryQuery = useWeekInventory(weekId);
   const costSnapshotQuery = useWeekCostSnapshot(weekId);
   const reportQuery = useWeekReport(weekId);
+  const salesQuery = useWeekSales(weekId);
   const ingredientsQuery = useIngredients();
   const finalizeWeekMutation = useFinalizeWeek();
 
@@ -67,6 +70,7 @@ export const WeekReviewPage = () => {
     [costSnapshotQuery.data]
   );
   const report = reportQuery.data;
+  const sales = salesQuery.data;
   const ingredients = useMemo(
     () => ingredientsQuery.data ?? [],
     [ingredientsQuery.data]
@@ -77,7 +81,8 @@ export const WeekReviewPage = () => {
     inventoryQuery.isLoading ||
     ingredientsQuery.isLoading ||
     costSnapshotQuery.isLoading ||
-    reportQuery.isLoading;
+    reportQuery.isLoading ||
+    salesQuery.isLoading;
 
   const errorMessage =
     (weekQuery.isError && weekQuery.error instanceof Error
@@ -94,6 +99,9 @@ export const WeekReviewPage = () => {
       : null) ??
     (reportQuery.isError && reportQuery.error instanceof Error
       ? reportQuery.error.message
+      : null) ??
+    (salesQuery.isError && salesQuery.error instanceof Error
+      ? salesQuery.error.message
       : null);
 
   const ingredientMap = useMemo(
@@ -132,6 +140,20 @@ export const WeekReviewPage = () => {
       costSnapshots: snapshotForComputation
     });
   }, [inventoryEntries, isFinalized, report, snapshotForComputation]);
+
+  const salesTotals = useMemo(() => {
+    if (!sales?.days) {
+      return null;
+    }
+    return calculateWeeklyTotals(sales.days);
+  }, [sales]);
+
+  const foodCostPercentage = useMemo(() => {
+    if (!summary || !salesTotals || salesTotals.grossSales === 0) {
+      return null;
+    }
+    return Number(((summary.totals.totalCostOfSales / salesTotals.grossSales) * 100).toFixed(2));
+  }, [summary, salesTotals]);
 
   const tableRows = useMemo(
     () =>
@@ -247,7 +269,8 @@ export const WeekReviewPage = () => {
       await downloadWeekReportPDF({
         weekId,
         summary,
-        finalizedAt: week?.finalizedAt?.toDate?.()?.toISOString(),
+        sales: sales ?? undefined,
+        finalizedAt: week?.finalizedAt ?? undefined,
         finalizedBy: week?.finalizedBy || undefined,
         ingredientNames,
         sourceVersions
@@ -364,11 +387,66 @@ export const WeekReviewPage = () => {
             </Card>
             <Card>
               <CardHeader>
-                <CardDescription>Variance check</CardDescription>
-                <CardTitle>0 issues</CardTitle>
+                <CardDescription>Food cost percentage</CardDescription>
+                <CardTitle>
+                  {foodCostPercentage !== null ? (
+                    <span
+                      className={cn(
+                        foodCostPercentage < 30
+                          ? 'text-emerald-600'
+                          : foodCostPercentage < 35
+                            ? 'text-amber-600'
+                            : 'text-red-600'
+                      )}
+                    >
+                      {foodCostPercentage}%
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">N/A</span>
+                  )}
+                </CardTitle>
               </CardHeader>
             </Card>
           </div>
+
+          {salesTotals && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly sales summary</CardTitle>
+                <CardDescription>
+                  Total sales for the week after tax and promotional deductions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <dt className="text-xs font-medium uppercase text-slate-500">Gross sales</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                      {formatCurrency(salesTotals.grossSales)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase text-slate-500">Less sales tax</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                      {formatCurrency(salesTotals.lessSalesTax)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase text-slate-500">Less promo</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                      {formatCurrency(salesTotals.lessPromo)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase text-slate-500">Net sales</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-emerald-700">
+                      {formatCurrency(salesTotals.netSales)}
+                    </dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
