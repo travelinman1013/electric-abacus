@@ -4,6 +4,7 @@ import type { Ingredient, IngredientVersion } from '@domain/costing';
 
 import {
   createIngredient,
+  deleteIngredient,
   getActiveIngredientIds,
   getIngredient,
   getIngredientVersions,
@@ -56,8 +57,8 @@ export const useCreateIngredient = () => {
   return useMutation<Ingredient, Error, CreateIngredientInput>({
     mutationFn: (input) => createIngredient(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-      queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
     }
   });
 };
@@ -67,10 +68,10 @@ export const useUpdateIngredient = () => {
   return useMutation<void, Error, UpdateIngredientInput>({
     mutationFn: (input) => updateIngredient(input),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-      queryClient.invalidateQueries({ queryKey: ['ingredient', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['ingredient-versions', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredient', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredient-versions', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
     }
   });
 };
@@ -85,9 +86,21 @@ export const useSetIngredientActive = () => {
   return useMutation<void, Error, SetIngredientActiveVariables>({
     mutationFn: ({ ingredientId, isActive }) => setIngredientActiveState(ingredientId, isActive),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-      queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
-      queryClient.invalidateQueries({ queryKey: ['ingredient', variables.ingredientId] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredient', variables.ingredientId] });
+    }
+  });
+};
+
+export const useDeleteIngredient = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (ingredientId) => deleteIngredient(ingredientId),
+    onSuccess: (_, ingredientId) => {
+      void queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredients', 'active-ids'] });
+      void queryClient.invalidateQueries({ queryKey: ['ingredient', ingredientId] });
     }
   });
 };

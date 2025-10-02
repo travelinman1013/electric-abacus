@@ -10,16 +10,44 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
   type DocumentData
 } from 'firebase/firestore';
 
-import type { Ingredient, IngredientCategory, IngredientVersion } from '@domain/costing';
+import type { Ingredient, IngredientCategory, IngredientVersion, RecipeIngredient } from '@domain/costing';
 import { getConversionFactor } from '@domain/costing';
 
 import { getClientFirestore } from '@taco/firebase';
 
 import { timestampToIsoString } from './utils';
 import { ensureId } from './ids';
+import type { Timestamp } from 'firebase/firestore';
+
+interface FirestoreIngredientData {
+  name: string;
+  inventoryUnit?: string;
+  unitOfMeasure?: string;
+  recipeUnit?: string;
+  conversionFactor?: number;
+  unitsPerCase: number;
+  casePrice: number;
+  unitCost: number;
+  isActive?: boolean;
+  category?: IngredientCategory;
+  currentVersionId?: string;
+  isBatch?: boolean;
+  recipeIngredients?: RecipeIngredient[];
+  yield?: number;
+  yieldUnit?: string;
+}
+
+interface FirestoreIngredientVersionData {
+  casePrice: number;
+  unitsPerCase: number;
+  unitCost: number;
+  effectiveFrom: Timestamp;
+  effectiveTo: Timestamp | null;
+}
 
 export interface CreateIngredientInput {
   id?: string;
@@ -69,7 +97,7 @@ export const listIngredients = async (): Promise<Ingredient[]> => {
   const snapshot = await getDocs(query(ingredientsRef, orderBy('name')));
 
   return snapshot.docs.map((docSnapshot) => {
-    const data = docSnapshot.data();
+    const data = docSnapshot.data() as FirestoreIngredientData;
     const ingredient: Ingredient = {
       id: docSnapshot.id,
       name: data.name,
@@ -98,7 +126,7 @@ export const getIngredientVersions = async (ingredientId: string): Promise<Ingre
   const snapshot = await getDocs(query(versionsRef, orderBy('effectiveFrom', 'desc')));
 
   return snapshot.docs.map((docSnapshot) => {
-    const data = docSnapshot.data();
+    const data = docSnapshot.data() as FirestoreIngredientVersionData;
     return {
       id: docSnapshot.id,
       ingredientId,
@@ -197,7 +225,7 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
     if (!snapshot.exists()) {
       throw new Error('Ingredient not found');
     }
-    const data = snapshot.data();
+    const data = snapshot.data() as FirestoreIngredientData;
 
     const updateData: DocumentData = {
       name: input.name,
@@ -271,7 +299,7 @@ export const getIngredient = async (ingredientId: string): Promise<Ingredient | 
   if (!snapshot.exists()) {
     return null;
   }
-  const data = snapshot.data();
+  const data = snapshot.data() as FirestoreIngredientData;
   return {
     id: ingredientId,
     name: data.name,
@@ -290,4 +318,15 @@ export const getIngredient = async (ingredientId: string): Promise<Ingredient | 
     yield: data.yield,
     yieldUnit: data.yieldUnit
   } satisfies Ingredient;
+};
+
+export const deleteIngredient = async (ingredientId: string) => {
+  const firestore = getClientFirestore();
+  const versionsRef = collection(firestore, 'ingredients', ingredientId, 'versions');
+  const versionSnapshot = await getDocs(versionsRef);
+  const batch = writeBatch(firestore);
+  versionSnapshot.docs.forEach((docSnapshot) => batch.delete(docSnapshot.ref));
+  const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+  batch.delete(ingredientRef);
+  await batch.commit();
 };

@@ -69,7 +69,15 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 ### Firebase Package (packages/firebase)
 - Admin SDK utilities for seed scripts
 - Firestore data models and type definitions
-- Seed script creates demo users and test data
+- Enhanced seed script with realistic demo data:
+  - 2 users (owner and team member)
+  - 31 ingredients across 3 categories (food, paper, other)
+  - 15 menu items with realistic pricing
+  - 6 finalized historical weeks (2025-W33 to W38) with:
+    - Realistic daily sales ($4,000-$6,500/week)
+    - Complete inventory tracking with usage patterns
+    - Generated cost reports and summaries
+  - 1 draft week for current operations
 
 ### Key Data Flows
 1. **Inventory Tracking**: Begin → Received → End → Computed Usage

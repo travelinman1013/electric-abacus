@@ -16,6 +16,15 @@ import {
   CardHeader,
   CardTitle
 } from '../../components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
@@ -23,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { cn } from '../../lib/utils';
 import {
   useCreateIngredient,
+  useDeleteIngredient,
   useIngredient,
   useIngredientVersions,
   useIngredients,
@@ -123,11 +133,13 @@ export const IngredientsPage = () => {
   const createIngredientMutation = useCreateIngredient();
   const updateIngredientMutation = useUpdateIngredient();
   const setActiveMutation = useSetIngredientActive();
+  const deleteIngredientMutation = useDeleteIngredient();
 
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingIngredientId, setDeletingIngredientId] = useState<string | null>(null);
 
   const editingIngredient = useIngredient(editingIngredientId || undefined);
   const ingredientVersions = useIngredientVersions(editingIngredientId || undefined);
@@ -421,6 +433,53 @@ export const IngredientsPage = () => {
     }
   };
 
+  const handleDeleteClick = (ingredientId: string) => {
+    setDeletingIngredientId(ingredientId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingIngredientId) return;
+
+    setFormError(null);
+    setFormSuccess(null);
+    try {
+      await deleteIngredientMutation.mutateAsync(deletingIngredientId);
+      if (editingIngredientId === deletingIngredientId) {
+        setEditingIngredientId(null);
+      }
+      setDeletingIngredientId(null);
+      setFormSuccess('Ingredient deleted');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete ingredient.';
+      setFormError(message);
+      setDeletingIngredientId(null);
+    }
+  };
+
+  const getDeletingIngredientUsage = () => {
+    if (!deletingIngredientId) return { usedInMenuItems: [], usedInBatchIngredients: [] };
+
+    const usedInMenuItems: string[] = [];
+    const usedInBatchIngredients: string[] = [];
+
+    // Check if ingredient is used in any batch ingredients
+    ingredients.forEach(ingredient => {
+      if (ingredient.isBatch && ingredient.recipeIngredients) {
+        const usesIngredient = ingredient.recipeIngredients.some(
+          ri => ri.ingredientId === deletingIngredientId
+        );
+        if (usesIngredient) {
+          usedInBatchIngredients.push(ingredient.name);
+        }
+      }
+    });
+
+    // Note: We can't check menu items here without fetching all their recipes
+    // For simplicity, we'll just warn about batch ingredients for now
+
+    return { usedInMenuItems, usedInBatchIngredients };
+  };
+
   return (
     <div className="space-y-8">
       <header className="space-y-1">
@@ -503,6 +562,14 @@ export const IngredientsPage = () => {
                           variant={editingIngredientId === ingredient.id ? 'secondary' : 'ghost'}
                         >
                           Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteClick(ingredient.id)}
+                          disabled={deleteIngredientMutation.isPending}
+                        >
+                          Delete
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -1040,6 +1107,50 @@ export const IngredientsPage = () => {
           ) : null}
         </div>
       </div>
+
+      <Dialog open={Boolean(deletingIngredientId)} onOpenChange={(open) => !open && setDeletingIngredientId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Ingredient</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this ingredient? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {(() => {
+            const usage = getDeletingIngredientUsage();
+            const hasUsage = usage.usedInBatchIngredients.length > 0;
+
+            return hasUsage ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <p className="font-semibold mb-1">Warning: This ingredient is currently in use</p>
+                {usage.usedInBatchIngredients.length > 0 && (
+                  <div>
+                    <p className="font-medium">Used in batch ingredients:</p>
+                    <ul className="list-disc list-inside ml-2">
+                      {usage.usedInBatchIngredients.map(name => (
+                        <li key={name}>{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="mt-2">Deleting this ingredient may cause issues with these recipes.</p>
+              </div>
+            ) : null;
+          })()}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={() => void handleDeleteConfirm()}
+              disabled={deleteIngredientMutation.isPending}
+            >
+              {deleteIngredientMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
