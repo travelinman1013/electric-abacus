@@ -9,6 +9,7 @@ const mockUseWeek = vi.fn();
 const mockUseWeekInventory = vi.fn();
 const mockUseWeekCostSnapshot = vi.fn();
 const mockUseWeekReport = vi.fn();
+const mockUseWeekSales = vi.fn();
 const mockUseIngredients = vi.fn();
 const mockUseFinalizeWeek = vi.fn();
 const mockUseAuthContext = vi.fn();
@@ -18,6 +19,7 @@ vi.mock('../../hooks/use-weeks', () => ({
   useWeekInventory: (): unknown => mockUseWeekInventory(),
   useWeekCostSnapshot: (): unknown => mockUseWeekCostSnapshot(),
   useWeekReport: (): unknown => mockUseWeekReport(),
+  useWeekSales: (): unknown => mockUseWeekSales(),
   useFinalizeWeek: (): unknown => mockUseFinalizeWeek()
 }));
 
@@ -116,6 +118,7 @@ describe('WeekReviewPage', () => {
     mockUseWeekInventory.mockReset();
     mockUseWeekCostSnapshot.mockReset();
     mockUseWeekReport.mockReset();
+    mockUseWeekSales.mockReset();
     mockUseIngredients.mockReset();
     mockUseFinalizeWeek.mockReset();
     mockUseAuthContext.mockReset();
@@ -143,6 +146,13 @@ describe('WeekReviewPage', () => {
     });
 
     mockUseWeekReport.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+      error: null
+    });
+
+    mockUseWeekSales.mockReturnValue({
       data: null,
       isLoading: false,
       isError: false,
@@ -197,6 +207,6 @@ describe('WeekReviewPage', () => {
 
     expect(screen.getByText('Total usage units')).toBeInTheDocument();
     expect(screen.getByText('Total cost of sales')).toBeInTheDocument();
-    expect(screen.getByText('Variance check')).toBeInTheDocument();
+    expect(screen.getByText('Food cost percentage')).toBeInTheDocument();
   });
 });

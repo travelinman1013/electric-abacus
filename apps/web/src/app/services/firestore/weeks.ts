@@ -31,6 +31,39 @@ import { timestampToIsoString, toNonNegativeNumber } from './utils';
 
 const SALES_DOC_ID = 'daily';
 
+/**
+ * Calculate the next week ID in ISO 8601 format (YYYY-W##)
+ * Handles year rollover (W52/W53 -> W01 of next year)
+ * @param weekId Current week ID (e.g., "2025-W38")
+ * @returns Next week ID (e.g., "2025-W39")
+ */
+export const calculateNextWeekId = (weekId: string): string => {
+  const match = weekId.match(/^(\d{4})-W(\d{2})$/);
+  if (!match) {
+    throw new Error(`Invalid week ID format: ${weekId}. Expected format: YYYY-W##`);
+  }
+
+  const year = parseInt(match[1], 10);
+  const week = parseInt(match[2], 10);
+
+  // Check if current year has 53 weeks (years starting on Thursday or leap years starting on Wednesday)
+  const jan1 = new Date(year, 0, 1);
+  const jan1Day = jan1.getUTCDay();
+  const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const has53Weeks = jan1Day === 4 || (isLeapYear && jan1Day === 3);
+
+  const maxWeek = has53Weeks ? 53 : 52;
+
+  if (week >= maxWeek) {
+    // Roll over to next year
+    return `${year + 1}-W01`;
+  }
+
+  // Normal increment
+  const nextWeek = week + 1;
+  return `${year}-W${String(nextWeek).padStart(2, '0')}`;
+};
+
 const makeEmptySalesDay = (): WeeklySalesDay => ({
   foodSales: 0,
   drinkSales: 0,
@@ -70,6 +103,7 @@ export const listWeeks = async (): Promise<Week[]> => {
 
 interface CreateWeekOptions {
   ingredientIds?: string[];
+  initialInventory?: WeeklyInventoryEntry[];
 }
 
 export const createWeek = async (weekId: string, options?: CreateWeekOptions) => {
@@ -99,8 +133,26 @@ export const createWeek = async (weekId: string, options?: CreateWeekOptions) =>
     });
   });
 
-  if (options?.ingredientIds?.length) {
-    const batch = writeBatch(firestore);
+  // Create inventory entries with initial values if provided
+  const batch = writeBatch(firestore);
+
+  if (options?.initialInventory?.length) {
+    // Use provided initial inventory (with begin values from previous week's end)
+    options.initialInventory.forEach((entry) => {
+      const inventoryRef = doc(firestore, 'weeks', weekId, 'inventory', entry.ingredientId);
+      batch.set(
+        inventoryRef,
+        {
+          begin: entry.begin,
+          received: 0,
+          end: 0,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    });
+  } else if (options?.ingredientIds?.length) {
+    // Fallback: create empty inventory entries
     options.ingredientIds.forEach((ingredientId) => {
       const inventoryRef = doc(firestore, 'weeks', weekId, 'inventory', ingredientId);
       batch.set(
@@ -114,6 +166,9 @@ export const createWeek = async (weekId: string, options?: CreateWeekOptions) =>
         { merge: true }
       );
     });
+  }
+
+  if (options?.initialInventory?.length || options?.ingredientIds?.length) {
     await batch.commit();
   }
 };
@@ -361,6 +416,30 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
 
     return summaryResult;
   });
+
+  // After successful finalization, automatically create next week with carry-forward inventory
+  try {
+    const nextWeekId = calculateNextWeekId(weekId);
+
+    // Check if next week already exists to avoid duplicates
+    const nextWeekExists = await getWeek(nextWeekId);
+    if (!nextWeekExists) {
+      // Prepare initial inventory: begin = current week's end
+      const initialInventory = inventoryEntries.map((entry) => ({
+        ingredientId: entry.ingredientId,
+        begin: entry.end, // Carry forward ending inventory
+        received: 0,
+        end: 0
+      }));
+
+      // Create the next week with carried-forward inventory
+      await createWeek(nextWeekId, { initialInventory });
+    }
+  } catch (error) {
+    // Log the error but don't fail the finalization if next week creation fails
+    console.error(`Failed to auto-create next week after finalizing ${weekId}:`, error);
+    // The finalization itself succeeded, so we still return the summary
+  }
 
   return summary;
 };
