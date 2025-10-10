@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import type { ReportSummary, WeeklySales, WeekDay } from '@domain/costing';
-import { WEEK_DAYS } from '@domain/costing';
+import { calculateGrossMargin, calculateGrossProfit, WEEK_DAYS } from '@domain/costing';
 
 interface PDFExportData {
   weekId: string;
@@ -170,6 +170,15 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
     ? ((summary.totals.totalCostOfSales / salesTotals.grossSales) * 100).toFixed(2)
     : null;
 
+  // Calculate gross profit and margin
+  const grossProfit = salesTotals
+    ? calculateGrossProfit(salesTotals.grossSales, summary.totals.totalCostOfSales)
+    : null;
+
+  const grossMargin = salesTotals
+    ? calculateGrossMargin(salesTotals.grossSales, summary.totals.totalCostOfSales)
+    : null;
+
   return (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -183,27 +192,6 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
             {finalizedBy && ` by ${finalizedBy}`}
           </Text>
         )}
-      </View>
-
-      {/* Summary Cards */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Cost Summary</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total Usage Units</Text>
-            <Text style={styles.summaryValue}>{summary.totals.totalUsageUnits.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total Cost of Sales</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Food Cost %</Text>
-            <Text style={styles.summaryValue}>
-              {foodCostPercentage ? `${foodCostPercentage}%` : 'N/A'}
-            </Text>
-          </View>
-        </View>
       </View>
 
       {/* Sales Summary */}
@@ -278,6 +266,44 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
         </View>
       )}
 
+      {/* Cost Summary */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Weekly Cost Summary</Text>
+        <View style={styles.summaryGrid}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Total Usage Units</Text>
+            <Text style={styles.summaryValue}>{summary.totals.totalUsageUnits.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Total Cost of Sales</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Food Cost %</Text>
+            <Text style={styles.summaryValue}>
+              {foodCostPercentage ? `${foodCostPercentage}%` : 'N/A'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Profitability Section */}
+      {grossProfit !== null && grossMargin !== null && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Profitability</Text>
+          <View style={[styles.summaryGrid, { gap: 20 }]}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Gross Profit</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(grossProfit)}</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Gross Margin</Text>
+              <Text style={styles.summaryValue}>{grossMargin.toFixed(2)}%</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Detailed Breakdown */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Ingredient Cost Breakdown</Text>
@@ -323,6 +349,25 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
               </View>
             </View>
           ))}
+
+          {/* Totals Row */}
+          <View style={[styles.tableRow, { backgroundColor: '#f3f4f6', fontWeight: 'bold' }]}>
+            <View style={styles.tableCell}>
+              <Text style={styles.tableHeaderText}>TOTAL</Text>
+            </View>
+            <View style={styles.tableCellRight}>
+              <Text style={styles.tableHeaderText}>{summary.totals.totalUsageUnits.toFixed(2)}</Text>
+            </View>
+            <View style={styles.tableCellRight}>
+              <Text></Text>
+            </View>
+            <View style={styles.tableCellRight}>
+              <Text style={styles.tableHeaderText}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
+            </View>
+            <View style={styles.tableCellCenter}>
+              <Text></Text>
+            </View>
+          </View>
         </View>
       </View>
 

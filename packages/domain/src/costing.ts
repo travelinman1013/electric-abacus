@@ -271,3 +271,30 @@ export const calculateRecipeCostWithPercentage = (
     foodCostPercentage
   } satisfies RecipeCostSummary;
 };
+
+export const calculateGrossProfit = (
+  grossSales: number,
+  totalCostOfSales: number
+): number => {
+  const sales = clampNonNegative(ensureNumber(grossSales));
+  const cost = clampNonNegative(ensureNumber(totalCostOfSales));
+
+  const profit = sales - cost;
+  return Number(profit.toFixed(2));
+};
+
+export const calculateGrossMargin = (
+  grossSales: number,
+  totalCostOfSales: number
+): number => {
+  const sales = clampNonNegative(ensureNumber(grossSales));
+  const cost = clampNonNegative(ensureNumber(totalCostOfSales));
+
+  if (sales === 0) {
+    return 0;
+  }
+
+  const profit = sales - cost;
+  const margin = (profit / sales) * 100;
+  return Number(margin.toFixed(2));
+};

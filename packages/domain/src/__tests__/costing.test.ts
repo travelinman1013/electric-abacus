@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateBatchIngredientCost,
   calculateFoodCostPercentage,
+  calculateGrossMargin,
+  calculateGrossProfit,
   calculateRecipeCost,
   calculateRecipeCostWithPercentage,
   computeCostOfSales,
@@ -667,5 +669,68 @@ describe('calculateRecipeCost with batch ingredients', () => {
     // Should still calculate correctly - circular batch uses seasoned-beef
     // Cost should be $6.50 per lb (same as seasoned-beef cost per yield unit)
     expect(result).toBeCloseTo(6.5, 4);
+  });
+});
+
+describe('calculateGrossProfit', () => {
+  it('calculates gross profit correctly', () => {
+    expect(calculateGrossProfit(5000, 1000)).toBe(4000);
+    expect(calculateGrossProfit(5214.68, 1050.96)).toBeCloseTo(4163.72, 2);
+  });
+
+  it('handles zero sales', () => {
+    expect(calculateGrossProfit(0, 100)).toBe(-100);
+  });
+
+  it('handles zero cost', () => {
+    expect(calculateGrossProfit(1000, 0)).toBe(1000);
+  });
+
+  it('handles negative values by clamping them to zero', () => {
+    expect(calculateGrossProfit(-500, 100)).toBe(-100);
+    expect(calculateGrossProfit(1000, -50)).toBe(1000);
+  });
+
+  it('handles invalid inputs gracefully', () => {
+    // NaN gets clamped to 0, so 0 - 100 = -100
+    expect(calculateGrossProfit(Number.NaN, 100)).toBe(-100);
+    // Infinity gets clamped to 0, so 1000 - 0 = 1000
+    expect(calculateGrossProfit(1000, Number.POSITIVE_INFINITY)).toBe(1000);
+    // -Infinity gets clamped to 0, so 0 - 100 = -100
+    expect(calculateGrossProfit(Number.NEGATIVE_INFINITY, 100)).toBe(-100);
+  });
+});
+
+describe('calculateGrossMargin', () => {
+  it('calculates gross margin percentage correctly', () => {
+    expect(calculateGrossMargin(5000, 1000)).toBe(80);
+    expect(calculateGrossMargin(5214.68, 1050.96)).toBeCloseTo(79.85, 2);
+  });
+
+  it('returns zero when gross sales is zero', () => {
+    expect(calculateGrossMargin(0, 100)).toBe(0);
+    expect(calculateGrossMargin(0, 0)).toBe(0);
+  });
+
+  it('returns 100% when cost is zero', () => {
+    expect(calculateGrossMargin(1000, 0)).toBe(100);
+  });
+
+  it('returns negative margin when cost exceeds sales', () => {
+    expect(calculateGrossMargin(100, 150)).toBe(-50);
+  });
+
+  it('handles invalid inputs gracefully', () => {
+    // NaN gets clamped to 0 for sales, division by zero check returns 0
+    expect(calculateGrossMargin(Number.NaN, 100)).toBe(0);
+    // Infinity gets clamped to 0 for sales, division by zero check returns 0
+    expect(calculateGrossMargin(Number.POSITIVE_INFINITY, 100)).toBe(0);
+    // NaN gets clamped to 0 for cost, so (1000 - 0) / 1000 = 100%
+    expect(calculateGrossMargin(1000, Number.NaN)).toBe(100);
+  });
+
+  it('handles negative values by clamping them to zero', () => {
+    expect(calculateGrossMargin(-500, 100)).toBe(0);
+    expect(calculateGrossMargin(1000, -50)).toBe(100);
   });
 });

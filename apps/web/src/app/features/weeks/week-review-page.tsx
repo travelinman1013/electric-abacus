@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import type { WeekStatus, WeeklyCostSnapshotEntry } from '@domain/costing';
-import { computeReportSummary } from '@domain/costing';
+import { calculateGrossMargin, calculateGrossProfit, computeReportSummary } from '@domain/costing';
 
 import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
@@ -153,6 +153,20 @@ export const WeekReviewPage = () => {
       return null;
     }
     return Number(((summary.totals.totalCostOfSales / salesTotals.grossSales) * 100).toFixed(2));
+  }, [summary, salesTotals]);
+
+  const grossProfit = useMemo(() => {
+    if (!summary || !salesTotals) {
+      return null;
+    }
+    return calculateGrossProfit(salesTotals.grossSales, summary.totals.totalCostOfSales);
+  }, [summary, salesTotals]);
+
+  const grossMargin = useMemo(() => {
+    if (!summary || !salesTotals) {
+      return null;
+    }
+    return calculateGrossMargin(salesTotals.grossSales, summary.totals.totalCostOfSales);
   }, [summary, salesTotals]);
 
   const tableRows = useMemo(
@@ -370,45 +384,6 @@ export const WeekReviewPage = () => {
 
       {!isLoading && !errorMessage && week && inventoryEntries.length ? (
         <>
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardDescription>Total usage units</CardDescription>
-                <CardTitle>{summary ? summary.totals.totalUsageUnits.toFixed(2) : '0.00'}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardDescription>Total cost of sales</CardDescription>
-                <CardTitle>
-                  {summary ? formatCurrency(summary.totals.totalCostOfSales) : formatCurrency(0)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardDescription>Food cost percentage</CardDescription>
-                <CardTitle>
-                  {foodCostPercentage !== null ? (
-                    <span
-                      className={cn(
-                        foodCostPercentage < 30
-                          ? 'text-emerald-600'
-                          : foodCostPercentage < 35
-                            ? 'text-amber-600'
-                            : 'text-red-600'
-                      )}
-                    >
-                      {foodCostPercentage}%
-                    </span>
-                  ) : (
-                    <span className="text-slate-400">N/A</span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
           {salesTotals && (
             <Card>
               <CardHeader>
@@ -441,6 +416,88 @@ export const WeekReviewPage = () => {
                     <dt className="text-xs font-medium uppercase text-slate-500">Net sales</dt>
                     <dd className="mt-1 text-2xl font-semibold text-emerald-700">
                       {formatCurrency(salesTotals.netSales)}
+                    </dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly cost summary</CardTitle>
+              <CardDescription>
+                Total ingredient usage and cost analysis.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <dt className="text-xs font-medium uppercase text-slate-500">Total cost of sales</dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {summary ? formatCurrency(summary.totals.totalCostOfSales) : formatCurrency(0)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase text-slate-500">Total usage units</dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {summary ? summary.totals.totalUsageUnits.toFixed(2) : '0.00'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase text-slate-500">Food cost percentage</dt>
+                  <dd className="mt-1 text-2xl font-semibold">
+                    {foodCostPercentage !== null ? (
+                      <span
+                        className={cn(
+                          foodCostPercentage < 30
+                            ? 'text-emerald-600'
+                            : foodCostPercentage < 35
+                              ? 'text-amber-600'
+                              : 'text-red-600'
+                        )}
+                      >
+                        {foodCostPercentage}%
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">N/A</span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          {grossProfit !== null && grossMargin !== null && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Profitability</CardTitle>
+                <CardDescription>
+                  Gross profit and margin after subtracting cost of sales from gross sales.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-medium uppercase text-slate-500">Gross profit</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-emerald-700">
+                      {formatCurrency(grossProfit)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase text-slate-500">Gross margin</dt>
+                    <dd className="mt-1 text-2xl font-semibold">
+                      <span
+                        className={cn(
+                          grossMargin >= 70
+                            ? 'text-emerald-600'
+                            : grossMargin >= 60
+                              ? 'text-amber-600'
+                              : 'text-red-600'
+                        )}
+                      >
+                        {grossMargin}%
+                      </span>
                     </dd>
                   </div>
                 </dl>
@@ -494,6 +551,15 @@ export const WeekReviewPage = () => {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {summary && (
+                      <TableRow className="bg-slate-50 font-semibold">
+                        <TableCell className="font-bold text-slate-900">TOTAL</TableCell>
+                        <TableCell className="text-right">{summary.totals.totalUsageUnits.toFixed(2)}</TableCell>
+                        <TableCell className="text-right"></TableCell>
+                        <TableCell className="text-right">{formatCurrency(summary.totals.totalCostOfSales)}</TableCell>
+                        <TableCell className="text-center"></TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               ) : (
