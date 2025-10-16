@@ -1,5 +1,5 @@
 {
-  "name": "taco-casa-digital-solution",
+  "name": "lightning-abacus",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -20,8 +20,7 @@
     "test:e2e": "npm --workspace apps/web run test:e2e",
     "e2e": "npm --workspace apps/web run test:e2e",
     "deploy": "npm --workspace apps/web run deploy",
-    "seed": "npm --workspace packages/firebase run seed",
-    "prepare": "husky install"
+    "seed": "npm --workspace packages/firebase run seed"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
@@ -31,19 +30,10 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "firebase-tools": "^14.17.0",
-    "husky": "^9.0.0",
-    "lint-staged": "^15.2.0",
     "prettier": "^3.2.0",
     "tsx": "^4.20.5",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.44.1"
-  },
-  "lint-staged": {
-    "*.{json,md}": "prettier --write",
-    "{apps,packages}/**/*.{ts,tsx,js,jsx}": [
-      "eslint --max-warnings=0",
-      "prettier --write"
-    ]
   },
   "dependencies": {
     "@modelcontextprotocol/server-puppeteer": "^2025.5.12",

@@ -10,112 +10,194 @@ interface PDFExportData {
   finalizedBy?: string;
   ingredientNames: Record<string, string>;
   sourceVersions: Record<string, string>;
+  ingredientCategories?: Record<string, string>;
 }
 
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
-    fontSize: 10,
-    padding: 30,
-    backgroundColor: '#ffffff'
+    fontSize: 11,
+    padding: 40,
+    backgroundColor: '#ffffff',
+    lineHeight: 1.4
   },
   header: {
-    marginBottom: 20,
-    borderBottom: '1px solid #e5e7eb',
-    paddingBottom: 10
+    marginBottom: 25,
+    borderBottom: '2px solid #1f2937',
+    paddingBottom: 12,
+    backgroundColor: '#f9fafb',
+    padding: 20,
+    borderRadius: 4
   },
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#1f2937'
+    marginBottom: 6,
+    color: '#111827'
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7280',
-    marginBottom: 3
+    marginBottom: 3,
+    lineHeight: 1.5
   },
   section: {
-    marginBottom: 15
+    marginBottom: 25
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#374151'
+    marginBottom: 12,
+    color: '#111827',
+    borderBottom: '1px solid #e5e7eb',
+    paddingBottom: 6
   },
   summaryGrid: {
     flexDirection: 'row',
-    marginBottom: 15,
-    gap: 20
+    gap: 15
   },
   summaryCard: {
     flex: 1,
-    padding: 10,
+    padding: 14,
     backgroundColor: '#f9fafb',
-    border: '1px solid #e5e7eb',
-    borderRadius: 4
+    border: '1.5px solid #d1d5db',
+    borderRadius: 6
   },
   summaryLabel: {
     fontSize: 9,
     color: '#6b7280',
-    marginBottom: 3
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   summaryValue: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#1f2937'
+    color: '#111827',
+    lineHeight: 1.2
   },
   table: {
-    width: '100%'
+    width: '100%',
+    border: '1px solid #e5e7eb',
+    borderRadius: 4
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderBottom: '1px solid #d1d5db',
-    padding: 8
+    backgroundColor: '#1f2937',
+    padding: 10
   },
   tableRow: {
     flexDirection: 'row',
     borderBottom: '1px solid #e5e7eb',
-    padding: 8
+    padding: 10
+  },
+  tableRowAlt: {
+    flexDirection: 'row',
+    borderBottom: '1px solid #e5e7eb',
+    padding: 10,
+    backgroundColor: '#f9fafb'
   },
   tableCell: {
     flex: 1,
-    fontSize: 9
+    fontSize: 10
   },
   tableCellRight: {
     flex: 1,
-    fontSize: 9,
+    fontSize: 10,
     textAlign: 'right'
   },
   tableCellCenter: {
     flex: 1,
-    fontSize: 9,
+    fontSize: 10,
     textAlign: 'center'
   },
   tableHeaderText: {
     fontWeight: 'bold',
     fontSize: 10,
-    color: '#374151'
+    color: '#ffffff'
   },
   versionBadge: {
     fontSize: 8,
     backgroundColor: '#e5e7eb',
-    padding: 2,
-    borderRadius: 2,
+    padding: '3 6',
+    borderRadius: 3,
     color: '#6b7280'
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#e5e7eb',
+    padding: 10,
+    borderTop: '1px solid #d1d5db'
+  },
+  categoryHeaderText: {
+    fontWeight: 'bold',
+    fontSize: 11,
+    color: '#374151',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   footer: {
     position: 'absolute',
     bottom: 30,
-    left: 30,
-    right: 30,
+    left: 40,
+    right: 40,
     textAlign: 'center',
-    fontSize: 8,
+    fontSize: 9,
     color: '#9ca3af',
     borderTop: '1px solid #e5e7eb',
     paddingTop: 10
+  },
+  executiveSummary: {
+    backgroundColor: '#f0f9ff',
+    border: '2px solid #3b82f6',
+    borderRadius: 6,
+    padding: 18,
+    marginBottom: 25
+  },
+  executiveTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e40af',
+    marginBottom: 12
+  },
+  keyMetricRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 10
+  },
+  keyMetric: {
+    flex: 1
+  },
+  keyMetricLabel: {
+    fontSize: 9,
+    color: '#6b7280',
+    marginBottom: 4,
+    textTransform: 'uppercase'
+  },
+  keyMetricValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827'
+  },
+  badge: {
+    fontSize: 9,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    fontWeight: 'bold',
+    textAlign: 'center'
+  },
+  badgeGreen: {
+    backgroundColor: '#d1fae5',
+    color: '#065f46'
+  },
+  badgeYellow: {
+    backgroundColor: '#fef3c7',
+    color: '#92400e'
+  },
+  badgeRed: {
+    backgroundColor: '#fee2e2',
+    color: '#991b1b'
   }
 });
 
@@ -152,7 +234,15 @@ const dayLabels: Record<WeekDay, string> = {
   sun: 'Sunday'
 };
 
-const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, ingredientNames, sourceVersions }: PDFExportData) => {
+const categoryLabels: Record<string, string> = {
+  food: 'Food Ingredients',
+  paper: 'Paper & Supplies',
+  other: 'Other Items'
+};
+
+const categoryOrder = ['food', 'paper', 'other'];
+
+const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, ingredientNames, sourceVersions, ingredientCategories }: PDFExportData) => {
   // Calculate sales totals
   const salesTotals = sales?.days ? WEEK_DAYS.reduce((acc, day) => {
     const dayData = sales.days[day];
@@ -184,20 +274,80 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
     <Page size="A4" style={styles.page}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Weekly Cost Report - {weekId}</Text>
-        <Text style={styles.subtitle}>Generated on {new Date().toLocaleDateString('en-US')}</Text>
+        <Text style={styles.title}>Weekly Operations Report</Text>
+        <Text style={styles.subtitle}>Week: {weekId}</Text>
+        <Text style={styles.subtitle}>Generated: {new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}</Text>
         {finalizedAt && (
           <Text style={styles.subtitle}>
-            Finalized on {formatDate(finalizedAt)}
+            Finalized: {formatDate(finalizedAt)}
             {finalizedBy && ` by ${finalizedBy}`}
           </Text>
         )}
       </View>
 
+      {/* Executive Summary */}
+      {salesTotals && (
+        <View style={styles.executiveSummary}>
+          <Text style={styles.executiveTitle}>Executive Summary</Text>
+
+          <View style={styles.keyMetricRow}>
+            <View style={styles.keyMetric}>
+              <Text style={styles.keyMetricLabel}>Gross Sales</Text>
+              <Text style={styles.keyMetricValue}>{formatCurrency(salesTotals.grossSales)}</Text>
+            </View>
+            <View style={styles.keyMetric}>
+              <Text style={styles.keyMetricLabel}>Cost of Sales</Text>
+              <Text style={styles.keyMetricValue}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
+            </View>
+            {grossProfit !== null && (
+              <View style={styles.keyMetric}>
+                <Text style={styles.keyMetricLabel}>Gross Profit</Text>
+                <Text style={[styles.keyMetricValue, { color: '#065f46' }]}>{formatCurrency(grossProfit)}</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.keyMetricRow}>
+            {foodCostPercentage && (
+              <View style={styles.keyMetric}>
+                <Text style={styles.keyMetricLabel}>Food Cost %</Text>
+                <Text style={[
+                  styles.keyMetricValue,
+                  { color: parseFloat(foodCostPercentage) < 30 ? '#065f46' : parseFloat(foodCostPercentage) < 35 ? '#92400e' : '#991b1b' }
+                ]}>
+                  {foodCostPercentage}%
+                </Text>
+              </View>
+            )}
+            {grossMargin !== null && (
+              <View style={styles.keyMetric}>
+                <Text style={styles.keyMetricLabel}>Gross Margin</Text>
+                <Text style={[
+                  styles.keyMetricValue,
+                  { color: grossMargin >= 70 ? '#065f46' : grossMargin >= 60 ? '#92400e' : '#991b1b' }
+                ]}>
+                  {grossMargin.toFixed(2)}%
+                </Text>
+              </View>
+            )}
+            <View style={styles.keyMetric}>
+              <Text style={styles.keyMetricLabel}>Net Sales</Text>
+              <Text style={styles.keyMetricValue}>{formatCurrency(salesTotals.netSales)}</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Sales Summary */}
       {sales?.days && salesTotals && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sales Summary</Text>
+          <Text style={styles.sectionTitle}>Daily Sales Breakdown</Text>
           <View style={styles.table}>
             {/* Table Header */}
             <View style={styles.tableHeader}>
@@ -219,12 +369,12 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
             </View>
 
             {/* Daily Rows */}
-            {WEEK_DAYS.map((day) => {
+            {WEEK_DAYS.map((day, index) => {
               const dayData = sales.days[day];
               const gross = calculateDayGross(dayData);
               const net = calculateDayNet(dayData);
               return (
-                <View key={day} style={styles.tableRow}>
+                <View key={day} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
                   <View style={styles.tableCell}>
                     <Text>{dayLabels[day]}</Text>
                   </View>
@@ -245,68 +395,31 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
             })}
 
             {/* Totals Row */}
-            <View style={[styles.tableRow, { backgroundColor: '#f3f4f6', fontWeight: 'bold' }]}>
+            <View style={[styles.tableRow, { backgroundColor: '#1f2937' }]}>
               <View style={styles.tableCell}>
-                <Text style={styles.tableHeaderText}>TOTAL</Text>
+                <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>TOTAL</Text>
               </View>
               <View style={styles.tableCellRight}>
-                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.grossSales)}</Text>
+                <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>{formatCurrency(salesTotals.grossSales)}</Text>
               </View>
               <View style={styles.tableCellRight}>
-                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.lessSalesTax)}</Text>
+                <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>{formatCurrency(salesTotals.lessSalesTax)}</Text>
               </View>
               <View style={styles.tableCellRight}>
-                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.lessPromo)}</Text>
+                <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>{formatCurrency(salesTotals.lessPromo)}</Text>
               </View>
               <View style={styles.tableCellRight}>
-                <Text style={styles.tableHeaderText}>{formatCurrency(salesTotals.netSales)}</Text>
+                <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>{formatCurrency(salesTotals.netSales)}</Text>
               </View>
             </View>
           </View>
         </View>
       )}
 
-      {/* Cost Summary */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weekly Cost Summary</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total Usage Units</Text>
-            <Text style={styles.summaryValue}>{summary.totals.totalUsageUnits.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total Cost of Sales</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Food Cost %</Text>
-            <Text style={styles.summaryValue}>
-              {foodCostPercentage ? `${foodCostPercentage}%` : 'N/A'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Profitability Section */}
-      {grossProfit !== null && grossMargin !== null && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profitability</Text>
-          <View style={[styles.summaryGrid, { gap: 20 }]}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Gross Profit</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(grossProfit)}</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Gross Margin</Text>
-              <Text style={styles.summaryValue}>{grossMargin.toFixed(2)}%</Text>
-            </View>
-          </View>
-        </View>
-      )}
 
       {/* Detailed Breakdown */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Ingredient Cost Breakdown</Text>
+        <Text style={styles.sectionTitle}>Ingredient Cost Breakdown by Category</Text>
         <View style={styles.table}>
           {/* Table Header */}
           <View style={styles.tableHeader}>
@@ -327,42 +440,112 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
             </View>
           </View>
 
-          {/* Table Rows */}
-          {summary.breakdown.map((item) => (
-            <View key={item.ingredientId} style={styles.tableRow}>
-              <View style={styles.tableCell}>
-                <Text>{ingredientNames[item.ingredientId] || item.ingredientId}</Text>
-              </View>
-              <View style={styles.tableCellRight}>
-                <Text>{item.usage.toFixed(2)}</Text>
-              </View>
-              <View style={styles.tableCellRight}>
-                <Text>{formatCurrency(item.unitCost)}</Text>
-              </View>
-              <View style={styles.tableCellRight}>
-                <Text>{formatCurrency(item.costOfSales)}</Text>
-              </View>
-              <View style={styles.tableCellCenter}>
-                <Text style={styles.versionBadge}>
-                  {sourceVersions[item.ingredientId] || 'unspecified'}
-                </Text>
-              </View>
-            </View>
-          ))}
+          {/* Group items by category */}
+          {(() => {
+            // Group breakdown items by category
+            const groupedItems = summary.breakdown.reduce<Record<string, typeof summary.breakdown>>((acc, item) => {
+              const category = ingredientCategories?.[item.ingredientId] || 'other';
+              if (!acc[category]) {
+                acc[category] = [];
+              }
+              acc[category].push(item);
+              return acc;
+            }, {});
 
-          {/* Totals Row */}
-          <View style={[styles.tableRow, { backgroundColor: '#f3f4f6', fontWeight: 'bold' }]}>
+            // Calculate category subtotals
+            const categoryTotals = Object.entries(groupedItems).reduce<Record<string, { usage: number; cost: number }>>((acc, [category, items]) => {
+              acc[category] = items.reduce(
+                (totals, item) => ({
+                  usage: totals.usage + item.usage,
+                  cost: totals.cost + item.costOfSales
+                }),
+                { usage: 0, cost: 0 }
+              );
+              return acc;
+            }, {});
+
+            let rowIndex = 0;
+            return categoryOrder.map((category) => {
+              const items = groupedItems[category];
+              if (!items || items.length === 0) return null;
+
+              return (
+                <View key={category}>
+                  {/* Category Header */}
+                  <View style={styles.categoryHeader}>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.categoryHeaderText}>{categoryLabels[category] || category}</Text>
+                    </View>
+                  </View>
+
+                  {/* Category Items */}
+                  {items.map((item) => {
+                    const currentRowIndex = rowIndex++;
+                    return (
+                      <View key={item.ingredientId} style={currentRowIndex % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
+                        <View style={styles.tableCell}>
+                          <Text>  {ingredientNames[item.ingredientId] || item.ingredientId}</Text>
+                        </View>
+                        <View style={styles.tableCellRight}>
+                          <Text>{item.usage.toFixed(2)}</Text>
+                        </View>
+                        <View style={styles.tableCellRight}>
+                          <Text>{formatCurrency(item.unitCost)}</Text>
+                        </View>
+                        <View style={styles.tableCellRight}>
+                          <Text>{formatCurrency(item.costOfSales)}</Text>
+                        </View>
+                        <View style={styles.tableCellCenter}>
+                          <Text style={styles.versionBadge}>
+                            {sourceVersions[item.ingredientId] || 'N/A'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  {/* Category Subtotal */}
+                  <View style={[styles.tableRow, { backgroundColor: '#e5e7eb', fontWeight: 'bold' }]}>
+                    <View style={styles.tableCell}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 10 }}>
+                        {categoryLabels[category]} Subtotal
+                      </Text>
+                    </View>
+                    <View style={styles.tableCellRight}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 10 }}>
+                        {categoryTotals[category].usage.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.tableCellRight}>
+                      <Text></Text>
+                    </View>
+                    <View style={styles.tableCellRight}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 10 }}>
+                        {formatCurrency(categoryTotals[category].cost)}
+                      </Text>
+                    </View>
+                    <View style={styles.tableCellCenter}>
+                      <Text></Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            });
+          })()}
+
+          {/* Grand Total Row */}
+          <View style={[styles.tableRow, { backgroundColor: '#1f2937' }]}>
             <View style={styles.tableCell}>
-              <Text style={styles.tableHeaderText}>TOTAL</Text>
+              <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>GRAND TOTAL</Text>
             </View>
             <View style={styles.tableCellRight}>
-              <Text style={styles.tableHeaderText}>{summary.totals.totalUsageUnits.toFixed(2)}</Text>
+              <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>{summary.totals.totalUsageUnits.toFixed(2)}</Text>
             </View>
             <View style={styles.tableCellRight}>
               <Text></Text>
             </View>
             <View style={styles.tableCellRight}>
-              <Text style={styles.tableHeaderText}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
+              <Text style={[styles.tableHeaderText, { color: '#ffffff' }]}>{formatCurrency(summary.totals.totalCostOfSales)}</Text>
             </View>
             <View style={styles.tableCellCenter}>
               <Text></Text>
@@ -371,38 +554,60 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
         </View>
       </View>
 
-      {/* Cost Analysis */}
+      {/* Performance Benchmarks */}
       {foodCostPercentage && salesTotals && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cost Analysis</Text>
-          <View style={{ padding: 10, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 4 }}>
-            <Text style={{ fontSize: 10, marginBottom: 5, color: '#6b7280' }}>
-              Food Cost Percentage
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Text style={{ fontSize: 9, color: '#374151' }}>
-                Total Food Cost: {formatCurrency(summary.totals.totalCostOfSales)}
+          <Text style={styles.sectionTitle}>Performance Benchmarks</Text>
+          <View style={{ padding: 16, backgroundColor: '#f9fafb', border: '1.5px solid #d1d5db', borderRadius: 6 }}>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 11, marginBottom: 8, color: '#374151', fontWeight: 'bold' }}>
+                Food Cost Percentage Analysis
               </Text>
-              <Text style={{ fontSize: 9, color: '#6b7280' }}>÷</Text>
-              <Text style={{ fontSize: 9, color: '#374151' }}>
-                Gross Sales: {formatCurrency(salesTotals.grossSales)}
-              </Text>
-              <Text style={{ fontSize: 9, color: '#6b7280' }}>=</Text>
-              <Text style={{
-                fontSize: 14,
-                fontWeight: 'bold',
-                color: parseFloat(foodCostPercentage) < 30
-                  ? '#059669'
-                  : parseFloat(foodCostPercentage) < 35
-                    ? '#d97706'
-                    : '#dc2626'
-              }}>
-                {foodCostPercentage}%
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <Text style={{ fontSize: 10, color: '#6b7280' }}>Formula:</Text>
+                <Text style={{ fontSize: 10, color: '#374151' }}>
+                  {formatCurrency(summary.totals.totalCostOfSales)} ÷ {formatCurrency(salesTotals.grossSales)} =
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  color: parseFloat(foodCostPercentage) < 30 ? '#065f46' : parseFloat(foodCostPercentage) < 35 ? '#92400e' : '#991b1b'
+                }}>
+                  {foodCostPercentage}%
+                </Text>
+              </View>
             </View>
-            <Text style={{ fontSize: 8, marginTop: 5, color: '#6b7280' }}>
-              Target: &lt;30% (excellent) | 30-35% (acceptable) | &gt;35% (needs attention)
-            </Text>
+
+            <View style={{ borderTop: '1px solid #d1d5db', paddingTop: 10 }}>
+              <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 4 }}>Industry Benchmarks:</Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={[styles.badge, styles.badgeGreen]}>
+                  <Text style={{ fontSize: 8 }}>Excellent: &lt;30%</Text>
+                </View>
+                <View style={[styles.badge, styles.badgeYellow]}>
+                  <Text style={{ fontSize: 8 }}>Acceptable: 30-35%</Text>
+                </View>
+                <View style={[styles.badge, styles.badgeRed]}>
+                  <Text style={{ fontSize: 8 }}>Needs Attention: &gt;35%</Text>
+                </View>
+              </View>
+            </View>
+
+            {grossMargin !== null && (
+              <View style={{ borderTop: '1px solid #d1d5db', paddingTop: 10, marginTop: 10 }}>
+                <Text style={{ fontSize: 11, marginBottom: 6, color: '#374151', fontWeight: 'bold' }}>
+                  Gross Margin Analysis
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={[styles.badge, grossMargin >= 70 ? styles.badgeGreen : grossMargin >= 60 ? styles.badgeYellow : styles.badgeRed]}>
+                    <Text style={{ fontSize: 8 }}>Current: {grossMargin.toFixed(2)}%</Text>
+                  </View>
+                  <Text style={{ fontSize: 9, color: '#6b7280', alignSelf: 'center' }}>
+                    Target: ≥70% (excellent) | ≥60% (acceptable)
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       )}

@@ -41,7 +41,8 @@ service cloud.firestore {
 
     // User Profiles
     match /users/{uid} {
-      allow read: if isOwner() || (isAuthenticated() && request.auth.uid == uid);
+      // Check own UID first to avoid circular dependency with isOwner()
+      allow read: if (isAuthenticated() && request.auth.uid == uid) || isOwner();
       allow create: if isOwner();
       allow update: if isOwner();
       allow delete: if false;

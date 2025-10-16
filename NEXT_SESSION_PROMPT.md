@@ -1,4 +1,4 @@
-# Next Session Context - Taco Casa Digital Solution
+# Next Session Context - Lightning Abacus
 
 ## Priority Fixes Required
 

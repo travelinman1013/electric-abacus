@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Taco Casa Digital Solution - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles restaurant operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations.
+Lightning Abacus - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles business operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations.
 
 ## Project Structure
 
@@ -99,8 +99,8 @@ Taco Casa Digital Solution - A monorepo for weekly operations management built w
 
 ## Demo Credentials
 
-- **Owner**: `regan.owner@tacocasa.test` / `OwnerPass123!`
-- **Team Member**: `taylor.team@tacocasa.test` / `TeamPass123!`
+- **Admin**: `admin@lightningabacus.test` / `AdminPass123!`
+- **Staff**: `staff@lightningabacus.test` / `StaffPass123!`
 
 ## Environment Setup
 

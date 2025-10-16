@@ -1,5 +1,5 @@
 {
-  "name": "@taco/firebase",
+  "name": "@lightning/firebase",
   "private": true,
   "type": "module",
   "scripts": {

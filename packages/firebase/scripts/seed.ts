@@ -141,15 +141,15 @@ const main = async () => {
   console.log('👥 Creating users...');
   const users: SeedUserInput[] = [
     {
-      email: 'regan.owner@tacocasa.test',
-      displayName: 'Regan Owner',
-      password: 'OwnerPass123!',
+      email: 'admin@lightningabacus.test',
+      displayName: 'Admin User',
+      password: 'AdminPass123!',
       role: 'owner',
     },
     {
-      email: 'taylor.team@tacocasa.test',
-      displayName: 'Taylor Team Member',
-      password: 'TeamPass123!',
+      email: 'staff@lightningabacus.test',
+      displayName: 'Staff User',
+      password: 'StaffPass123!',
       role: 'teamMember',
     },
   ];

@@ -11,7 +11,7 @@ export default defineConfig({
       { find: '@', replacement: path.resolve(__dirname, './src') },
       { find: '@domain', replacement: path.resolve(__dirname, '../../packages/domain/src') },
       {
-        find: '@taco/firebase',
+        find: '@lightning/firebase',
         replacement: path.resolve(__dirname, '../../packages/firebase/src/client-only.ts')
       }
     ]

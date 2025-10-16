@@ -280,6 +280,10 @@ export const WeekReviewPage = () => {
         ])
       );
 
+      const ingredientCategories = Object.fromEntries(
+        ingredients.map((ingredient) => [ingredient.id, ingredient.category])
+      );
+
       await downloadWeekReportPDF({
         weekId,
         summary,
@@ -287,7 +291,8 @@ export const WeekReviewPage = () => {
         finalizedAt: week?.finalizedAt ?? undefined,
         finalizedBy: week?.finalizedBy || undefined,
         ingredientNames,
-        sourceVersions
+        sourceVersions,
+        ingredientCategories
       });
     } catch (error) {
       setActionError(

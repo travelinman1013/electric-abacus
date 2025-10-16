@@ -12,7 +12,7 @@ import {
 
 import type { MenuItem, RecipeIngredient } from '@domain/costing';
 
-import { getClientFirestore } from '@taco/firebase';
+import { getClientFirestore } from '@lightning/firebase';
 
 import { ensureId } from './ids';
 

@@ -13,7 +13,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebas
 import { doc, getDoc } from 'firebase/firestore';
 
 import type { UserProfile, UserRole } from '@domain/costing';
-import { getClientAuth, getClientFirestore } from '@taco/firebase';
+import { getClientAuth, getClientFirestore } from '@lightning/firebase';
 
 interface AuthContextValue {
   user: FirebaseUser | null;
@@ -92,7 +92,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('🔐 Attempting signInWithEmailAndPassword...');
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('🔐 signInWithEmailAndPassword successful:', { uid: result.user?.uid, email: result.user?.email });
-      return result;
     } catch (error) {
       console.error('🔐 signInWithEmailAndPassword failed:', error);
       throw error;

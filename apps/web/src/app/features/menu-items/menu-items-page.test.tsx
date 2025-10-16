@@ -62,9 +62,16 @@ describe('MenuItemsPage editing', () => {
         },
       ],
       isLoading: false,
+      isPending: false,
       isError: false,
+      isSuccess: true,
       error: null,
-    });
+      status: 'success',
+      fetchStatus: 'idle',
+      isLoadingError: false,
+      isRefetchError: false,
+      refetch: vi.fn(),
+    } as any);
 
     mockUseMenuItems.mockReturnValue({
       data: [
@@ -76,9 +83,16 @@ describe('MenuItemsPage editing', () => {
         },
       ],
       isLoading: false,
+      isPending: false,
       isError: false,
+      isSuccess: true,
       error: null,
-    });
+      status: 'success',
+      fetchStatus: 'idle',
+      isLoadingError: false,
+      isRefetchError: false,
+      refetch: vi.fn(),
+    } as any);
 
     const menuItemDetail = {
       item: {
@@ -101,26 +115,53 @@ describe('MenuItemsPage editing', () => {
           unitOfMeasure: 'oz',
         },
       ],
-    } as const;
+    };
 
     mockGetMenuItemWithRecipes.mockResolvedValue(menuItemDetail);
 
     mockUseMenuItemWithRecipes.mockImplementation((menuItemId?: string) => ({
       data: menuItemId ? menuItemDetail : null,
       isLoading: false,
+      isPending: false,
       isError: false,
+      isSuccess: true,
       error: null,
-    }));
+      status: 'success',
+      fetchStatus: 'idle',
+      isLoadingError: false,
+      isRefetchError: false,
+      refetch: vi.fn(),
+    } as any));
 
     mockUseUpsertMenuItem.mockReturnValue({
       mutateAsync: vi.fn(),
+      mutate: vi.fn(),
       isPending: false,
-    });
+      isIdle: true,
+      isError: false,
+      isSuccess: false,
+      data: undefined,
+      error: null,
+      variables: undefined,
+      status: 'idle',
+      reset: vi.fn(),
+      context: undefined,
+    } as any);
 
     mockUseDeleteMenuItem.mockReturnValue({
       mutateAsync: vi.fn(),
+      mutate: vi.fn(),
       isPending: false,
-    });
+      isIdle: true,
+      isError: false,
+      isSuccess: false,
+      data: undefined,
+      error: null,
+      variables: undefined,
+      status: 'idle',
+      reset: vi.fn(),
+      context: undefined,
+    } as any);
   });
 
   it('allows editing form fields without resetting to the original recipe', async () => {

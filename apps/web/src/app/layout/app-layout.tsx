@@ -54,10 +54,10 @@ export const AppLayout = () => {
         <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              <span className="text-lg font-semibold text-slate-900">Taco Casa Digital</span>
+              <span className="text-lg font-semibold text-slate-900">Lightning Abacus</span>
               <Badge variant="secondary" className="uppercase">{profile.role}</Badge>
             </div>
-            <p className="text-xs text-slate-500">Digitize weekly sales, inventory, and costing.</p>
+            <p className="text-xs text-slate-500">Fast, powerful operations management for your business.</p>
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-6">

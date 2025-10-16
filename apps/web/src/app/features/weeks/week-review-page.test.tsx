@@ -46,7 +46,7 @@ const renderWithProviders = (initialEntries = ['/weeks/2025-W01/review']) => {
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0
+        gcTime: 0
       }
     }
   });

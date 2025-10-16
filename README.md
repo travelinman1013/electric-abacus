@@ -1,6 +1,6 @@
-# Taco Casa Digital Solution
+# Lightning Abacus
 
-Restaurant operations management system built with React, Firebase, and TypeScript. Features real-time recipe costing, food cost percentage analysis, and comprehensive inventory management.
+Business operations management system built with React, Firebase, and TypeScript. Features real-time recipe costing, food cost percentage analysis, and comprehensive inventory management.
 
 ## Quick Start
 
@@ -30,9 +30,79 @@ npm run dev  # Start dev server at http://localhost:5173
 
 - `npm run dev` – Start development server
 - `npm run build` – Build for production
+- `npm run deploy` – Build and deploy to Firebase Hosting
 - `npm run test:unit` – Run unit tests
 - `npm run lint` – Lint all workspaces
 - `npm run seed` – Seed Firebase with test data
+
+## Firebase Hosting Deployment
+
+### Initial Setup (One-Time)
+
+1. **Login to Firebase**
+   ```bash
+   npx firebase login
+   ```
+   This will open a browser for authentication.
+
+2. **Verify Project Configuration**
+   The project is already configured for `taco-ray-1355553`. Check `.firebaserc` if needed.
+
+### Deploy to Production
+
+Deploy your application with a single command:
+
+```bash
+npm run deploy
+```
+
+This will:
+1. Build the production version (`tsc -b && vite build`)
+2. Deploy to Firebase Hosting
+3. Make your app live in ~2-3 minutes
+
+### Access Your Application
+
+**Production URL:** https://taco-ray-1355553.web.app
+
+**Alternative URL:** https://taco-ray-1355553.firebaseapp.com
+
+### Accessing from Tablet/Mobile
+
+1. Open any browser on your device
+2. Navigate to the production URL
+3. Login with demo credentials (see Demo Accounts section below)
+4. **Add to Home Screen** for app-like experience:
+   - **iOS**: Tap Share → "Add to Home Screen"
+   - **Android**: Tap Menu (⋮) → "Add to Home Screen"
+
+### Firebase Console
+
+View hosting metrics, rollback deployments, and manage settings:
+https://console.firebase.google.com/project/taco-ray-1355553/hosting
+
+### Hosting Costs
+
+Current configuration uses Firebase free tier:
+- **Hosting**: 10GB storage, 360MB/day bandwidth (free)
+- **Firestore**: 50k reads, 20k writes/day (free)
+- **Auth**: 10k verifications/month (free)
+- **Expected Cost**: $0/month for typical single-location usage
+
+### Advanced Deployment
+
+```bash
+# Preview locally before deploying
+npm run build
+npm run preview  # Opens at http://localhost:4173
+
+# Deploy specific services
+npx firebase deploy --only hosting
+npx firebase deploy --only firestore:rules
+
+# View deployment history
+npx firebase hosting:channel:list
+```
 
 ## Recent Updates (Sep 2025)
 
@@ -48,8 +118,8 @@ npm run dev  # Start dev server at http://localhost:5173
 
 ## Demo Accounts
 
-- Owner: `regan.owner@tacocasa.test` / `OwnerPass123!`
-- Team: `taylor.team@tacocasa.test` / `TeamPass123!`
+- Admin: `admin@lightningabacus.test` / `AdminPass123!`
+- Staff: `staff@lightningabacus.test` / `StaffPass123!`
 
 ## Environment Setup
 

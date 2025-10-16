@@ -1,13 +1,13 @@
 # Seed Data Guide
 
 ## Overview
-The enhanced seed script generates realistic, demo-quality data for the Taco Casa Digital Solution application. This data is designed to showcase the application's capabilities with authentic restaurant operations data.
+The enhanced seed script generates realistic, demo-quality data for the Lightning Abacus application. This data is designed to showcase the application's capabilities with authentic business operations data.
 
 ## What Gets Generated
 
 ### 👥 Users (2)
-- **Owner Account**: `regan.owner@tacocasa.test` / `OwnerPass123!`
-- **Team Member Account**: `taylor.team@tacocasa.test` / `TeamPass123!`
+- **Admin Account**: `admin@lightningabacus.test` / `AdminPass123!`
+- **Staff Account**: `staff@lightningabacus.test` / `StaffPass123!`
 
 ### 🥫 Ingredients (31)
 

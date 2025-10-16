@@ -88,8 +88,8 @@ export const LoginPage = () => {
       if (result.success) {
         console.log('🎉 Debug test successful - Firebase is working!');
         // Auto-fill the form with the test credentials since they work
-        form.setValue('email', 'regan.owner@tacocasa.test');
-        form.setValue('password', 'OwnerPass123!');
+        form.setValue('email', 'admin@lightningabacus.test');
+        form.setValue('password', 'AdminPass123!');
       } else {
         console.error('❌ Debug test failed');
         setFormError('Firebase connection test failed. Check console for details.');
@@ -106,9 +106,9 @@ export const LoginPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-slate-100 px-4 py-8">
       <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Taco Casa Digital</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Lightning Abacus</h1>
           <p className="text-sm text-slate-500">
-            Sign in with the credentials provisioned by your franchise owner.
+            Sign in with your account credentials to access your operations dashboard.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export const LoginPage = () => {
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="regan.owner@tacocasa.test"
+              placeholder="admin@lightningabacus.test"
               {...form.register('email')}
             />
           </FormField>
@@ -170,8 +170,8 @@ export const LoginPage = () => {
 
         <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
           <p className="font-semibold text-slate-600">Demo credentials</p>
-          <p>Owner: regan.owner@tacocasa.test</p>
-          <p>Team Member: taylor.team@tacocasa.test</p>
+          <p>Admin: admin@lightningabacus.test</p>
+          <p>Staff: staff@lightningabacus.test</p>
         </div>
       </div>
     </div>

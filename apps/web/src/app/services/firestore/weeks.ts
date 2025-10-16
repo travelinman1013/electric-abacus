@@ -25,7 +25,7 @@ import type {
 } from '@domain/costing';
 import { WEEK_DAYS, computeReportSummary } from '@domain/costing';
 
-import { getClientAuth, getClientFirestore } from '@taco/firebase';
+import { getClientAuth, getClientFirestore } from '@lightning/firebase';
 
 import { timestampToIsoString, toNonNegativeNumber } from './utils';
 

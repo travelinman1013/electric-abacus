@@ -19,7 +19,7 @@ vi.mock('../../providers/auth-provider', () => ({
   useAuthContext: () => mockUseAuthContext()
 }));
 
-vi.mock('@taco/firebase', () => ({
+vi.mock('@lightning/firebase', () => ({
   getClientAuth: vi.fn(),
   getClientFirestore: vi.fn()
 }));
@@ -31,7 +31,7 @@ const renderWithProviders = () => {
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0
+        gcTime: 0
       }
     }
   });

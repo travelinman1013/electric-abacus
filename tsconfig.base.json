@@ -13,7 +13,7 @@
     "paths": {
       "@domain/*": ["packages/domain/src/*"],
       "@firebase/*": ["packages/firebase/src/*"],
-      "@taco/firebase": ["packages/firebase/src/client-only.ts"]
+      "@lightning/firebase": ["packages/firebase/src/client-only.ts"]
     }
   },
   "include": ["packages", "apps"],
