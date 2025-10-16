@@ -171,6 +171,9 @@ const main = async () => {
 
     userIds[user.role] = uid;
 
+    // Set custom claims for role-based access (used in Firestore rules)
+    await auth.setCustomUserClaims(uid, { role: user.role });
+
     await db.doc(`users/${uid}`).set({
       displayName: user.displayName,
       role: user.role,

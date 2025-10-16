@@ -5,13 +5,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userData(uid) {
-      return get(/databases/$(database)/documents/users/$(uid));
-    }
-
+    // Get user role from custom claims (no Firestore read needed!)
     function userRole() {
-      return isAuthenticated() && userData(request.auth.uid).exists()
-        ? userData(request.auth.uid).data.role
+      return isAuthenticated() && request.auth.token.role != null
+        ? request.auth.token.role
         : null;
     }
 
