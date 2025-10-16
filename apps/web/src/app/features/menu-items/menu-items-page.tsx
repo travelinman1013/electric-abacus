@@ -127,7 +127,7 @@ export const MenuItemsPage = () => {
   const [editingMenuItemId, setEditingMenuItemId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const editingMenuItem = useMenuItemWithRecipes(editingMenuItemId);
+  const editingMenuItem = useMenuItemWithRecipes(editingMenuItemId ?? undefined);
 
   const activeIngredients = useMemo(
     () => ingredients.filter((ingredient) => ingredient.isActive),
@@ -531,7 +531,10 @@ export const MenuItemsPage = () => {
             <NumberInput
               className="text-right"
               inputClassName="text-base text-right"
-              increment={0.25}
+              increment={(() => {
+                const unitOfMeasure = form.watch(`recipes.${index}.unitOfMeasure`);
+                return unitOfMeasure?.toLowerCase() === 'each' ? 1 : 0.25;
+              })()}
               min={0}
               value={form.watch(`recipes.${index}.quantity`) || 0}
               onChange={(value) => form.setValue(`recipes.${index}.quantity`, value)}
@@ -769,6 +772,11 @@ export const MenuItemsPage = () => {
                     placeholder="0.00"
                     {...createForm.register('sellingPrice', { valueAsNumber: true })}
                   />
+                  {createRecipeCostSummary.totalRecipeCost > 0 && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Suggested for 30% food cost: {formatCurrency(createRecipeCostSummary.totalRecipeCost / 0.30)}
+                    </p>
+                  )}
                 </FormField>
 
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
@@ -887,6 +895,11 @@ export const MenuItemsPage = () => {
                       placeholder="0.00"
                       {...editForm.register('sellingPrice', { valueAsNumber: true })}
                     />
+                    {editRecipeCostSummary.totalRecipeCost > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Suggested for 30% food cost: {formatCurrency(editRecipeCostSummary.totalRecipeCost / 0.30)}
+                      </p>
+                    )}
                   </FormField>
 
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
