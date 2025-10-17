@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Electric Abacus - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles business operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations.
+Electric Abacus - A multi-tenant SaaS monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles business operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations. Each business is fully isolated with its own data and users can belong to multiple businesses with different roles.
 
 ## Project Structure
 
@@ -26,6 +26,13 @@ Electric Abacus - A monorepo for weekly operations management built with React, 
 - `npm --workspace apps/web run test:watch` – Run unit tests in watch mode
 - `npm --workspace packages/domain run test` – Run domain tests only
 - `npm --workspace packages/firebase run seed` – Seed Firebase data
+- `npm --workspace packages/firebase run migrate` – Migrate existing data to multi-tenant structure
+
+### Firebase Deployment
+
+- `firebase deploy --only functions` – Deploy Cloud Functions
+- `firebase deploy --only firestore:rules` – Deploy Firestore security rules
+- `firebase deploy` – Deploy all Firebase resources
 
 ## Current Features
 
@@ -49,12 +56,45 @@ Electric Abacus - A monorepo for weekly operations management built with React, 
 
 ## Architecture Notes
 
+### Multi-Tenant Architecture (Oct 2025)
+
+Electric Abacus uses a multi-tenant SaaS architecture with complete data isolation:
+
+#### Custom Claims Authentication
+- Firebase Authentication users have custom claims: `{ businessId, role }`
+- Claims are set automatically by Cloud Function (`onUserCreate`) when a user is created
+- Claims are read by `BusinessProvider` via `getIdTokenResult()` to provide business context
+- All React Query hooks use `useBusiness()` to get current `businessId`
+
+#### Data Isolation
+- **Collection Structure**: `/businesses/{businessId}/{collection}/{docId}`
+- **Old Structure** (deprecated): `/{collection}/{docId}`
+- **Example Paths**:
+  - Ingredients: `/businesses/abc123/ingredients/beef`
+  - Weeks: `/businesses/abc123/weeks/2025-W39`
+  - Menu Items: `/businesses/abc123/menuItems/taco`
+
+#### Security Rules
+- Firestore rules enforce tenant isolation using `request.auth.token.businessId`
+- Users can only access data belonging to their business
+- Write operations restricted by role (owner vs teamMember)
+- Global `/users` collection remains for multi-business support (future feature)
+
+#### Cloud Functions
+Location: `packages/firebase/functions/`
+- **onUserCreate**: Triggered on user creation
+  - Creates a new business for the user
+  - Sets custom claims: `{ businessId, role: 'owner' }`
+  - Creates user profile with businesses map
+
 ### Frontend (apps/web)
 - **State Management**: React Query for server state, AuthProvider for auth context
+- **Business Context**: BusinessProvider reads custom claims and provides businessId to all hooks
 - **Routing**: React Router v7 with protected routes and role guards
 - **Forms**: React Hook Form with Zod validation
 - **Styling**: Tailwind CSS with custom components (Radix UI primitives)
 - **File Structure**: Feature-based organization under `src/app/features/`
+- **Provider Hierarchy**: QueryClient → AuthProvider → BusinessProvider → App
 
 ### Domain Package (packages/domain)
 - Pure business logic with no external dependencies
@@ -67,10 +107,12 @@ Electric Abacus - A monorepo for weekly operations management built with React, 
 - Unit conversion system via `getConversionFactor()` for standard units
 
 ### Firebase Package (packages/firebase)
-- Admin SDK utilities for seed scripts
+- Admin SDK utilities for seed scripts and migrations
 - Firestore data models and type definitions
-- Enhanced seed script with realistic demo data:
-  - 2 users (owner and team member)
+- Cloud Functions for user onboarding and custom claims
+- Enhanced seed script with realistic demo data (multi-tenant structure):
+  - 1 default business
+  - 2 users (owner and team member) with custom claims
   - 31 ingredients across 3 categories (food, paper, other)
   - 15 menu items with realistic pricing
   - 6 finalized historical weeks (2025-W33 to W38) with:
@@ -78,12 +120,15 @@ Electric Abacus - A monorepo for weekly operations management built with React, 
     - Complete inventory tracking with usage patterns
     - Generated cost reports and summaries
   - 1 draft week for current operations
+- Migration script (`migrate-to-multitenant.ts`) for converting existing single-tenant data
 
 ### Key Data Flows
-1. **Inventory Tracking**: Begin → Received → End → Computed Usage
-2. **Cost Calculation**: Ingredient Cost Snapshots + Usage → Cost of Sales
-3. **Recipe Costing**: Recipe Ingredients + Ingredient Costs → Total Cost + Food Cost %
-4. **Week Finalization**: Inventory + Sales + Costs → PDF Report
+1. **User Onboarding**: User Creation → Cloud Function → Business Creation → Custom Claims Set → User Profile Created
+2. **Business Context**: Auth Token → getIdTokenResult() → BusinessProvider → useBusiness() → All Queries/Mutations
+3. **Inventory Tracking**: Begin → Received → End → Computed Usage
+4. **Cost Calculation**: Ingredient Cost Snapshots + Usage → Cost of Sales
+5. **Recipe Costing**: Recipe Ingredients + Ingredient Costs → Total Cost + Food Cost %
+6. **Week Finalization**: Inventory + Sales + Costs → PDF Report
 
 ### Role-Based Access
 - **Owner**: Full access to all features including ingredients, menu items, and week review
@@ -106,6 +151,50 @@ Electric Abacus - A monorepo for weekly operations management built with React, 
 
 Copy `.env.example` to `.env` and configure Firebase credentials (if example file exists).
 
-## Known Issues (Sep 2025)
+## Migration Guide (For Existing Deployments)
+
+If you have existing single-tenant data that needs to be migrated to the multi-tenant structure:
+
+1. **Backup your data** (export from Firebase console)
+2. **Deploy Cloud Functions**: `firebase deploy --only functions`
+3. **Run migration script**: `npm --workspace packages/firebase run migrate`
+4. **Deploy new security rules**: `firebase deploy --only firestore:rules`
+5. **Test with existing users** (they may need to refresh their auth tokens by logging out and back in)
+6. **Verify data isolation** by checking that businesses cannot access each other's data
+7. **Delete old flat collections** manually from Firebase console once verified
+
+## Type Definitions
+
+### Custom Claims Structure
+```typescript
+{
+  businessId: string;  // The business this user belongs to
+  role: 'owner' | 'teamMember';  // User's role in this business
+}
+```
+
+### UserProfile Structure
+```typescript
+{
+  displayName: string;
+  role: 'owner' | 'teamMember';
+  businesses: Record<string, {
+    businessId: string;
+    role: 'owner' | 'teamMember';
+    joinedAt: Timestamp;
+  }>;
+  createdAt: Timestamp;
+}
+```
+
+### BusinessProfile Structure
+```typescript
+{
+  name: string;
+  createdAt: Timestamp;
+}
+```
+
+## Known Issues (Oct 2025)
 
 None currently documented.

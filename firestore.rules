@@ -5,7 +5,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Get user role from custom claims (no Firestore read needed!)
+    // Get user businessId from custom claims
+    function userBusinessId() {
+      return isAuthenticated() && request.auth.token.businessId != null
+        ? request.auth.token.businessId
+        : null;
+    }
+
+    // Get user role from custom claims
     function userRole() {
       return isAuthenticated() && request.auth.token.role != null
         ? request.auth.token.role
@@ -20,81 +27,93 @@ service cloud.firestore {
       return userRole() == 'teamMember';
     }
 
-    function weekDoc(weekId) {
-      return get(/databases/$(database)/documents/weeks/$(weekId));
+    // Check if user belongs to the specified business
+    function belongsToBusiness(businessId) {
+      return isAuthenticated() && userBusinessId() == businessId;
     }
 
-    function weekStatus(weekId) {
-      return weekDoc(weekId).exists() ? weekDoc(weekId).data.status : null;
+    // Helper for week document access within business context
+    function weekDoc(businessId, weekId) {
+      return get(/databases/$(database)/documents/businesses/$(businessId)/weeks/$(weekId));
     }
 
-    function isWeekDraft(weekId) {
-      return weekStatus(weekId) == 'draft';
+    function weekStatus(businessId, weekId) {
+      return weekDoc(businessId, weekId).exists() ? weekDoc(businessId, weekId).data.status : null;
     }
 
-    function isWeekFinalized(weekId) {
-      return weekStatus(weekId) == 'finalized';
+    function isWeekDraft(businessId, weekId) {
+      return weekStatus(businessId, weekId) == 'draft';
     }
 
-    // User Profiles
+    function isWeekFinalized(businessId, weekId) {
+      return weekStatus(businessId, weekId) == 'finalized';
+    }
+
+    // Global User Profiles (not tenant-scoped)
     match /users/{uid} {
-      // Check own UID first to avoid circular dependency with isOwner()
+      // Users can read their own profile, owners can read all profiles in their business
       allow read: if (isAuthenticated() && request.auth.uid == uid) || isOwner();
-      allow create: if isOwner();
-      allow update: if isOwner();
+      allow create: if isAuthenticated() && request.auth.uid == uid;
+      allow update: if isAuthenticated() && request.auth.uid == uid;
       allow delete: if false;
     }
 
-    // Ingredients + Versions
-    match /ingredients/{ingredientId} {
-      allow read: if isOwner() || isTeamMember();
-      allow create, update, delete: if isOwner();
+    // Business profiles
+    match /businesses/{businessId} {
+      allow read: if belongsToBusiness(businessId);
+      allow write: if belongsToBusiness(businessId) && isOwner();
 
-      match /versions/{versionId} {
-        allow read: if isOwner() || isTeamMember();
-        allow create, update, delete: if isOwner();
+      // Ingredients + Versions
+      match /ingredients/{ingredientId} {
+        allow read: if belongsToBusiness(businessId);
+        allow create, update, delete: if belongsToBusiness(businessId) && isOwner();
+
+        match /versions/{versionId} {
+          allow read: if belongsToBusiness(businessId);
+          allow create, update, delete: if belongsToBusiness(businessId) && isOwner();
+        }
       }
-    }
 
-    // Menu Items + Recipes
-    match /menuItems/{menuItemId} {
-      allow read: if isOwner() || isTeamMember();
-      allow create, update, delete: if isOwner();
+      // Menu Items + Recipes
+      match /menuItems/{menuItemId} {
+        allow read: if belongsToBusiness(businessId);
+        allow create, update, delete: if belongsToBusiness(businessId) && isOwner();
 
-      match /recipes/{recipeId} {
-        allow read: if isOwner() || isTeamMember();
-        allow create, update, delete: if isOwner();
+        match /recipes/{recipeId} {
+          allow read: if belongsToBusiness(businessId);
+          allow create, update, delete: if belongsToBusiness(businessId) && isOwner();
+        }
       }
-    }
 
-    // Weeks and nested collections
-    match /weeks/{weekId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isOwner();
-      allow delete: if false;
-
-      match /sales/{docId} {
-        allow read: if isOwner() || isTeamMember();
-        allow create, update: if !isWeekFinalized(weekId) && (isOwner() || (isTeamMember() && docId == 'daily' && isWeekDraft(weekId)));
+      // Weeks and nested collections
+      match /weeks/{weekId} {
+        allow read: if belongsToBusiness(businessId);
+        allow create, update: if belongsToBusiness(businessId) && isOwner();
         allow delete: if false;
-      }
 
-      match /inventory/{ingredientId} {
-        allow read: if isOwner() || isTeamMember();
-        allow create, update: if !isWeekFinalized(weekId) && (isOwner() || (isTeamMember() && isWeekDraft(weekId)));
-        allow delete: if false;
-      }
+        match /sales/{docId} {
+          allow read: if belongsToBusiness(businessId);
+          allow create, update: if belongsToBusiness(businessId) && !isWeekFinalized(businessId, weekId) && (isOwner() || (isTeamMember() && docId == 'daily' && isWeekDraft(businessId, weekId)));
+          allow delete: if false;
+        }
 
-      match /costSnapshot/{ingredientId} {
-        allow read: if isOwner();
-        allow create, update: if isOwner() && !isWeekFinalized(weekId);
-        allow delete: if false;
-      }
+        match /inventory/{ingredientId} {
+          allow read: if belongsToBusiness(businessId);
+          allow create, update: if belongsToBusiness(businessId) && !isWeekFinalized(businessId, weekId) && (isOwner() || (isTeamMember() && isWeekDraft(businessId, weekId)));
+          allow delete: if false;
+        }
 
-      match /report/{docId} {
-        allow read: if isOwner();
-        allow create, update: if isOwner() && !isWeekFinalized(weekId);
-        allow delete: if false;
+        match /costSnapshot/{ingredientId} {
+          allow read: if belongsToBusiness(businessId) && isOwner();
+          allow create, update: if belongsToBusiness(businessId) && isOwner() && !isWeekFinalized(businessId, weekId);
+          allow delete: if false;
+        }
+
+        match /report/{docId} {
+          allow read: if belongsToBusiness(businessId) && isOwner();
+          allow create, update: if belongsToBusiness(businessId) && isOwner() && !isWeekFinalized(businessId, weekId);
+          allow delete: if false;
+        }
       }
     }
   }

@@ -36,6 +36,7 @@ import {
   useMenuItems,
   useUpsertMenuItem,
 } from '../../hooks/use-menu-items';
+import { useBusiness } from '../../providers/business-provider';
 import { getMenuItemWithRecipes } from '../../services/firestore';
 
 const recipeSchema = z.object({
@@ -105,6 +106,7 @@ const foodCostPercentageClass = (percentage: number) => {
 };
 
 export const MenuItemsPage = () => {
+  const { businessId } = useBusiness();
   const {
     data: menuItems = [],
     isLoading: menuItemsLoading,
@@ -154,10 +156,13 @@ export const MenuItemsPage = () => {
     let cancelled = false;
 
     const loadSummaries = async () => {
+      if (!businessId) {
+        return;
+      }
       try {
         const results = await Promise.all(
           menuItems.map(async (item) => {
-            const detail = await getMenuItemWithRecipes(item.id);
+            const detail = await getMenuItemWithRecipes(businessId, item.id);
             if (!detail) {
               return null;
             }
@@ -212,7 +217,7 @@ export const MenuItemsPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [ingredients, menuItems]);
+  }, [businessId, ingredients, menuItems]);
 
   const createForm = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),

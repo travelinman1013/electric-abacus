@@ -6,7 +6,8 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint 'src/**/*.ts' --max-warnings=0",
     "test": "vitest run",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "migrate": "tsx scripts/migrate-to-multitenant.ts"
   },
   "dependencies": {
     "firebase": "^12.3.0",

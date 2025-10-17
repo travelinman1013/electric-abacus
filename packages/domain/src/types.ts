@@ -1,10 +1,25 @@
 export type UserRole = 'owner' | 'teamMember';
 
+export interface BusinessProfile {
+  id: string;
+  name: string;
+  createdAt: string;
+  ownerId: string;
+}
+
+export interface BusinessMembership {
+  businessId: string;
+  role: UserRole;
+  joinedAt: string;
+}
+
 export interface UserProfile {
   uid: string;
   displayName: string;
+  email?: string;
   role: UserRole;
   createdAt: string;
+  businesses: Record<string, BusinessMembership>;
 }
 
 export type WeekStatus = 'draft' | 'finalized';

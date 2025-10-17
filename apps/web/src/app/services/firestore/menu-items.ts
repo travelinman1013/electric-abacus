@@ -35,9 +35,9 @@ export interface MenuItemWithRecipes {
   recipes: RecipeIngredient[];
 }
 
-export const listMenuItems = async (): Promise<MenuItem[]> => {
+export const listMenuItems = async (businessId: string): Promise<MenuItem[]> => {
   const firestore = getClientFirestore();
-  const itemsRef = collection(firestore, 'menuItems');
+  const itemsRef = collection(firestore, 'businesses', businessId, 'menuItems');
   const snapshot = await getDocs(query(itemsRef, orderBy('name')));
 
   return snapshot.docs.map((docSnapshot) => {
@@ -51,16 +51,16 @@ export const listMenuItems = async (): Promise<MenuItem[]> => {
   });
 };
 
-export const getMenuItemWithRecipes = async (menuItemId: string): Promise<MenuItemWithRecipes | null> => {
+export const getMenuItemWithRecipes = async (businessId: string, menuItemId: string): Promise<MenuItemWithRecipes | null> => {
   const firestore = getClientFirestore();
-  const itemRef = doc(firestore, 'menuItems', menuItemId);
+  const itemRef = doc(firestore, 'businesses', businessId, 'menuItems', menuItemId);
   const snapshot = await getDoc(itemRef);
   if (!snapshot.exists()) {
     return null;
   }
 
   const itemData = snapshot.data();
-  const recipesRef = collection(firestore, 'menuItems', menuItemId, 'recipes');
+  const recipesRef = collection(firestore, 'businesses', businessId, 'menuItems', menuItemId, 'recipes');
   const recipeSnapshot = await getDocs(recipesRef);
 
   const recipes = recipeSnapshot.docs.map((docSnapshot) => {
@@ -84,10 +84,10 @@ export const getMenuItemWithRecipes = async (menuItemId: string): Promise<MenuIt
   } satisfies MenuItemWithRecipes;
 };
 
-export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[]): Promise<MenuItem> => {
+export const upsertMenuItem = async (businessId: string, input: MenuItemInput, recipes: RecipeInput[]): Promise<MenuItem> => {
   const firestore = getClientFirestore();
   const menuItemId = ensureId(input.id, input.name);
-  const itemRef = doc(firestore, 'menuItems', menuItemId);
+  const itemRef = doc(firestore, 'businesses', businessId, 'menuItems', menuItemId);
   const batch = writeBatch(firestore);
 
   await runTransaction(firestore, async (transaction) => {
@@ -110,7 +110,7 @@ export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[
     }
   });
 
-  const recipesRef = collection(firestore, 'menuItems', menuItemId, 'recipes');
+  const recipesRef = collection(firestore, 'businesses', businessId, 'menuItems', menuItemId, 'recipes');
   const existingRecipes = await getDocs(recipesRef);
   const existingIds = new Set(existingRecipes.docs.map((docSnapshot) => docSnapshot.id));
 
@@ -118,7 +118,7 @@ export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[
   recipes.forEach((recipe) => {
     const recipeId = recipe.id ?? ensureId(undefined, `${recipe.ingredientId}-${recipe.unitOfMeasure}`);
     nextIds.add(recipeId);
-    const recipeRef = doc(firestore, 'menuItems', menuItemId, 'recipes', recipeId);
+    const recipeRef = doc(firestore, 'businesses', businessId, 'menuItems', menuItemId, 'recipes', recipeId);
     batch.set(recipeRef, {
       ingredientId: recipe.ingredientId,
       quantity: recipe.quantity,
@@ -129,7 +129,7 @@ export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[
 
   existingIds.forEach((recipeId) => {
     if (!nextIds.has(recipeId)) {
-      const recipeRef = doc(firestore, 'menuItems', menuItemId, 'recipes', recipeId);
+      const recipeRef = doc(firestore, 'businesses', businessId, 'menuItems', menuItemId, 'recipes', recipeId);
       batch.delete(recipeRef);
     }
   });
@@ -144,13 +144,13 @@ export const upsertMenuItem = async (input: MenuItemInput, recipes: RecipeInput[
   } satisfies MenuItem;
 };
 
-export const deleteMenuItem = async (menuItemId: string) => {
+export const deleteMenuItem = async (businessId: string, menuItemId: string) => {
   const firestore = getClientFirestore();
-  const recipesRef = collection(firestore, 'menuItems', menuItemId, 'recipes');
+  const recipesRef = collection(firestore, 'businesses', businessId, 'menuItems', menuItemId, 'recipes');
   const recipeSnapshot = await getDocs(recipesRef);
   const batch = writeBatch(firestore);
   recipeSnapshot.docs.forEach((docSnapshot) => batch.delete(docSnapshot.ref));
-  const itemRef = doc(firestore, 'menuItems', menuItemId);
+  const itemRef = doc(firestore, 'businesses', businessId, 'menuItems', menuItemId);
   batch.delete(itemRef);
   await batch.commit();
 };

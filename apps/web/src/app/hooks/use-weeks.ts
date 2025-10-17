@@ -20,6 +20,7 @@ import {
   saveWeekInventory,
   saveWeekSales
 } from '../services/firestore';
+import { useBusiness } from '../providers/business-provider';
 
 interface CreateWeekVariables {
   weekId: string;
@@ -40,115 +41,132 @@ interface FinalizeWeekVariables {
   weekId: string;
 }
 
-export const useWeeks = () =>
-  useQuery<Week[]>({
-    queryKey: ['weeks'],
-    queryFn: () => listWeeks()
+export const useWeeks = () => {
+  const { businessId } = useBusiness();
+  return useQuery<Week[]>({
+    queryKey: ['weeks', businessId],
+    queryFn: () => listWeeks(businessId!),
+    enabled: !!businessId
   });
+};
 
-export const useWeek = (weekId: string | undefined) =>
-  useQuery<Week | null>({
-    queryKey: ['week', weekId],
+export const useWeek = (weekId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<Week | null>({
+    queryKey: ['week', businessId, weekId],
     queryFn: () => {
       if (!weekId) {
         return Promise.resolve(null);
       }
-      return getWeek(weekId);
+      return getWeek(businessId!, weekId);
     },
-    enabled: Boolean(weekId)
+    enabled: Boolean(weekId) && !!businessId
   });
+};
 
 export const useCreateWeek = () => {
   const queryClient = useQueryClient();
+  const { businessId } = useBusiness();
   return useMutation<void, Error, CreateWeekVariables>({
-    mutationFn: ({ weekId, ingredientIds }) => createWeek(weekId, { ingredientIds }),
+    mutationFn: ({ weekId, ingredientIds }) => createWeek(businessId!, weekId, { ingredientIds }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weeks'] });
+      queryClient.invalidateQueries({ queryKey: ['weeks', businessId] });
     }
   });
 };
 
-export const useWeekSales = (weekId: string | undefined) =>
-  useQuery<WeeklySales | null>({
-    queryKey: ['week-sales', weekId],
+export const useWeekSales = (weekId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<WeeklySales | null>({
+    queryKey: ['week-sales', businessId, weekId],
     queryFn: () => {
       if (!weekId) {
         return Promise.resolve(null);
       }
-      return getWeekSales(weekId);
+      return getWeekSales(businessId!, weekId);
     },
-    enabled: Boolean(weekId)
+    enabled: Boolean(weekId) && !!businessId
   });
+};
 
 export const useSaveWeekSales = () => {
   const queryClient = useQueryClient();
+  const { businessId } = useBusiness();
   return useMutation<void, Error, SaveWeekSalesVariables>({
-    mutationFn: ({ weekId, data }) => saveWeekSales(weekId, data),
+    mutationFn: ({ weekId, data }) => saveWeekSales(businessId!, weekId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['week-sales', variables.weekId] });
-      queryClient.invalidateQueries({ queryKey: ['week', variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week-sales', businessId, variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week', businessId, variables.weekId] });
     }
   });
 };
 
-export const useWeekInventory = (weekId: string | undefined) =>
-  useQuery<WeeklyInventoryEntry[]>({
-    queryKey: ['week-inventory', weekId],
+export const useWeekInventory = (weekId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<WeeklyInventoryEntry[]>({
+    queryKey: ['week-inventory', businessId, weekId],
     queryFn: () => {
       if (!weekId) {
         return Promise.resolve([]);
       }
-      return getWeekInventory(weekId);
+      return getWeekInventory(businessId!, weekId);
     },
-    enabled: Boolean(weekId)
+    enabled: Boolean(weekId) && !!businessId
   });
+};
 
 export const useSaveWeekInventory = () => {
   const queryClient = useQueryClient();
+  const { businessId } = useBusiness();
   return useMutation<void, Error, SaveWeekInventoryVariables>({
-    mutationFn: ({ weekId, entries }) => saveWeekInventory(weekId, entries),
+    mutationFn: ({ weekId, entries }) => saveWeekInventory(businessId!, weekId, entries),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['week-inventory', variables.weekId] });
-      queryClient.invalidateQueries({ queryKey: ['week', variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week-inventory', businessId, variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week', businessId, variables.weekId] });
     }
   });
 };
 
-export const useWeekCostSnapshot = (weekId: string | undefined) =>
-  useQuery<WeeklyCostSnapshotEntry[]>({
-    queryKey: ['week-cost-snapshot', weekId],
+export const useWeekCostSnapshot = (weekId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<WeeklyCostSnapshotEntry[]>({
+    queryKey: ['week-cost-snapshot', businessId, weekId],
     queryFn: () => {
       if (!weekId) {
         return Promise.resolve([]);
       }
-      return getCostSnapshots(weekId);
+      return getCostSnapshots(businessId!, weekId);
     },
-    enabled: Boolean(weekId),
+    enabled: Boolean(weekId) && !!businessId,
     initialData: []
   });
+};
 
-export const useWeekReport = (weekId: string | undefined) =>
-  useQuery<ReportSummary | null>({
-    queryKey: ['week-report', weekId],
+export const useWeekReport = (weekId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<ReportSummary | null>({
+    queryKey: ['week-report', businessId, weekId],
     queryFn: () => {
       if (!weekId) {
         return Promise.resolve(null);
       }
-      return getWeekReport(weekId);
+      return getWeekReport(businessId!, weekId);
     },
-    enabled: Boolean(weekId)
+    enabled: Boolean(weekId) && !!businessId
   });
+};
 
 export const useFinalizeWeek = () => {
   const queryClient = useQueryClient();
+  const { businessId } = useBusiness();
   return useMutation<ReportSummary, Error, FinalizeWeekVariables>({
-    mutationFn: ({ weekId }) => finalizeWeek(weekId),
+    mutationFn: ({ weekId }) => finalizeWeek(businessId!, weekId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['week', variables.weekId] });
-      queryClient.invalidateQueries({ queryKey: ['weeks'] });
-      queryClient.invalidateQueries({ queryKey: ['week-inventory', variables.weekId] });
-      queryClient.invalidateQueries({ queryKey: ['week-cost-snapshot', variables.weekId] });
-      queryClient.invalidateQueries({ queryKey: ['week-report', variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week', businessId, variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['weeks', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['week-inventory', businessId, variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week-cost-snapshot', businessId, variables.weekId] });
+      queryClient.invalidateQueries({ queryKey: ['week-report', businessId, variables.weekId] });
     }
   });
 };
