@@ -19,7 +19,7 @@ export const AppRoutes = () => {
   const { user, loading } = useAuthContext();
 
   if (loading) {
-    return <LoadingScreen label="Starting Taco Casa" />;
+    return <LoadingScreen label="Starting Electric Abacus" />;
   }
 
   return (

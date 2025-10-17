@@ -19,7 +19,7 @@ vi.mock('../../providers/auth-provider', () => ({
   useAuthContext: () => mockUseAuthContext()
 }));
 
-vi.mock('@lightning/firebase', () => ({
+vi.mock('@electric/firebase', () => ({
   getClientAuth: vi.fn(),
   getClientFirestore: vi.fn()
 }));

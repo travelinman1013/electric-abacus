@@ -614,7 +614,7 @@ const WeekReportDocument = ({ weekId, summary, sales, finalizedAt, finalizedBy, 
 
       {/* Footer */}
       <Text style={styles.footer}>
-        Taco Ray v2 - Weekly Operations Management System
+        Electric Abacus - Weekly Operations Management System
       </Text>
     </Page>
   </Document>
