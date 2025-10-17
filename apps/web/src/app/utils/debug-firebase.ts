@@ -1,4 +1,4 @@
-import { getClientAuth, getClientFirestore } from '@lightning/firebase';
+import { getClientAuth, getClientFirestore } from '@electric/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -14,7 +14,7 @@ export const debugFirebaseConnection = async () => {
 
     // Test 2: Test authentication with known user
     console.log('🔍 Test 2: Testing authentication...');
-    const testEmail = 'admin@lightningabacus.test';
+    const testEmail = 'admin@electricabacus.test';
     const testPassword = 'AdminPass123!';
 
     console.log('🔐 Attempting sign in with:', testEmail);

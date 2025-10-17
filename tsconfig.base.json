@@ -13,7 +13,7 @@
     "paths": {
       "@domain/*": ["packages/domain/src/*"],
       "@firebase/*": ["packages/firebase/src/*"],
-      "@lightning/firebase": ["packages/firebase/src/client-only.ts"]
+      "@electric/firebase": ["packages/firebase/src/client-only.ts"]
     }
   },
   "include": ["packages", "apps"],

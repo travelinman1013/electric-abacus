@@ -13,7 +13,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebas
 import { doc, getDoc } from 'firebase/firestore';
 
 import type { UserProfile, UserRole } from '@domain/costing';
-import { getClientAuth, getClientFirestore } from '@lightning/firebase';
+import { getClientAuth, getClientFirestore } from '@electric/firebase';
 
 interface AuthContextValue {
   user: FirebaseUser | null;

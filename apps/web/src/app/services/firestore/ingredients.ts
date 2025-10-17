@@ -17,7 +17,7 @@ import {
 import type { Ingredient, IngredientCategory, IngredientVersion, RecipeIngredient } from '@domain/costing';
 import { getConversionFactor } from '@domain/costing';
 
-import { getClientFirestore } from '@lightning/firebase';
+import { getClientFirestore } from '@electric/firebase';
 
 import { timestampToIsoString } from './utils';
 import { ensureId } from './ids';

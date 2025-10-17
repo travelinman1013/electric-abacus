@@ -1,0 +1,25 @@
+{"users": [
+{
+  "localId": "bAtuZugziOh8PSwlEJYHRrlhj4n2",
+  "email": "admin@lightningabacus.test",
+  "emailVerified": false,
+  "passwordHash": "Rst5bxFfZwQv0bgRsXgEm71aZSPKHaJCKpjHFFGUoprtEh7MDM0z0WiVTM1NG2jdsBvC2uphx+UGLkbdyJ9fOg==",
+  "salt": "TSh1+2146tL+VA==",
+  "displayName": "Admin User",
+  "lastSignedInAt": "1760639478921",
+  "createdAt": "1760635750128",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "w2yO2MWQpwWUO2rjSOreLKXTFZc2",
+  "email": "staff@lightningabacus.test",
+  "emailVerified": false,
+  "passwordHash": "lBJ0Vxel2U2DHC+gWxpHChuowByaw/QyrSy2U1wbqoM0oNL+dFWKgANEmH0y6co6Kcvrsof0tcfsz2hLnGroLA==",
+  "salt": "T+au7JggQKK5TA==",
+  "displayName": "Staff User",
+  "lastSignedInAt": "1760638719970",
+  "createdAt": "1760635751356",
+  "disabled": false,
+  "providerUserInfo": []
+}]}

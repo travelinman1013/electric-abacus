@@ -1,4 +1,4 @@
-# Lightning Abacus
+# Electric Abacus
 
 Business operations management system built with React, Firebase, and TypeScript. Features real-time recipe costing, food cost percentage analysis, and comprehensive inventory management.
 
@@ -46,7 +46,7 @@ npm run dev  # Start dev server at http://localhost:5173
    This will open a browser for authentication.
 
 2. **Verify Project Configuration**
-   The project is already configured for `taco-ray-1355553`. Check `.firebaserc` if needed.
+   The project is configured for `electric-abacus`. Check `.firebaserc` if needed.
 
 ### Deploy to Production
 
@@ -63,9 +63,9 @@ This will:
 
 ### Access Your Application
 
-**Production URL:** https://taco-ray-1355553.web.app
+**Production URL:** https://electric-abacus.web.app
 
-**Alternative URL:** https://taco-ray-1355553.firebaseapp.com
+**Alternative URL:** https://electric-abacus.firebaseapp.com
 
 ### Accessing from Tablet/Mobile
 
@@ -79,7 +79,7 @@ This will:
 ### Firebase Console
 
 View hosting metrics, rollback deployments, and manage settings:
-https://console.firebase.google.com/project/taco-ray-1355553/hosting
+https://console.firebase.google.com/project/electric-abacus/hosting
 
 ### Hosting Costs
 
@@ -118,8 +118,8 @@ npx firebase hosting:channel:list
 
 ## Demo Accounts
 
-- Admin: `admin@lightningabacus.test` / `AdminPass123!`
-- Staff: `staff@lightningabacus.test` / `StaffPass123!`
+- Admin: `admin@electricabacus.test` / `AdminPass123!`
+- Staff: `staff@electricabacus.test` / `StaffPass123!`
 
 ## Environment Setup
 

@@ -1,4 +1,4 @@
-# Next Session Context - Lightning Abacus
+# Next Session Context - Electric Abacus
 
 ## Priority Fixes Required
 
@@ -68,7 +68,7 @@ Successfully implemented dynamic recipe costing with:
 ## Testing the Fixes
 
 1. Start dev server: `npm run dev`
-2. Login as owner: `regan.owner@tacocasa.test` / `OwnerPass123!`
+2. Login as owner: `admin@electricabacus.test` / `AdminPass123!`
 3. Test Ingredients page:
    - Should be able to create new ingredients with category
    - Should be able to edit existing ingredients

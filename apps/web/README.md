@@ -1,6 +1,6 @@
-# Lightning Abacus Web App
+# Electric Abacus Web App
 
-The web workspace hosts the Lightning Abacus MVP frontend built with React, Vite, Tailwind, and shadcn-inspired primitives. The app consumes Firebase Auth/Firestore and the shared `@domain/costing` library.
+The web workspace hosts the Electric Abacus MVP frontend built with React, Vite, Tailwind, and shadcn-inspired primitives. The app consumes Firebase Auth/Firestore and the shared `@domain/costing` library.
 
 ## Available Scripts
 

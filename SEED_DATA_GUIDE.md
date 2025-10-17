@@ -1,13 +1,13 @@
 # Seed Data Guide
 
 ## Overview
-The enhanced seed script generates realistic, demo-quality data for the Lightning Abacus application. This data is designed to showcase the application's capabilities with authentic business operations data.
+The enhanced seed script generates realistic, demo-quality data for the Electric Abacus application. This data is designed to showcase the application's capabilities with authentic business operations data.
 
 ## What Gets Generated
 
 ### 👥 Users (2)
-- **Admin Account**: `admin@lightningabacus.test` / `AdminPass123!`
-- **Staff Account**: `staff@lightningabacus.test` / `StaffPass123!`
+- **Admin Account**: `admin@electricabacus.test` / `AdminPass123!`
+- **Staff Account**: `staff@electricabacus.test` / `StaffPass123!`
 
 ### 🥫 Ingredients (31)
 
@@ -140,8 +140,8 @@ npm --workspace packages/firebase run seed
   - 1 draft week
 
 🔑 Login Credentials:
-  Owner: regan.owner@tacocasa.test / OwnerPass123!
-  Team Member: taylor.team@tacocasa.test / TeamPass123!
+  Owner: admin@electricabacus.test / AdminPass123!
+  Team Member: staff@electricabacus.test / StaffPass123!
 ```
 
 ## Use Cases

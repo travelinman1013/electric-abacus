@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Lightning Abacus - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles business operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations.
+Electric Abacus - A monorepo for weekly operations management built with React, Firebase, and TypeScript. The system handles business operations including inventory tracking, sales data, ingredient management, recipe costing, and food cost percentage calculations.
 
 ## Project Structure
 
@@ -99,8 +99,8 @@ Lightning Abacus - A monorepo for weekly operations management built with React,
 
 ## Demo Credentials
 
-- **Admin**: `admin@lightningabacus.test` / `AdminPass123!`
-- **Staff**: `staff@lightningabacus.test` / `StaffPass123!`
+- **Admin**: `admin@electricabacus.test` / `AdminPass123!`
+- **Staff**: `staff@electricabacus.test` / `StaffPass123!`
 
 ## Environment Setup
 

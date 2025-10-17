@@ -1,5 +1,5 @@
 {
-  "name": "@lightning/firebase",
+  "name": "@electric/firebase",
   "private": true,
   "type": "module",
   "scripts": {
