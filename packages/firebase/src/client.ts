@@ -28,26 +28,34 @@ const requireApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
+// Cache Firebase service instances at module level to reduce redundant calls
+let cachedAuth: Auth | undefined;
+let cachedFirestore: Firestore | undefined;
+let cachedFunctions: Functions | undefined;
+
 export const getClientAuth = (): Auth => {
-  console.log('🔐 getClientAuth called');
+  if (cachedAuth) {
+    return cachedAuth;
+  }
   const app = requireApp();
-  const auth = getAuth(app);
-  console.log('🔐 Auth instance created:', !!auth);
-  return auth;
+  cachedAuth = getAuth(app);
+  return cachedAuth;
 };
 
 export const getClientFirestore = (): Firestore => {
-  console.log('🔥 getClientFirestore called');
+  if (cachedFirestore) {
+    return cachedFirestore;
+  }
   const app = requireApp();
-  const firestore = getFirestore(app);
-  console.log('🔥 Firestore instance created:', !!firestore);
-  return firestore;
+  cachedFirestore = getFirestore(app);
+  return cachedFirestore;
 };
 
 export const getClientFunctions = (): Functions => {
-  console.log('⚡ getClientFunctions called');
+  if (cachedFunctions) {
+    return cachedFunctions;
+  }
   const app = requireApp();
-  const functions = getFunctions(app);
-  console.log('⚡ Functions instance created:', !!functions);
-  return functions;
+  cachedFunctions = getFunctions(app);
+  return cachedFunctions;
 };
