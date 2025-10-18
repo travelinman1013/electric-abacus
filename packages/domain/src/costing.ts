@@ -35,8 +35,21 @@ export type {
   UserProfile,
   UserRole,
   ComputeReportSummaryInput,
-  CostOfSalesBreakdown
+  CostOfSalesBreakdown,
+  IndustryType,
+  TeamSizeType,
+  BusinessDetails,
+  BusinessProfile,
+  BusinessMembership
 } from './types';
+
+// Re-export validation schemas
+export {
+  signupAccountSchema,
+  businessDetailsSchema,
+  type SignupAccountInput,
+  type BusinessDetailsInput
+} from './validation';
 
 const ensureNumber = (value: number): number => {
   if (!Number.isFinite(value)) {

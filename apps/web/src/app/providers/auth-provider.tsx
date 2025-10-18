@@ -9,17 +9,24 @@ import {
 } from 'react';
 
 import type { User as FirebaseUser } from 'firebase/auth';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
-import type { UserProfile, UserRole } from '@domain/costing';
-import { getClientAuth, getClientFirestore } from '@electric/firebase';
+import type { BusinessDetails, UserProfile, UserRole } from '@domain/costing';
+import { getClientAuth, getClientFirestore, getClientFunctions } from '@electric/firebase';
 
 interface AuthContextValue {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, businessDetails: BusinessDetails) => Promise<void>;
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
 }
@@ -98,6 +105,60 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
+  const signUp = useCallback(
+    async (email: string, password: string, businessDetails: BusinessDetails) => {
+      console.log('✍️ signUp called with email:', email);
+      const auth = getClientAuth();
+      const functions = getClientFunctions();
+
+      try {
+        // 1. Create Firebase Auth user
+        console.log('✍️ Creating Firebase Auth user...');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        console.log('✅ Firebase Auth user created:', { uid: user.uid, email: user.email });
+
+        // 2. Call Cloud Function to set up business
+        console.log('🏢 Calling setupNewBusinessAccountCallable...');
+        const setupFunction = httpsCallable<BusinessDetails, { success: boolean; businessId: string; message: string }>(
+          functions,
+          'setupNewBusinessAccountCallable'
+        );
+        const result = await setupFunction(businessDetails);
+        console.log('✅ Business setup result:', result.data);
+
+        // 3. Force token refresh to get custom claims
+        console.log('🔄 Refreshing ID token to get custom claims...');
+        await user.getIdToken(true);
+        console.log('✅ ID token refreshed');
+
+        // 4. Auth state will update automatically via onAuthStateChanged
+        console.log('✅ Signup complete, waiting for auth state update...');
+      } catch (error: unknown) {
+        console.error('❌ Signup error:', error);
+
+        // Enhanced error handling
+        const firebaseError = error as { code?: string; message?: string };
+        if (firebaseError.code === 'auth/email-already-in-use') {
+          throw new Error('This email is already registered. Please sign in instead.');
+        } else if (firebaseError.code === 'auth/weak-password') {
+          throw new Error('Password is too weak. Please use a stronger password.');
+        } else if (firebaseError.code === 'auth/invalid-email') {
+          throw new Error('Please enter a valid email address.');
+        } else if (firebaseError.code === 'functions/already-exists') {
+          throw new Error('Account setup already completed. Please sign in.');
+        } else if (firebaseError.code === 'functions/invalid-argument') {
+          throw new Error('Invalid business details. Please check your information.');
+        } else {
+          throw new Error(
+            firebaseError.message || 'Failed to create account. Please try again.'
+          );
+        }
+      }
+    },
+    []
+  );
+
   const signOutUser = useCallback(async () => {
     const auth = getClientAuth();
     await signOut(auth);
@@ -114,10 +175,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       profile: state.profile,
       loading: state.loading,
       signIn,
+      signUp,
       signOut: signOutUser,
       hasRole
     }),
-    [hasRole, signIn, signOutUser, state.loading, state.profile, state.user]
+    [hasRole, signIn, signUp, signOutUser, state.loading, state.profile, state.user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

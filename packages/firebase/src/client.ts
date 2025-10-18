@@ -2,6 +2,7 @@ import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFunctions, type Functions } from 'firebase/functions';
 
 let firebaseApp: FirebaseApp | undefined;
 
@@ -41,4 +42,12 @@ export const getClientFirestore = (): Firestore => {
   const firestore = getFirestore(app);
   console.log('🔥 Firestore instance created:', !!firestore);
   return firestore;
+};
+
+export const getClientFunctions = (): Functions => {
+  console.log('⚡ getClientFunctions called');
+  const app = requireApp();
+  const functions = getFunctions(app);
+  console.log('⚡ Functions instance created:', !!functions);
+  return functions;
 };

@@ -1,8 +1,27 @@
 export type UserRole = 'owner' | 'teamMember';
 
+export type IndustryType =
+  | 'restaurant'
+  | 'cafe'
+  | 'food-truck'
+  | 'bakery'
+  | 'bar'
+  | 'catering'
+  | 'other';
+
+export type TeamSizeType = '1-5' | '6-10' | '11-25' | '26-50' | '50+';
+
+export interface BusinessDetails {
+  name: string;
+  industry: IndustryType;
+  teamSize: TeamSizeType;
+}
+
 export interface BusinessProfile {
   id: string;
   name: string;
+  industry: IndustryType;
+  teamSize: TeamSizeType;
   createdAt: string;
   ownerId: string;
 }

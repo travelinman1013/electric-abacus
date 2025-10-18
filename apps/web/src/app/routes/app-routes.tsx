@@ -3,6 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../layout/app-layout';
 import { IngredientsPage } from '../features/ingredients/ingredients-page';
 import { LoginPage } from '../features/auth/login-page';
+import { SignupPage } from '../features/auth/signup-page';
+import { LandingPage } from '../features/landing/landing-page';
+import { TermsPage } from '../features/legal/terms-page';
+import { PrivacyPage } from '../features/legal/privacy-page';
 import { MenuItemsPage } from '../features/menu-items/menu-items-page';
 import { InventoryPage } from '../features/weeks/inventory-page';
 import { SalesEntryPage } from '../features/weeks/sales-entry-page';
@@ -13,7 +17,7 @@ import { LoadingScreen } from '../components/layout/loading-screen';
 import { ProtectedRoute } from './protected-route';
 import { RoleGuard } from './role-guard';
 
-const DEFAULT_AUTHENTICATED_PATH = '/weeks';
+const DEFAULT_AUTHENTICATED_PATH = '/app/weeks';
 
 export const AppRoutes = () => {
   const { user, loading } = useAuthContext();
@@ -24,14 +28,26 @@ export const AppRoutes = () => {
 
   return (
     <Routes>
+      {/* Public routes */}
+      <Route
+        path="/"
+        element={user ? <Navigate to={DEFAULT_AUTHENTICATED_PATH} replace /> : <LandingPage />}
+      />
       <Route
         path="/login"
         element={user ? <Navigate to={DEFAULT_AUTHENTICATED_PATH} replace /> : <LoginPage />}
       />
+      <Route
+        path="/signup"
+        element={user ? <Navigate to={DEFAULT_AUTHENTICATED_PATH} replace /> : <SignupPage />}
+      />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
 
-      <Route element={<ProtectedRoute />}>
+      {/* Protected app routes */}
+      <Route path="/app" element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to={DEFAULT_AUTHENTICATED_PATH} replace />} />
+          <Route index element={<Navigate to="/app/weeks" replace />} />
           <Route path="weeks" element={<WeekListPage />} />
           <Route path="weeks/:weekId/sales" element={<SalesEntryPage />} />
           <Route path="weeks/:weekId/inventory" element={<InventoryPage />} />
@@ -44,9 +60,10 @@ export const AppRoutes = () => {
         </Route>
       </Route>
 
+      {/* Catch-all redirect */}
       <Route
         path="*"
-        element={<Navigate to={user ? DEFAULT_AUTHENTICATED_PATH : '/login'} replace />}
+        element={<Navigate to={user ? DEFAULT_AUTHENTICATED_PATH : '/'} replace />}
       />
     </Routes>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate, type Location } from 'react-router-dom';
+import { Link, useLocation, useNavigate, type Location } from 'react-router-dom';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -172,6 +172,13 @@ export const LoginPage = () => {
           <p className="font-semibold text-slate-600">Demo credentials</p>
           <p>Admin: admin@electricabacus.test</p>
           <p>Staff: staff@electricabacus.test</p>
+        </div>
+
+        <div className="text-center text-sm text-slate-500">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-primary hover:underline font-medium">
+            Sign up
+          </Link>
         </div>
       </div>
     </div>

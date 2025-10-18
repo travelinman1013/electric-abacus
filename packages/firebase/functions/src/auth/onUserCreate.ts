@@ -16,9 +16,11 @@ export async function handleUserCreate(user: AuthUserRecord): Promise<void> {
     const businessRef = db.collection('businesses').doc();
     const businessId = businessRef.id;
 
-    // Create the business document
+    // Create the business document with default values
     await businessRef.set({
       name: `${user.displayName || user.email}'s Business`,
+      industry: 'other',
+      teamSize: '1-5',
       createdAt: new Date(),
       ownerId: user.uid,
     });

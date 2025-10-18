@@ -1,18 +1,20 @@
 import * as admin from 'firebase-admin';
-import { onUserCreated } from 'firebase-functions/v2/identity';
-import { handleUserCreate } from './auth/onUserCreate';
+import { onCall } from 'firebase-functions/v2/https';
+import { setupNewBusinessAccount } from './auth/setupNewBusinessAccount';
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
 /**
- * Cloud Function triggered when a new user is created.
- * Creates a business for the user and sets custom claims.
+ * Callable Cloud Function for setting up a new business account.
+ * This is the preferred method for user onboarding via the signup wizard.
  *
- * Note: Using onUserCreated instead of beforeUserCreated because
- * blocking functions require Google Cloud Identity Platform (GCIP).
- * The user will need to refresh their token after signup to get custom claims.
+ * Called by the frontend after user authentication is created.
+ * Handles business creation, user profile creation, and custom claims setup.
  */
-export const onUserCreate = onUserCreated(async (event) => {
-  await handleUserCreate(event.data);
-});
+export const setupNewBusinessAccountCallable = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    return setupNewBusinessAccount(request.data, request);
+  }
+);
