@@ -15,9 +15,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Weeks', to: '/weeks', roles: ['owner', 'teamMember'] },
-  { label: 'Ingredients', to: '/ingredients', roles: ['owner'] },
-  { label: 'Menu Items', to: '/menu-items', roles: ['owner'] }
+  { label: 'Weeks', to: '/app/weeks', roles: ['owner', 'teamMember'] },
+  { label: 'Ingredients', to: '/app/ingredients', roles: ['owner'] },
+  { label: 'Menu Items', to: '/app/menu-items', roles: ['owner'] }
 ];
 
 export const MainNav = ({ role }: MainNavProps) => {

@@ -93,13 +93,19 @@ service cloud.firestore {
 
         match /sales/{docId} {
           allow read: if belongsToBusiness(businessId);
-          allow create, update: if belongsToBusiness(businessId) && !isWeekFinalized(businessId, weekId) && (isOwner() || (isTeamMember() && docId == 'daily' && isWeekDraft(businessId, weekId)));
+          // Allow create for owners without week status check (week may not exist yet in transaction)
+          // Allow update only if week is not finalized
+          allow create: if belongsToBusiness(businessId) && (isOwner() || isTeamMember());
+          allow update: if belongsToBusiness(businessId) && !isWeekFinalized(businessId, weekId) && (isOwner() || (isTeamMember() && docId == 'daily'));
           allow delete: if false;
         }
 
         match /inventory/{ingredientId} {
           allow read: if belongsToBusiness(businessId);
-          allow create, update: if belongsToBusiness(businessId) && !isWeekFinalized(businessId, weekId) && (isOwner() || (isTeamMember() && isWeekDraft(businessId, weekId)));
+          // Allow create for owners and team members without week status check (week may not exist yet)
+          // Allow update only if week is not finalized
+          allow create: if belongsToBusiness(businessId) && (isOwner() || isTeamMember());
+          allow update: if belongsToBusiness(businessId) && !isWeekFinalized(businessId, weekId) && (isOwner() || isTeamMember());
           allow delete: if false;
         }
 

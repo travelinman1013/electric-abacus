@@ -7,6 +7,7 @@ import { App } from './App';
 import { AuthProvider } from './app/providers/auth-provider';
 import { BusinessProvider } from './app/providers/business-provider';
 import { initializeFirebaseClient } from './app/utils/firebaseClient';
+import './app/utils/debug-token'; // Load debug utility
 
 initializeFirebaseClient();
 

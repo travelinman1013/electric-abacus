@@ -36,20 +36,28 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       }
 
       try {
-        // Get the ID token result to access custom claims
-        const idTokenResult = await user.getIdTokenResult();
+        // IMPORTANT: Force token refresh to get latest custom claims
+        // This ensures we have the most up-to-date claims from the server
+        console.log('🔄 Refreshing auth token to get latest custom claims...');
+        const idTokenResult = await user.getIdTokenResult(true); // force refresh = true
         const claims = idTokenResult.claims;
+
+        console.log('📋 Custom claims received:', {
+          businessId: claims.businessId || 'MISSING',
+          role: claims.role || 'MISSING'
+        });
 
         // Extract businessId and role from custom claims
         const claimedBusinessId = claims.businessId as string | undefined;
         const claimedRole = claims.role as UserRole | undefined;
 
         if (claimedBusinessId && claimedRole) {
+          console.log('✅ Custom claims valid, setting business context');
           setBusinessId(claimedBusinessId);
           setRole(claimedRole);
           setShowClaimError(false);
         } else {
-          console.warn('User does not have businessId or role in custom claims');
+          console.warn('⚠️ User does not have businessId or role in custom claims');
           setBusinessId(null);
           setRole(null);
           // Show error after a delay to allow for claim propagation
@@ -60,7 +68,7 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
           }, 3000);
         }
       } catch (error) {
-        console.error('Error loading business context:', error);
+        console.error('❌ Error loading business context:', error);
         setBusinessId(null);
         setRole(null);
       } finally {
@@ -75,27 +83,45 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   if (!loading && !businessId && user && showClaimError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900">Setting up your account...</h1>
-          <p className="text-sm text-slate-500">
-            Your account setup is taking longer than expected. This can happen right after signing up.
-          </p>
+        <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="text-center">
+            <h1 className="text-xl font-semibold text-slate-900">Account Setup Incomplete</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Your account is missing required business permissions. This can happen if:
+            </p>
+          </div>
+          <ul className="list-disc space-y-1 pl-6 text-sm text-slate-600">
+            <li>Your account was just created and permissions are still being set up</li>
+            <li>Your auth token needs to be refreshed to get the latest permissions</li>
+            <li>There was an issue during account creation</li>
+          </ul>
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+            <p className="text-xs text-blue-900">
+              <strong>User ID:</strong> {user.uid}
+              <br />
+              <strong>Email:</strong> {user.email}
+            </p>
+          </div>
           <div className="flex flex-col gap-2">
             <Button
               variant="default"
               onClick={async () => {
+                console.log('🔄 Manually refreshing token and reloading...');
                 setShowClaimError(false);
                 setLoading(true);
                 await user.getIdToken(true);
                 window.location.reload();
               }}
             >
-              Refresh and try again
+              Refresh Permissions
             </Button>
             <Button variant="outline" onClick={signOut}>
-              Return to login
+              Sign Out and Try Again
             </Button>
           </div>
+          <p className="text-xs text-slate-500 text-center">
+            If this problem persists, please contact support with your User ID above.
+          </p>
         </div>
       </div>
     );

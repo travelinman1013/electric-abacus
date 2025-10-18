@@ -63,12 +63,12 @@ const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
     return [
       {
         label: week.status === 'draft' ? 'Review & finalize' : 'View review',
-        to: `/weeks/${week.id}/review`,
+        to: `/app/weeks/${week.id}/review`,
         variant: 'default'
       },
       {
         label: 'Inventory',
-        to: `/weeks/${week.id}/inventory`,
+        to: `/app/weeks/${week.id}/inventory`,
         variant: 'outline'
       }
     ];
@@ -78,12 +78,12 @@ const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
     return [
       {
         label: week.status === 'draft' ? 'Enter sales' : 'View sales',
-        to: `/weeks/${week.id}/sales`,
+        to: `/app/weeks/${week.id}/sales`,
         variant: 'default'
       },
       {
         label: 'Inventory',
-        to: `/weeks/${week.id}/inventory`,
+        to: `/app/weeks/${week.id}/inventory`,
         variant: 'outline'
       }
     ];
