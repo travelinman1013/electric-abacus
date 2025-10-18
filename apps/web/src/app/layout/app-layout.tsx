@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { MainNav } from '../components/navigation/main-nav';
@@ -11,54 +11,40 @@ export const AppLayout = () => {
   const { user, profile, loading, signOut } = useAuthContext();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [showProvisionError, setShowProvisionError] = useState(false);
 
-  // Retry mechanism for profile loading
-  useEffect(() => {
-    if (!loading && !profile && user && retryCount < 3) {
-      console.log(`⏳ Profile not loaded, scheduling retry ${retryCount + 1}/3...`);
-
-      // Wait 2 seconds before retrying
-      const timer = setTimeout(() => {
-        if (!profile) {
-          console.log(`🔄 Retrying profile load attempt ${retryCount + 1}...`);
-          setRetryCount(prev => prev + 1);
-          // Force token refresh to trigger auth state update
-          user.getIdToken(true).catch(err =>
-            console.error('Failed to refresh token during retry:', err)
-          );
-        }
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    } else if (!loading && !profile && user && retryCount >= 3) {
-      console.error('❌ Profile failed to load after 3 retries');
-      setShowProvisionError(true);
-    }
-  }, [loading, profile, user, retryCount]);
-
+  // Trust AuthProvider's loading state - it handles profile polling with exponential backoff
   if (loading) {
     return (
       <LoadingScreen label="Preparing your workspace" />
     );
   }
 
-  if (!profile && showProvisionError) {
+  // If loading is complete but no profile exists, show error (AuthProvider polling timed out)
+  if (!profile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
         <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900">Account Setup Delayed</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Account Setup Incomplete</h1>
           <p className="text-sm text-slate-500">
-            Your account is taking longer than expected to provision. This can happen if you just signed up.
+            Your account profile could not be loaded. This can happen if:
           </p>
+          <ul className="list-disc space-y-1 pl-6 text-left text-sm text-slate-600">
+            <li>Your account was just created and is still being set up</li>
+            <li>There was an issue during account creation</li>
+            <li>Your profile data is missing from the system</li>
+          </ul>
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-left">
+            <p className="text-xs text-blue-900">
+              <strong>User ID:</strong> {user?.uid || 'Unknown'}
+              <br />
+              <strong>Email:</strong> {user?.email || 'Unknown'}
+            </p>
+          </div>
           <div className="flex flex-col gap-2">
             <Button
               variant="default"
               onClick={() => {
-                setRetryCount(0);
-                setShowProvisionError(false);
-                user?.getIdToken(true);
+                console.log('🔄 Refreshing page to retry profile load...');
                 window.location.reload();
               }}
             >
@@ -68,21 +54,11 @@ export const AppLayout = () => {
               Return to Login
             </Button>
           </div>
+          <p className="text-xs text-slate-500 text-center">
+            If this problem persists, please try signing in again or contact support.
+          </p>
         </div>
       </div>
-    );
-  }
-
-  // Show loading state while retrying
-  if (!profile && retryCount > 0) {
-    return (
-      <LoadingScreen label={`Setting up your account... (attempt ${retryCount}/3)`} />
-    );
-  }
-
-  if (!profile) {
-    return (
-      <LoadingScreen label="Loading your profile..." />
     );
   }
 

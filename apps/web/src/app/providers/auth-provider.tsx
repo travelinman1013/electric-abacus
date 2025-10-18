@@ -82,6 +82,53 @@ async function waitForCustomClaims(
   return false;
 }
 
+/**
+ * Polls for user profile document with exponential backoff.
+ * This handles the delay between auth user creation and Cloud Function creating the profile.
+ *
+ * @param userId - The user ID to check profile for
+ * @param firestore - Firestore instance
+ * @param maxAttempts - Maximum number of polling attempts (default: 10)
+ * @param initialDelay - Initial delay in milliseconds (default: 500ms)
+ * @returns Promise<UserProfile | null> - Profile if found, null if timeout
+ */
+async function waitForUserProfile(
+  userId: string,
+  firestore: ReturnType<typeof getClientFirestore>,
+  maxAttempts = 10,
+  initialDelay = 500
+): Promise<UserProfile | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const profileSnapshot = await getDoc(doc(firestore, `users/${userId}`));
+
+    if (profileSnapshot.exists()) {
+      const profile = {
+        uid: userId,
+        ...profileSnapshot.data()
+      } as UserProfile;
+      console.log(`✅ Profile available after ${attempt + 1} attempt(s)`, {
+        displayName: profile.displayName,
+        role: profile.role
+      });
+      return profile;
+    }
+
+    // Don't wait after the last attempt
+    if (attempt < maxAttempts - 1) {
+      // Exponential backoff: 500ms, 1s, 2s, 4s, 8s, 16s...
+      const delay = initialDelay * Math.pow(2, attempt);
+      console.log(`⏳ Waiting for profile... attempt ${attempt + 1}/${maxAttempts} (${delay}ms delay)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  console.error('❌ Profile never appeared after maximum attempts', {
+    maxAttempts,
+    totalWaitTime: initialDelay * (Math.pow(2, maxAttempts) - 1)
+  });
+  return null;
+}
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [state, setState] = useState<AuthState>({ user: null, profile: null, loading: true });
 
@@ -106,14 +153,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const profileSnapshot = await getDoc(doc(firestore, `users/${firebaseUser.uid}`));
         console.log('📄 Profile snapshot exists:', profileSnapshot.exists());
 
-        const profile = profileSnapshot.exists()
-          ? ({
-              uid: firebaseUser.uid,
-              ...profileSnapshot.data()
-            } as UserProfile)
-          : null;
+        let profile: UserProfile | null;
 
-        console.log('✅ User profile loaded:', profile);
+        if (profileSnapshot.exists()) {
+          // Profile exists immediately (returning user)
+          profile = {
+            uid: firebaseUser.uid,
+            ...profileSnapshot.data()
+          } as UserProfile;
+          console.log('✅ User profile loaded:', profile);
+        } else {
+          // Profile doesn't exist yet - likely a new signup
+          // Poll for the profile document with exponential backoff
+          console.log('🔄 Profile not found, polling for profile document...');
+          profile = await waitForUserProfile(firebaseUser.uid, firestore);
+
+          if (!profile) {
+            console.warn('⚠️ Profile never appeared after polling');
+          }
+        }
+
         setState({ user: firebaseUser, profile, loading: false });
       } catch (error) {
         console.error('❌ Failed to load user profile', error);

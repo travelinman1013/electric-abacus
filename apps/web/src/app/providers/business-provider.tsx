@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole } from '@domain/costing';
 import { useAuthContext } from './auth-provider';
 import { Button } from '../components/ui/button';
@@ -15,12 +16,55 @@ interface BusinessProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Polls for custom claims (businessId and role) with exponential backoff.
+ * This handles the eventual consistency of Firebase Auth custom claims.
+ *
+ * @param user - The Firebase user to check claims for
+ * @param maxAttempts - Maximum number of polling attempts (default: 10)
+ * @param initialDelay - Initial delay in milliseconds (default: 500ms)
+ * @returns Promise<{businessId: string | null, role: UserRole | null}> - Claims if found, nulls if timeout
+ */
+async function waitForCustomClaims(
+  user: FirebaseUser,
+  maxAttempts = 10,
+  initialDelay = 500
+): Promise<{ businessId: string | null; role: UserRole | null }> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Force refresh the token to get latest claims
+    const tokenResult = await user.getIdTokenResult(true);
+    const { businessId, role } = tokenResult.claims;
+
+    if (businessId && role) {
+      console.log(`✅ Claims available after ${attempt + 1} attempt(s)`, {
+        businessId,
+        role
+      });
+      return { businessId: businessId as string, role: role as UserRole };
+    }
+
+    // Don't wait after the last attempt
+    if (attempt < maxAttempts - 1) {
+      // Exponential backoff: 500ms, 1s, 2s, 4s, 8s, 16s...
+      const delay = initialDelay * Math.pow(2, attempt);
+      console.log(`⏳ Waiting for claims... attempt ${attempt + 1}/${maxAttempts} (${delay}ms delay)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  console.error('❌ Claims never appeared after maximum attempts', {
+    maxAttempts,
+    totalWaitTime: initialDelay * (Math.pow(2, maxAttempts) - 1)
+  });
+  return { businessId: null, role: null };
+}
+
 export function BusinessProvider({ children }: BusinessProviderProps) {
   const { user, loading: authLoading, signOut } = useAuthContext();
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showClaimError, setShowClaimError] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   useEffect(() => {
     async function loadBusinessContext() {
@@ -32,40 +76,25 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
         setBusinessId(null);
         setRole(null);
         setLoading(false);
+        setIsPolling(false);
         return;
       }
 
       try {
-        // IMPORTANT: Force token refresh to get latest custom claims
-        // This ensures we have the most up-to-date claims from the server
-        console.log('🔄 Refreshing auth token to get latest custom claims...');
-        const idTokenResult = await user.getIdTokenResult(true); // force refresh = true
-        const claims = idTokenResult.claims;
+        setIsPolling(true);
+        console.log('🔄 Polling for custom claims...');
 
-        console.log('📋 Custom claims received:', {
-          businessId: claims.businessId || 'MISSING',
-          role: claims.role || 'MISSING'
-        });
+        // Poll for claims with exponential backoff (up to ~30 seconds)
+        const claims = await waitForCustomClaims(user);
 
-        // Extract businessId and role from custom claims
-        const claimedBusinessId = claims.businessId as string | undefined;
-        const claimedRole = claims.role as UserRole | undefined;
-
-        if (claimedBusinessId && claimedRole) {
+        if (claims.businessId && claims.role) {
           console.log('✅ Custom claims valid, setting business context');
-          setBusinessId(claimedBusinessId);
-          setRole(claimedRole);
-          setShowClaimError(false);
+          setBusinessId(claims.businessId);
+          setRole(claims.role);
         } else {
-          console.warn('⚠️ User does not have businessId or role in custom claims');
+          console.warn('⚠️ User does not have businessId or role in custom claims after polling');
           setBusinessId(null);
           setRole(null);
-          // Show error after a delay to allow for claim propagation
-          setTimeout(() => {
-            if (!claimedBusinessId || !claimedRole) {
-              setShowClaimError(true);
-            }
-          }, 3000);
         }
       } catch (error) {
         console.error('❌ Error loading business context:', error);
@@ -73,14 +102,33 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
         setRole(null);
       } finally {
         setLoading(false);
+        setIsPolling(false);
       }
     }
 
     loadBusinessContext();
   }, [user, authLoading]);
 
-  // Show error UI if claims are missing after auth completes
-  if (!loading && !businessId && user && showClaimError) {
+  // Show loading state while polling for claims
+  if (isPolling) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm text-center">
+          <div className="flex justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+          </div>
+          <h1 className="text-xl font-semibold text-slate-900">Setting Up Your Account</h1>
+          <p className="text-sm text-slate-500">
+            Please wait while we configure your business permissions...
+          </p>
+          <p className="text-xs text-slate-400">This usually takes 5-10 seconds</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error UI only if claims are still missing after polling completes
+  if (!loading && !businessId && user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
         <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
@@ -107,7 +155,6 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
               variant="default"
               onClick={async () => {
                 console.log('🔄 Manually refreshing token and reloading...');
-                setShowClaimError(false);
                 setLoading(true);
                 await user.getIdToken(true);
                 window.location.reload();
