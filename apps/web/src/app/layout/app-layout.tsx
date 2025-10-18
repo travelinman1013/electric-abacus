@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { MainNav } from '../components/navigation/main-nav';
@@ -8,9 +8,35 @@ import { LoadingScreen } from '../components/layout/loading-screen';
 import { useAuthContext } from '../providers/auth-provider';
 
 export const AppLayout = () => {
-  const { profile, loading, signOut } = useAuthContext();
+  const { user, profile, loading, signOut } = useAuthContext();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [showProvisionError, setShowProvisionError] = useState(false);
+
+  // Retry mechanism for profile loading
+  useEffect(() => {
+    if (!loading && !profile && user && retryCount < 3) {
+      console.log(`⏳ Profile not loaded, scheduling retry ${retryCount + 1}/3...`);
+
+      // Wait 2 seconds before retrying
+      const timer = setTimeout(() => {
+        if (!profile) {
+          console.log(`🔄 Retrying profile load attempt ${retryCount + 1}...`);
+          setRetryCount(prev => prev + 1);
+          // Force token refresh to trigger auth state update
+          user.getIdToken(true).catch(err =>
+            console.error('Failed to refresh token during retry:', err)
+          );
+        }
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    } else if (!loading && !profile && user && retryCount >= 3) {
+      console.error('❌ Profile failed to load after 3 retries');
+      setShowProvisionError(true);
+    }
+  }, [loading, profile, user, retryCount]);
 
   if (loading) {
     return (
@@ -18,20 +44,45 @@ export const AppLayout = () => {
     );
   }
 
-  if (!profile) {
+  if (!profile && showProvisionError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
         <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900">Account not provisioned</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Account Setup Delayed</h1>
           <p className="text-sm text-slate-500">
-            Your account is authenticated but missing a profile. Please contact an administrator to
-            assign your role.
+            Your account is taking longer than expected to provision. This can happen if you just signed up.
           </p>
-          <Button variant="outline" onClick={signOut}>
-            Return to login
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="default"
+              onClick={() => {
+                setRetryCount(0);
+                setShowProvisionError(false);
+                user?.getIdToken(true);
+                window.location.reload();
+              }}
+            >
+              Refresh and Try Again
+            </Button>
+            <Button variant="outline" onClick={signOut}>
+              Return to Login
+            </Button>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  // Show loading state while retrying
+  if (!profile && retryCount > 0) {
+    return (
+      <LoadingScreen label={`Setting up your account... (attempt ${retryCount}/3)`} />
+    );
+  }
+
+  if (!profile) {
+    return (
+      <LoadingScreen label="Loading your profile..." />
     );
   }
 

@@ -43,6 +43,45 @@ type AuthState = {
   loading: boolean;
 };
 
+/**
+ * Polls for custom claims (businessId and role) with exponential backoff.
+ * This handles the eventual consistency of Firebase Auth custom claims.
+ *
+ * @param user - The Firebase user to check claims for
+ * @param maxAttempts - Maximum number of polling attempts (default: 10)
+ * @param initialDelay - Initial delay in milliseconds (default: 500ms)
+ * @returns Promise<boolean> - True if claims are available, false if timeout
+ */
+async function waitForCustomClaims(
+  user: FirebaseUser,
+  maxAttempts = 10,
+  initialDelay = 500
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Force refresh the token to get latest claims
+    const tokenResult = await user.getIdTokenResult(true);
+
+    if (tokenResult.claims.businessId && tokenResult.claims.role) {
+      console.log(`✅ Claims available after ${attempt + 1} attempt(s)`, {
+        businessId: tokenResult.claims.businessId,
+        role: tokenResult.claims.role
+      });
+      return true;
+    }
+
+    // Exponential backoff: 500ms, 1s, 2s, 4s, 8s, 16s...
+    const delay = initialDelay * Math.pow(2, attempt);
+    console.log(`⏳ Waiting for claims... attempt ${attempt + 1}/${maxAttempts} (${delay}ms delay)`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  console.error('❌ Claims never appeared after maximum attempts', {
+    maxAttempts,
+    totalWaitTime: initialDelay * (Math.pow(2, maxAttempts) - 1)
+  });
+  return false;
+}
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [state, setState] = useState<AuthState>({ user: null, profile: null, loading: true });
 
@@ -127,13 +166,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const result = await setupFunction(businessDetails);
         console.log('✅ Business setup result:', result.data);
 
-        // 3. Force token refresh to get custom claims
-        console.log('🔄 Refreshing ID token to get custom claims...');
-        await user.getIdToken(true);
-        console.log('✅ ID token refreshed');
+        // 3. Poll for custom claims with exponential backoff
+        console.log('🔄 Waiting for custom claims to propagate...');
+        const claimsAvailable = await waitForCustomClaims(user);
+
+        if (!claimsAvailable) {
+          throw new Error(
+            'Account setup is taking longer than expected. Please try signing in again in a few moments.'
+          );
+        }
 
         // 4. Auth state will update automatically via onAuthStateChanged
-        console.log('✅ Signup complete, waiting for auth state update...');
+        console.log('✅ Signup complete, auth state will update automatically...');
       } catch (error: unknown) {
         console.error('❌ Signup error:', error);
 

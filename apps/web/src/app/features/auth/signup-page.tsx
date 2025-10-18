@@ -40,12 +40,15 @@ const TEAM_SIZE_OPTIONS: { value: TeamSizeType; label: string }[] = [
   { value: '50+', label: '50+ people' }
 ];
 
+type SignupState = 'idle' | 'creating' | 'provisioning' | 'complete';
+
 export const SignupPage = () => {
   const navigate = useNavigate();
   const { signUp } = useAuthContext();
   const [currentStep, setCurrentStep] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signupState, setSignupState] = useState<SignupState>('idle');
 
   // Step 1: Account details
   const accountForm = useForm<SignupAccountInput>({
@@ -54,7 +57,7 @@ export const SignupPage = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      termsAccepted: false as any // Will be validated by Zod schema
+      termsAccepted: false
     }
   });
 
@@ -105,22 +108,29 @@ export const SignupPage = () => {
   const handleSubmit = async () => {
     setFormError(null);
     setIsSubmitting(true);
+    setSignupState('creating');
 
     try {
       const accountData = accountForm.getValues();
       const businessData = businessForm.getValues();
 
+      // Stage 1: Creating account and business
+      setSignupState('creating');
       await signUp(accountData.email, accountData.password, {
         name: businessData.name,
         industry: businessData.industry,
         teamSize: businessData.teamSize
       });
 
-      // Navigate to app after successful signup
-      navigate('/app/weeks');
+      // Stage 2: Claims have propagated, finalizing
+      setSignupState('complete');
+
+      // Let route guards handle navigation automatically
+      // Auth state will update and redirect to /app/weeks
     } catch (error) {
       console.error('Signup failed:', error);
       setFormError(error instanceof Error ? error.message : 'An unexpected error occurred');
+      setSignupState('idle');
       // Go back to step 0 to allow user to fix issues
       setCurrentStep(0);
     } finally {
@@ -231,7 +241,7 @@ export const SignupPage = () => {
                 id="terms"
                 checked={accountForm.watch('termsAccepted')}
                 onCheckedChange={(checked) =>
-                  accountForm.setValue('termsAccepted', (checked === true) as any)
+                  accountForm.setValue('termsAccepted', checked === true)
                 }
               />
               <Label
@@ -372,12 +382,34 @@ export const SignupPage = () => {
               </div>
             </div>
 
+            {/* Signup progress feedback */}
+            {isSubmitting && (
+              <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                  <span>
+                    {signupState === 'creating' && 'Creating your account...'}
+                    {signupState === 'provisioning' && 'Setting up your business...'}
+                    {signupState === 'complete' && 'Redirecting to your dashboard...'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between gap-3">
               <Button type="button" variant="outline" onClick={handleBack} disabled={isSubmitting}>
                 Back
               </Button>
               <Button onClick={() => void handleSubmit()} disabled={isSubmitting}>
-                {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                {isSubmitting ? (
+                  <>
+                    {signupState === 'creating' && 'Creating Account...'}
+                    {signupState === 'provisioning' && 'Setting Up Business...'}
+                    {signupState === 'complete' && 'Finalizing...'}
+                  </>
+                ) : (
+                  'Create Account'
+                )}
               </Button>
             </div>
           </div>
