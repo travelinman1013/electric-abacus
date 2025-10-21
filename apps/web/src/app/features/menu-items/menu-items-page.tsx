@@ -34,6 +34,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
+  TableHeadResizable,
   TableRow,
 } from '../../components/ui/table';
 import { cn } from '../../lib/utils';
@@ -44,6 +45,7 @@ import {
   useMenuItems,
   useUpsertMenuItem,
 } from '../../hooks/use-menu-items';
+import { useResizableColumns } from '../../hooks/use-resizable-columns';
 import { useBusiness } from '../../providers/business-provider';
 import { getMenuItemWithRecipes } from '../../services/firestore';
 
@@ -129,6 +131,7 @@ export const MenuItemsPage = () => {
   } = useIngredients();
   const upsertMenuItemMutation = useUpsertMenuItem();
   const deleteMenuItemMutation = useDeleteMenuItem();
+  const { columnWidths, isLocked, handleResize, handleResizeEnd, toggleLock, resetWidths } = useResizableColumns();
 
   const [formMessage, setFormMessage] = useState<{
     type: 'success' | 'error';
@@ -544,7 +547,7 @@ export const MenuItemsPage = () => {
             ) : null}
           </TableCell>
           {/* Qty column - 90px from colgroup */}
-          <TableCell className="align-middle">
+          <TableCell className="align-middle px-2">
             <Input
               type="number"
               step={(() => {
@@ -552,22 +555,22 @@ export const MenuItemsPage = () => {
                 return unitOfMeasure?.toLowerCase() === 'each' ? '1' : '0.25';
               })()}
               min={0}
-              className="w-20 text-right text-sm"
+              className="w-full text-center text-sm px-2"
               {...form.register(`recipes.${index}.quantity`, { valueAsNumber: true })}
             />
             {error?.quantity?.message ? (
-              <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
+              <p className="text-destructive text-xs mt-1 text-center">{error.quantity.message}</p>
             ) : null}
           </TableCell>
           {/* Unit column - 100px from colgroup */}
-          <TableCell className="align-middle text-right">
+          <TableCell className="align-middle px-2">
             <Input
-              className="w-full text-right text-sm bg-slate-50 cursor-not-allowed"
+              className="w-full text-center text-sm bg-slate-50 cursor-not-allowed px-2"
               readOnly
               {...form.register(`recipes.${index}.unitOfMeasure` as const)}
             />
             {error?.unitOfMeasure?.message ? (
-              <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
+              <p className="text-destructive text-xs mt-1 text-center">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
           {/* Total column - 100px from colgroup */}
@@ -902,10 +905,48 @@ export const MenuItemsPage = () => {
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
-                <DialogTitle>
-                  {editingMenuItem.data?.item.name ? `Edit ${editingMenuItem.data.item.name}` : 'Edit menu item'}
-                </DialogTitle>
-                <DialogDescription>Adjust the recipe or toggle active state.</DialogDescription>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <DialogTitle>
+                      {editingMenuItem.data?.item.name ? `Edit ${editingMenuItem.data.item.name}` : 'Edit menu item'}
+                    </DialogTitle>
+                    <DialogDescription>Adjust the recipe or toggle active state.</DialogDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleLock}
+                      className="text-xs whitespace-nowrap"
+                    >
+                      {isLocked ? (
+                        <>
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          Locked
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                          </svg>
+                          Unlocked
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetWidths}
+                      className="text-xs"
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </div>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
                 <form className="space-y-4" onSubmit={handleUpdate} noValidate id="edit-menu-item-form">
@@ -961,20 +1002,44 @@ export const MenuItemsPage = () => {
 
                 <div className="overflow-x-auto -mx-6 px-6">
                   <Table className="w-full text-xs">
-                    <colgroup>
-                      <col /> {/* Ingredient - auto width */}
-                      <col style={{ width: '90px' }} /> {/* Qty - fits NumberInput */}
-                      <col style={{ width: '100px' }} /> {/* Unit */}
-                      <col style={{ width: '100px' }} /> {/* Total */}
-                      <col style={{ width: '120px' }} /> {/* Remove */}
-                    </colgroup>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Ingredient</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Unit</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="text-right"></TableHead>
+                        <TableHeadResizable
+                          width={columnWidths.ingredient || 150}
+                          onResize={(newWidth) => handleResize('ingredient', newWidth)}
+                          onResizeEnd={handleResizeEnd}
+                          isLocked={isLocked}
+                        >
+                          Ingredient
+                        </TableHeadResizable>
+                        <TableHeadResizable
+                          className="text-center"
+                          width={columnWidths.qty}
+                          onResize={(newWidth) => handleResize('qty', newWidth)}
+                          onResizeEnd={handleResizeEnd}
+                          isLocked={isLocked}
+                        >
+                          Qty
+                        </TableHeadResizable>
+                        <TableHeadResizable
+                          className="text-center"
+                          width={columnWidths.unit}
+                          onResize={(newWidth) => handleResize('unit', newWidth)}
+                          onResizeEnd={handleResizeEnd}
+                          isLocked={isLocked}
+                        >
+                          Unit
+                        </TableHeadResizable>
+                        <TableHeadResizable
+                          className="text-right"
+                          width={columnWidths.total}
+                          onResize={(newWidth) => handleResize('total', newWidth)}
+                          onResizeEnd={handleResizeEnd}
+                          isLocked={isLocked}
+                        >
+                          Total
+                        </TableHeadResizable>
+                        <TableHead className="text-right" style={{ width: '120px' }}></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
