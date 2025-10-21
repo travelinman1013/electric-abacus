@@ -517,6 +517,8 @@ export const MenuItemsPage = () => {
     array.append(buildDefaultRecipe(nextIngredient));
   };
 
+  // Recipe table row renderer with colgroup-based column widths
+  // Column widths are defined in <colgroup> elements for consistent alignment
   const renderRecipeRows = (
     array: typeof createRecipes,
     form: typeof createForm,
@@ -527,7 +529,8 @@ export const MenuItemsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="font-medium align-middle min-w-[140px]">
+          {/* Ingredient column - auto width from colgroup */}
+          <TableCell className="font-medium align-middle">
             <Select className="w-full text-sm" {...form.register(`recipes.${index}.ingredientId` as const)}>
               <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
@@ -540,25 +543,26 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="align-middle text-right">
-            <NumberInput
-              className="text-right"
-              inputClassName="text-base text-right"
-              increment={(() => {
+          {/* Qty column - 90px from colgroup */}
+          <TableCell className="align-middle">
+            <Input
+              type="number"
+              step={(() => {
                 const unitOfMeasure = form.watch(`recipes.${index}.unitOfMeasure`);
-                return unitOfMeasure?.toLowerCase() === 'each' ? 1 : 0.25;
+                return unitOfMeasure?.toLowerCase() === 'each' ? '1' : '0.25';
               })()}
               min={0}
-              value={form.watch(`recipes.${index}.quantity`) || 0}
-              onChange={(value) => form.setValue(`recipes.${index}.quantity`, value)}
+              className="w-20 text-right text-sm"
+              {...form.register(`recipes.${index}.quantity`, { valueAsNumber: true })}
             />
             {error?.quantity?.message ? (
               <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="align-middle">
+          {/* Unit column - 100px from colgroup */}
+          <TableCell className="align-middle text-right">
             <Input
-              className="w-[90px] text-right text-sm bg-slate-50 cursor-not-allowed"
+              className="w-full text-right text-sm bg-slate-50 cursor-not-allowed"
               readOnly
               {...form.register(`recipes.${index}.unitOfMeasure` as const)}
             />
@@ -566,6 +570,7 @@ export const MenuItemsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
+          {/* Total column - 100px from colgroup */}
           <TableCell className="text-right font-medium align-middle">
             {(() => {
               const ingredientId = form.watch(`recipes.${index}.ingredientId`);
@@ -588,7 +593,8 @@ export const MenuItemsPage = () => {
               return '—';
             })()}
           </TableCell>
-          <TableCell className="w-[1%] whitespace-nowrap text-right align-middle">
+          {/* Remove column - 120px from colgroup */}
+          <TableCell className="whitespace-nowrap text-right align-middle">
             <Button
               type="button"
               size="sm"
@@ -819,13 +825,20 @@ export const MenuItemsPage = () => {
 
                 <div className="overflow-x-auto -mx-6 px-6">
                   <Table className="w-full text-xs">
+                    <colgroup>
+                      <col /> {/* Ingredient - auto width */}
+                      <col style={{ width: '90px' }} /> {/* Qty - fits NumberInput */}
+                      <col style={{ width: '100px' }} /> {/* Unit */}
+                      <col style={{ width: '100px' }} /> {/* Total */}
+                      <col style={{ width: '120px' }} /> {/* Remove */}
+                    </colgroup>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[35%] min-w-[100px]">Ingredient</TableHead>
-                        <TableHead className="w-[20%] min-w-[80px] text-right">Qty</TableHead>
-                        <TableHead className="w-[15%] min-w-[60px] text-right">Unit</TableHead>
-                        <TableHead className="w-[15%] min-w-[60px] text-right">Total</TableHead>
-                        <TableHead className="w-[15%] min-w-[70px] text-right"></TableHead>
+                        <TableHead>Ingredient</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -948,13 +961,20 @@ export const MenuItemsPage = () => {
 
                 <div className="overflow-x-auto -mx-6 px-6">
                   <Table className="w-full text-xs">
+                    <colgroup>
+                      <col /> {/* Ingredient - auto width */}
+                      <col style={{ width: '90px' }} /> {/* Qty - fits NumberInput */}
+                      <col style={{ width: '100px' }} /> {/* Unit */}
+                      <col style={{ width: '100px' }} /> {/* Total */}
+                      <col style={{ width: '120px' }} /> {/* Remove */}
+                    </colgroup>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[35%] min-w-[100px]">Ingredient</TableHead>
-                        <TableHead className="w-[20%] min-w-[80px] text-right">Qty</TableHead>
-                        <TableHead className="w-[15%] min-w-[60px] text-right">Unit</TableHead>
-                        <TableHead className="w-[15%] min-w-[60px] text-right">Total</TableHead>
-                        <TableHead className="w-[15%] min-w-[70px] text-right"></TableHead>
+                        <TableHead>Ingredient</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
