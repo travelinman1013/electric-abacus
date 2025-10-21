@@ -12,6 +12,7 @@ import { InventoryPage } from '../features/weeks/inventory-page';
 import { SalesEntryPage } from '../features/weeks/sales-entry-page';
 import { WeekListPage } from '../features/weeks/week-list-page';
 import { WeekReviewPage } from '../features/weeks/week-review-page';
+import { UserSettingsPage } from '../features/settings/user-settings-page';
 import { useAuthContext } from '../providers/auth-provider';
 import { LoadingScreen } from '../components/layout/loading-screen';
 import { ProtectedRoute } from './protected-route';
@@ -51,6 +52,7 @@ export const AppRoutes = () => {
           <Route path="weeks" element={<WeekListPage />} />
           <Route path="weeks/:weekId/sales" element={<SalesEntryPage />} />
           <Route path="weeks/:weekId/inventory" element={<InventoryPage />} />
+          <Route path="settings" element={<UserSettingsPage />} />
 
           <Route element={<RoleGuard allowedRoles={['owner']} redirectTo={DEFAULT_AUTHENTICATED_PATH} />}>
             <Route path="ingredients" element={<IngredientsPage />} />

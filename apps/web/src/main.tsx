@@ -6,6 +6,7 @@ import './index.css';
 import { App } from './App';
 import { AuthProvider } from './app/providers/auth-provider';
 import { BusinessProvider } from './app/providers/business-provider';
+import { PreferencesProvider } from './app/providers/preferences-provider';
 import { initializeFirebaseClient } from './app/utils/firebaseClient';
 import './app/utils/debug-token'; // Load debug utility
 
@@ -24,9 +25,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BusinessProvider>
-          <App />
-        </BusinessProvider>
+        <PreferencesProvider>
+          <BusinessProvider>
+            <App />
+          </BusinessProvider>
+        </PreferencesProvider>
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>

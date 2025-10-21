@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { TableType } from '@domain/costing';
+import { usePreferences } from '../providers/preferences-provider';
 
 export interface ColumnWidths {
   ingredient?: number;
@@ -26,40 +28,53 @@ const COLUMN_CONSTRAINTS: Record<keyof ColumnWidths, ColumnConstraints> = {
   total: { min: 80, max: 150 },
 };
 
-const STORAGE_KEY_WIDTHS = 'menuItemTable:columnWidths';
-const STORAGE_KEY_LOCKED = 'menuItemTable:isLocked';
+interface UseResizableColumnsOptions {
+  tableType?: TableType;
+}
 
-export const useResizableColumns = () => {
+export const useResizableColumns = (options: UseResizableColumnsOptions = {}) => {
+  const { tableType = 'menuItems' } = options;
+  const { preferences, updatePreferences } = usePreferences();
+
   const [columnWidths, setColumnWidths] = useState<Required<ColumnWidths>>(DEFAULT_WIDTHS);
   const [isLocked, setIsLocked] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from preferences on mount and when preferences change
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY_WIDTHS);
-      if (stored) {
-        const parsed = JSON.parse(stored) as ColumnWidths;
-        setColumnWidths({ ...DEFAULT_WIDTHS, ...parsed });
+      const savedWidths = preferences.columns.widths[tableType];
+      const savedLocked = preferences.columns.lockStates[tableType];
+
+      if (savedWidths && Object.keys(savedWidths).length > 0) {
+        setColumnWidths({ ...DEFAULT_WIDTHS, ...savedWidths });
       }
 
-      const lockedStored = localStorage.getItem(STORAGE_KEY_LOCKED);
-      if (lockedStored) {
-        setIsLocked(lockedStored === 'true');
-      }
+      setIsLocked(savedLocked ?? false);
     } catch (error) {
-      console.error('Failed to load column widths from localStorage', error);
+      console.error(`Failed to load column widths for ${tableType}`, error);
     }
-  }, []);
+  }, [tableType, preferences.columns]);
 
-  // Save to localStorage when widths change
-  const saveWidths = useCallback((widths: Required<ColumnWidths>) => {
-    try {
-      localStorage.setItem(STORAGE_KEY_WIDTHS, JSON.stringify(widths));
-    } catch (error) {
-      console.error('Failed to save column widths to localStorage', error);
-    }
-  }, []);
+  // Save to preferences when widths change
+  const saveWidths = useCallback(
+    (widths: Required<ColumnWidths>) => {
+      try {
+        void updatePreferences({
+          columns: {
+            ...preferences.columns,
+            widths: {
+              ...preferences.columns.widths,
+              [tableType]: widths,
+            },
+          },
+        });
+      } catch (error) {
+        console.error(`Failed to save column widths for ${tableType}`, error);
+      }
+    },
+    [tableType, preferences.columns, updatePreferences]
+  );
 
   // Handle column resize - accepts absolute width
   const handleResize = useCallback(
@@ -91,11 +106,19 @@ export const useResizableColumns = () => {
     const newLocked = !isLocked;
     setIsLocked(newLocked);
     try {
-      localStorage.setItem(STORAGE_KEY_LOCKED, String(newLocked));
+      void updatePreferences({
+        columns: {
+          ...preferences.columns,
+          lockStates: {
+            ...preferences.columns.lockStates,
+            [tableType]: newLocked,
+          },
+        },
+      });
     } catch (error) {
-      console.error('Failed to save lock state to localStorage', error);
+      console.error(`Failed to save lock state for ${tableType}`, error);
     }
-  }, [isLocked]);
+  }, [isLocked, tableType, preferences.columns, updatePreferences]);
 
   // Reset to default widths
   const resetWidths = useCallback(() => {
