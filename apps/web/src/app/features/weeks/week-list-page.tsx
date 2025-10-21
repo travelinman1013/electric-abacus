@@ -162,52 +162,55 @@ export const WeekListPage = () => {
                 Loading weeks...
               </div>
             ) : sortedWeeks.length ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Week</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedWeeks.map((week) => {
-                    const actions = profile ? actionsForRole(profile.role, week) : [];
-                    return (
-                      <TableRow key={week.id}>
-                        <TableCell className="font-medium text-slate-800">{week.id}</TableCell>
-                        <TableCell>
-                          <Badge variant={badgeVariantByStatus[week.status]} className="uppercase">
-                            {week.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(week.createdAt)}</TableCell>
-                        <TableCell className="text-right">
-                          {actions.length ? (
-                            <div className="flex justify-end gap-2">
-                              {actions.map((action) => (
-                                <Link
-                                  key={`${week.id}-${action.to}`}
-                                  to={action.to}
-                                  className={cn(
-                                    buttonVariants({
-                                      variant: action.variant ?? 'outline',
-                                      size: 'sm'
-                                    })
-                                  )}
-                                >
-                                  {action.label}
-                                </Link>
-                              ))}
-                            </div>
-                          ) : null}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[80px]">Week</TableHead>
+                      <TableHead className="min-w-[80px]">Status</TableHead>
+                      <TableHead className="hidden sm:table-cell">Created</TableHead>
+                      <TableHead className="text-right min-w-[140px] sm:min-w-[180px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedWeeks.map((week) => {
+                      const actions = profile ? actionsForRole(profile.role, week) : [];
+                      return (
+                        <TableRow key={week.id}>
+                          <TableCell className="font-medium text-slate-800">{week.id}</TableCell>
+                          <TableCell>
+                            <Badge variant={badgeVariantByStatus[week.status]} className="uppercase text-[10px] sm:text-xs">
+                              {week.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">{formatDate(week.createdAt)}</TableCell>
+                          <TableCell className="text-right">
+                            {actions.length ? (
+                              <div className="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2">
+                                {actions.map((action) => (
+                                  <Link
+                                    key={`${week.id}-${action.to}`}
+                                    to={action.to}
+                                    className={cn(
+                                      buttonVariants({
+                                        variant: action.variant ?? 'outline',
+                                        size: 'sm'
+                                      }),
+                                      'text-xs whitespace-nowrap'
+                                    )}
+                                  >
+                                    {action.label}
+                                  </Link>
+                                ))}
+                              </div>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
                 No weeks yet. Owners can create the first week to kick off data collection.

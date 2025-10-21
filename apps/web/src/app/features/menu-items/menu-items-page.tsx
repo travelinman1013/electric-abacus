@@ -17,6 +17,14 @@ import {
   CardHeader,
   CardTitle,
 } from '../../components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
@@ -633,9 +641,7 @@ export const MenuItemsPage = () => {
         </div>
       ) : null}
 
-      <div className={cn('grid gap-6 lg:grid-cols-1 lg:items-start', {
-        'xl:grid-cols-[2fr_1fr] 2xl:grid-cols-[3fr_2fr]': editingMenuItemId || isCreating,
-      })}>
+      <div className="grid gap-6 lg:grid-cols-1 lg:items-start">
         <Card className="w-full">
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -661,84 +667,90 @@ export const MenuItemsPage = () => {
                 Loading menu items...
               </div>
             ) : (
-              <Table className="w-full text-xs sm:text-sm">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-auto min-w-[120px]">Name</TableHead>
-                    <TableHead className="w-24">Status</TableHead>
-                    <TableHead className="max-w-[200px] whitespace-normal">Recipe</TableHead>
-                    <TableHead className="w-24 text-right">Recipe Total</TableHead>
-                    <TableHead className="w-24 text-right">Selling Price</TableHead>
-                    <TableHead className="w-20 text-right">Food Cost %</TableHead>
-                    <TableHead className="w-32 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {menuItems.map((item) => {
-                    const recipeSummary = catalogCostSummaries[item.id];
-                    const foodCostDisplay =
-                      recipeSummary && recipeSummary.foodCostPercentage > 0
-                        ? formatPercentage(recipeSummary.foodCostPercentage)
-                        : '—';
-                    const foodCostTextClass =
-                      recipeSummary && recipeSummary.foodCostPercentage > 0
-                        ? foodCostPercentageClass(recipeSummary.foodCostPercentage)
-                        : 'text-slate-500';
+              <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+                <Table className="w-full text-xs sm:text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-auto min-w-[100px] sm:min-w-[120px]">Name</TableHead>
+                      <TableHead className="w-16 sm:w-24">Status</TableHead>
+                      <TableHead className="hidden lg:table-cell max-w-[200px] whitespace-normal">Recipe</TableHead>
+                      <TableHead className="hidden md:table-cell w-20 sm:w-24 text-right">Recipe Total</TableHead>
+                      <TableHead className="hidden sm:table-cell w-20 sm:w-24 text-right">Selling Price</TableHead>
+                      <TableHead className="w-16 sm:w-20 text-right">Food Cost %</TableHead>
+                      <TableHead className="w-24 sm:w-32 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {menuItems.map((item) => {
+                      const recipeSummary = catalogCostSummaries[item.id];
+                      const foodCostDisplay =
+                        recipeSummary && recipeSummary.foodCostPercentage > 0
+                          ? formatPercentage(recipeSummary.foodCostPercentage)
+                          : '—';
+                      const foodCostTextClass =
+                        recipeSummary && recipeSummary.foodCostPercentage > 0
+                          ? foodCostPercentageClass(recipeSummary.foodCostPercentage)
+                          : 'text-slate-500';
 
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
-                        <TableCell>
-                          <Badge variant={item.isActive ? 'success' : 'warning'}>
-                            {item.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm text-slate-500 max-w-[200px] whitespace-normal break-words">
-                          {editingMenuItemId === item.id && editingMenuItem.data
-                            ? formatIngredientList(
-                                editingMenuItem.data.recipes.map((recipe) =>
-                                  ingredientNameById.get(recipe.ingredientId) ??
-                                  recipe.ingredientId,
-                                ),
-                              )
-                            : 'Select to view recipe'}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm text-slate-600">
-                          {recipeSummary ? formatCurrency(recipeSummary.totalRecipeCost) : '—'}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm text-slate-600">
-                          {typeof item.sellingPrice === 'number'
-                            ? formatCurrency(item.sellingPrice)
-                            : '—'}
-                        </TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${foodCostTextClass}`}>
-                          {foodCostDisplay}
-                        </TableCell>
-                        <TableCell className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant={editingMenuItemId === item.id ? 'secondary' : 'ghost'}
-                            onClick={() => {
-                              setEditingMenuItemId(item.id);
-                              setIsCreating(false);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(item.id)}
-                            disabled={deleteMenuItemMutation.isPending}
-                          >
-                            Delete
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                          <TableCell>
+                            <Badge variant={item.isActive ? 'success' : 'warning'} className="text-[10px] sm:text-xs">
+                              {item.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-slate-500 max-w-[200px] whitespace-normal break-words">
+                            {editingMenuItemId === item.id && editingMenuItem.data
+                              ? formatIngredientList(
+                                  editingMenuItem.data.recipes.map((recipe) =>
+                                    ingredientNameById.get(recipe.ingredientId) ??
+                                    recipe.ingredientId,
+                                  ),
+                                )
+                              : 'Select to view recipe'}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">
+                            {recipeSummary ? formatCurrency(recipeSummary.totalRecipeCost) : '—'}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">
+                            {typeof item.sellingPrice === 'number'
+                              ? formatCurrency(item.sellingPrice)
+                              : '—'}
+                          </TableCell>
+                          <TableCell className={`text-right font-mono text-xs sm:text-sm ${foodCostTextClass}`}>
+                            {foodCostDisplay}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2">
+                              <Button
+                                size="sm"
+                                variant={editingMenuItemId === item.id ? 'secondary' : 'ghost'}
+                                onClick={() => {
+                                  setEditingMenuItemId(item.id);
+                                  setIsCreating(false);
+                                }}
+                                className="text-xs whitespace-nowrap"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDelete(item.id)}
+                                disabled={deleteMenuItemMutation.isPending}
+                                className="text-xs whitespace-nowrap"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
           <CardFooter className="text-sm text-slate-500">
@@ -805,15 +817,15 @@ export const MenuItemsPage = () => {
                   )}
                 </div>
 
-                <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
-                  <Table className="min-w-full text-xs sm:text-sm">
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <Table className="w-full text-xs">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-auto min-w-[140px]">Ingredient</TableHead>
-                        <TableHead className="w-20 text-right">Qty</TableHead>
-                        <TableHead className="w-16 text-right">Unit</TableHead>
-                        <TableHead className="w-20 text-right">Total</TableHead>
-                        <TableHead className="w-[1%] whitespace-nowrap"></TableHead>
+                        <TableHead className="w-[35%] min-w-[100px]">Ingredient</TableHead>
+                        <TableHead className="w-[20%] min-w-[80px] text-right">Qty</TableHead>
+                        <TableHead className="w-[15%] min-w-[60px] text-right">Unit</TableHead>
+                        <TableHead className="w-[15%] min-w-[60px] text-right">Total</TableHead>
+                        <TableHead className="w-[15%] min-w-[70px] text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -869,15 +881,21 @@ export const MenuItemsPage = () => {
             </CardContent>
           </Card>
           )}
+        </div>
 
-          {editingMenuItemId ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Edit menu item</CardTitle>
-                <CardDescription>Adjust the recipe or toggle active state.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form className="space-y-4" onSubmit={handleUpdate} noValidate>
+        <Dialog open={!!editingMenuItemId} onOpenChange={(open) => !open && setEditingMenuItemId(null)}>
+            <DialogContent
+              className="h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none lg:h-auto lg:max-h-[90vh] lg:max-w-4xl lg:rounded-lg flex flex-col gap-0"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+                <DialogTitle>
+                  {editingMenuItem.data?.item.name ? `Edit ${editingMenuItem.data.item.name}` : 'Edit menu item'}
+                </DialogTitle>
+                <DialogDescription>Adjust the recipe or toggle active state.</DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+                <form className="space-y-4" onSubmit={handleUpdate} noValidate id="edit-menu-item-form">
                   <FormField
                     label="Name"
                     htmlFor="edit-menu-name"
@@ -928,15 +946,15 @@ export const MenuItemsPage = () => {
                     )}
                   </div>
 
-                <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
-                  <Table className="min-w-full text-xs sm:text-sm">
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <Table className="w-full text-xs">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-auto min-w-[140px]">Ingredient</TableHead>
-                        <TableHead className="w-20 text-right">Qty</TableHead>
-                        <TableHead className="w-16 text-right">Unit</TableHead>
-                        <TableHead className="w-20 text-right">Total</TableHead>
-                        <TableHead className="w-[1%] whitespace-nowrap"></TableHead>
+                        <TableHead className="w-[35%] min-w-[100px]">Ingredient</TableHead>
+                        <TableHead className="w-[20%] min-w-[80px] text-right">Qty</TableHead>
+                        <TableHead className="w-[15%] min-w-[60px] text-right">Unit</TableHead>
+                        <TableHead className="w-[15%] min-w-[60px] text-right">Total</TableHead>
+                        <TableHead className="w-[15%] min-w-[70px] text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -968,27 +986,28 @@ export const MenuItemsPage = () => {
                   >
                     Add ingredient
                   </Button>
-
-                  <div className="flex items-center justify-between gap-3">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setEditingMenuItemId(null)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={editForm.formState.isSubmitting || upsertMenuItemMutation.isPending}
-                    >
-                      {upsertMenuItemMutation.isPending ? 'Saving...' : 'Update menu item'}
-                    </Button>
-                  </div>
                 </form>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
+              </div>
+              <DialogFooter className="flex-shrink-0 px-4 py-3 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingMenuItemId(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="edit-menu-item-form"
+                  size="sm"
+                  disabled={editForm.formState.isSubmitting || upsertMenuItemMutation.isPending}
+                >
+                  {upsertMenuItemMutation.isPending ? 'Saving...' : 'Update'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
       </div>
     </div>
   );

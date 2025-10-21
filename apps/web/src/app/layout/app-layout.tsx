@@ -78,33 +78,51 @@ export const AppLayout = () => {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3">
-              <span className="text-lg font-semibold text-slate-900">Electric Abacus</span>
-              <Badge variant="secondary" className="uppercase">{profile.role}</Badge>
-            </div>
-            <p className="text-xs text-slate-500">Fast, powerful operations management for your business.</p>
-          </div>
+        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-3 sm:py-4">
+          {/* Mobile & Desktop Header */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Logo and Badge */}
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-semibold text-slate-900">Electric Abacus</span>
+                  <Badge variant="secondary" className="uppercase">{profile.role}</Badge>
+                </div>
+                <p className="hidden sm:block text-xs text-slate-500">Fast, powerful operations management for your business.</p>
+              </div>
 
-          <div className="flex flex-1 items-center justify-end gap-6">
-            <MainNav role={profile.role} />
-            <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-              <span className="font-medium text-slate-700">{profile.displayName}</span>
-              <Button variant="outline" size="sm" onClick={handleSignOut} disabled={isSigningOut}>
-                {isSigningOut ? 'Signing out...' : 'Sign out'}
-              </Button>
+              {/* Mobile Sign Out Button */}
+              <div className="lg:hidden">
+                <Button variant="outline" size="sm" onClick={handleSignOut} disabled={isSigningOut}>
+                  {isSigningOut ? 'Signing out...' : 'Sign out'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Navigation - Full width on mobile, inline on desktop */}
+            <div className="flex items-center gap-4 lg:gap-6">
+              <div className="flex-1 lg:flex-initial">
+                <MainNav role={profile.role} />
+              </div>
+
+              {/* Desktop User Info */}
+              <div className="hidden lg:flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm whitespace-nowrap">
+                <span className="font-medium text-slate-700">{profile.displayName}</span>
+                <Button variant="outline" size="sm" onClick={handleSignOut} disabled={isSigningOut}>
+                  {isSigningOut ? 'Signing out...' : 'Sign out'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
         {signOutError ? (
           <div className="border-t border-amber-200 bg-amber-50">
-            <div className="mx-auto max-w-screen-2xl px-6 py-2 text-sm text-amber-900">{signOutError}</div>
+            <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-2 text-sm text-amber-900">{signOutError}</div>
           </div>
         ) : null}
       </header>
 
-      <main className="mx-auto max-w-screen-2xl px-6 py-8">
+      <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-6 sm:py-8">
         <Outlet />
       </main>
     </div>
