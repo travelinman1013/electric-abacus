@@ -1,4 +1,4 @@
-import type { ThemeDefinition, ThemeName } from '@domain/costing';
+import type { ThemeDefinition, ThemeName } from '@domain/preferences';
 
 /**
  * Theme definitions for Electric Abacus
@@ -235,7 +235,7 @@ export function applyTheme(themeName: ThemeName): void {
   Object.entries(theme.colors).forEach(([key, value]) => {
     // Convert camelCase to kebab-case for CSS variables
     const cssVar = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-    root.style.setProperty(`--${cssVar}`, value);
+    root.style.setProperty(`--${cssVar}`, value as string);
   });
 }
 

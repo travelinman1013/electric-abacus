@@ -17,6 +17,10 @@
     "./units": {
       "import": "./dist/units.js",
       "types": "./dist/units.d.ts"
+    },
+    "./preferences": {
+      "import": "./dist/preferences.js",
+      "types": "./dist/preferences.d.ts"
     }
   },
   "devDependencies": {

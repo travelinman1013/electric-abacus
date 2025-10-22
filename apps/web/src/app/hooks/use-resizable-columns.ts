@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { TableType } from '@domain/costing';
+import type { TableType } from '@domain/preferences';
 import { usePreferences } from '../providers/preferences-provider';
 
 export interface ColumnWidths {

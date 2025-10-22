@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import type { UserPreferences } from '@domain/costing';
+import type { UserPreferences } from '@domain/preferences';
 import { getClientFirestore } from '@electric/firebase';
 import { useAuthContext } from './auth-provider';
 import { applyTheme } from '../../constants/themes';
