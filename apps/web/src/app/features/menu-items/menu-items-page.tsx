@@ -735,7 +735,8 @@ export const MenuItemsPage = () => {
                               <Button
                                 size="sm"
                                 variant={editingMenuItemId === item.id ? 'secondary' : 'ghost'}
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.currentTarget.blur();
                                   setEditingMenuItemId(item.id);
                                   setIsCreating(false);
                                 }}
@@ -902,6 +903,16 @@ export const MenuItemsPage = () => {
         <Dialog open={!!editingMenuItemId} onOpenChange={(open) => !open && setEditingMenuItemId(null)}>
             <DialogContent
               className="h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none lg:h-auto lg:max-h-[90vh] lg:max-w-4xl lg:rounded-lg flex flex-col gap-0"
+              onOpenAutoFocus={(e) => {
+                e.preventDefault();
+                // Allow the dialog to open, then focus the first input
+                setTimeout(() => {
+                  const firstInput = document.getElementById('edit-menu-name');
+                  if (firstInput) {
+                    firstInput.focus();
+                  }
+                }, 0);
+              }}
             >
               <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
                 <div className="flex items-start justify-between gap-4">
