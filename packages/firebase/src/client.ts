@@ -2,6 +2,7 @@ import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFunctions, type Functions } from 'firebase/functions';
 
 let firebaseApp: FirebaseApp | undefined;
 
@@ -27,18 +28,34 @@ const requireApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
+// Cache Firebase service instances at module level to reduce redundant calls
+let cachedAuth: Auth | undefined;
+let cachedFirestore: Firestore | undefined;
+let cachedFunctions: Functions | undefined;
+
 export const getClientAuth = (): Auth => {
-  console.log('🔐 getClientAuth called');
+  if (cachedAuth) {
+    return cachedAuth;
+  }
   const app = requireApp();
-  const auth = getAuth(app);
-  console.log('🔐 Auth instance created:', !!auth);
-  return auth;
+  cachedAuth = getAuth(app);
+  return cachedAuth;
 };
 
 export const getClientFirestore = (): Firestore => {
-  console.log('🔥 getClientFirestore called');
+  if (cachedFirestore) {
+    return cachedFirestore;
+  }
   const app = requireApp();
-  const firestore = getFirestore(app);
-  console.log('🔥 Firestore instance created:', !!firestore);
-  return firestore;
+  cachedFirestore = getFirestore(app);
+  return cachedFirestore;
+};
+
+export const getClientFunctions = (): Functions => {
+  if (cachedFunctions) {
+    return cachedFunctions;
+  }
+  const app = requireApp();
+  cachedFunctions = getFunctions(app);
+  return cachedFunctions;
 };

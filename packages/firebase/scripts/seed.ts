@@ -137,6 +137,15 @@ const main = async () => {
 
   console.log('🌱 Starting seed process...');
 
+  // ===== BUSINESS =====
+  console.log('🏢 Creating default business...');
+  const businessId = 'default-business';
+  await db.doc(`businesses/${businessId}`).set({
+    name: 'Electric Abacus Demo',
+    createdAt: Timestamp.now(),
+  });
+  console.log(`✅ Created business: ${businessId}`);
+
   // ===== USERS =====
   console.log('👥 Creating users...');
   const users: SeedUserInput[] = [
@@ -171,12 +180,19 @@ const main = async () => {
 
     userIds[user.role] = uid;
 
-    // Set custom claims for role-based access (used in Firestore rules)
-    await auth.setCustomUserClaims(uid, { role: user.role });
+    // Set custom claims with businessId and role (used in Firestore rules and business context)
+    await auth.setCustomUserClaims(uid, { businessId, role: user.role });
 
     await db.doc(`users/${uid}`).set({
       displayName: user.displayName,
       role: user.role,
+      businesses: {
+        [businessId]: {
+          businessId,
+          role: user.role,
+          joinedAt: Timestamp.now(),
+        },
+      },
       createdAt: Timestamp.now(),
     });
   }
@@ -522,10 +538,10 @@ const main = async () => {
       docData.conversionFactor = ingredient.conversionFactor;
     }
 
-    await db.doc(`ingredients/${ingredient.id}`).set(docData);
+    await db.doc(`businesses/${businessId}/ingredients/${ingredient.id}`).set(docData);
 
     const versionId = `2025-v1`;
-    await db.doc(`ingredients/${ingredient.id}/versions/${versionId}`).set({
+    await db.doc(`businesses/${businessId}/ingredients/${ingredient.id}/versions/${versionId}`).set({
       casePrice: ingredient.casePrice,
       unitsPerCase: ingredient.unitsPerCase,
       unitCost: ingredient.unitCost,
@@ -534,7 +550,7 @@ const main = async () => {
     });
 
     docData.currentVersionId = versionId;
-    await db.doc(`ingredients/${ingredient.id}`).update({ currentVersionId: versionId });
+    await db.doc(`businesses/${businessId}/ingredients/${ingredient.id}`).update({ currentVersionId: versionId });
   }
   console.log(`✅ Created ${ingredients.length} ingredients`);
 
@@ -732,7 +748,7 @@ const main = async () => {
   ];
 
   for (const menuItem of menuItems) {
-    await db.doc(`menuItems/${menuItem.id}`).set({
+    await db.doc(`businesses/${businessId}/menuItems/${menuItem.id}`).set({
       name: menuItem.name,
       isActive: true,
       sellingPrice: menuItem.sellingPrice,
@@ -742,7 +758,7 @@ const main = async () => {
 
     for (const recipe of menuItem.recipes) {
       const recipeId = recipe.ingredientId;
-      await db.doc(`menuItems/${menuItem.id}/recipes/${recipeId}`).set({
+      await db.doc(`businesses/${businessId}/menuItems/${menuItem.id}/recipes/${recipeId}`).set({
         ingredientId: recipe.ingredientId,
         quantity: recipe.quantity,
         unitOfMeasure: recipe.unitOfMeasure,
@@ -769,7 +785,7 @@ const main = async () => {
     console.log(`  Creating week ${weekId}...`);
 
     // Create week document
-    await db.doc(`weeks/${weekId}`).set({
+    await db.doc(`businesses/${businessId}/weeks/${weekId}`).set({
       status: 'finalized',
       createdAt: weekTimestamp,
       finalizedAt: weekTimestamp,
@@ -782,7 +798,7 @@ const main = async () => {
       salesDays[day] = generateDailySales(day, weekIndex);
     }
 
-    await db.doc(`weeks/${weekId}/sales/daily`).set({
+    await db.doc(`businesses/${businessId}/weeks/${weekId}/sales/daily`).set({
       days: salesDays,
       updatedAt: weekTimestamp,
     });
@@ -792,7 +808,7 @@ const main = async () => {
       const previousEnd = inventoryEndValues[ingredient.id] || 0;
       const entry = generateInventoryEntry(ingredient.id, previousEnd);
 
-      await db.doc(`weeks/${weekId}/inventory/${ingredient.id}`).set({
+      await db.doc(`businesses/${businessId}/weeks/${weekId}/inventory/${ingredient.id}`).set({
         ...entry,
         updatedAt: weekTimestamp,
       });
@@ -801,7 +817,7 @@ const main = async () => {
       inventoryEndValues[ingredient.id] = entry.end;
 
       // Create cost snapshot
-      await db.doc(`weeks/${weekId}/costSnapshot/${ingredient.id}`).set({
+      await db.doc(`businesses/${businessId}/weeks/${weekId}/costSnapshot/${ingredient.id}`).set({
         unitCost: ingredient.unitCost,
         sourceVersionId: '2025-v1',
         capturedAt: weekTimestamp,
@@ -825,7 +841,7 @@ const main = async () => {
     const totalCostOfSales = breakdown.reduce((sum, item) => sum + item.costOfSales, 0);
     const totalUsageUnits = breakdown.reduce((sum, item) => sum + item.usage, 0);
 
-    await db.doc(`weeks/${weekId}/report/summary`).set({
+    await db.doc(`businesses/${businessId}/weeks/${weekId}/report/summary`).set({
       computedAt: weekTimestamp.toDate().toISOString(),
       totals: {
         totalUsageUnits: Number(totalUsageUnits.toFixed(2)),
@@ -848,7 +864,7 @@ const main = async () => {
   // ===== CURRENT DRAFT WEEK =====
   console.log('📝 Creating current draft week...');
   const draftWeekId = '2025-W39';
-  await db.doc(`weeks/${draftWeekId}`).set({
+  await db.doc(`businesses/${businessId}/weeks/${draftWeekId}`).set({
     status: 'draft',
     createdAt: Timestamp.now(),
     finalizedAt: null,
@@ -861,7 +877,7 @@ const main = async () => {
     emptySalesDays[day] = { foodSales: 0, drinkSales: 0, lessSalesTax: 0, lessPromo: 0 };
   }
 
-  await db.doc(`weeks/${draftWeekId}/sales/daily`).set({
+  await db.doc(`businesses/${businessId}/weeks/${draftWeekId}/sales/daily`).set({
     days: emptySalesDays,
     updatedAt: Timestamp.now(),
   });
@@ -869,7 +885,7 @@ const main = async () => {
   // Set beginning inventory from previous week's ending
   for (const ingredient of ingredients) {
     const previousEnd = inventoryEndValues[ingredient.id] || 0;
-    await db.doc(`weeks/${draftWeekId}/inventory/${ingredient.id}`).set({
+    await db.doc(`businesses/${businessId}/weeks/${draftWeekId}/inventory/${ingredient.id}`).set({
       begin: previousEnd,
       received: 0,
       end: 0,

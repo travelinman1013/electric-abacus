@@ -576,7 +576,7 @@ export const WeekReviewPage = () => {
             <CardFooter className="justify-between text-sm text-slate-500">
               <span>Owners can re-run costing before finalizing to refresh ingredient price changes.</span>
               <Link
-                to={`/weeks/${weekId}/inventory`}
+                to={`/app/weeks/${weekId}/inventory`}
                 className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-slate-600 hover:text-slate-900')}
               >
                 View raw inventory

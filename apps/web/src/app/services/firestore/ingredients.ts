@@ -91,9 +91,9 @@ const calculateConversionFactor = (inventoryUnit: string, recipeUnit?: string): 
   return factor !== null ? factor : undefined;
 };
 
-export const listIngredients = async (): Promise<Ingredient[]> => {
+export const listIngredients = async (businessId: string): Promise<Ingredient[]> => {
   const firestore = getClientFirestore();
-  const ingredientsRef = collection(firestore, 'ingredients');
+  const ingredientsRef = collection(firestore, 'businesses', businessId, 'ingredients');
   const snapshot = await getDocs(query(ingredientsRef, orderBy('name')));
 
   return snapshot.docs.map((docSnapshot) => {
@@ -120,9 +120,9 @@ export const listIngredients = async (): Promise<Ingredient[]> => {
   });
 };
 
-export const getIngredientVersions = async (ingredientId: string): Promise<IngredientVersion[]> => {
+export const getIngredientVersions = async (businessId: string, ingredientId: string): Promise<IngredientVersion[]> => {
   const firestore = getClientFirestore();
-  const versionsRef = collection(firestore, 'ingredients', ingredientId, 'versions');
+  const versionsRef = collection(firestore, 'businesses', businessId, 'ingredients', ingredientId, 'versions');
   const snapshot = await getDocs(query(versionsRef, orderBy('effectiveFrom', 'desc')));
 
   return snapshot.docs.map((docSnapshot) => {
@@ -139,10 +139,10 @@ export const getIngredientVersions = async (ingredientId: string): Promise<Ingre
   });
 };
 
-export const createIngredient = async (input: CreateIngredientInput): Promise<Ingredient> => {
+export const createIngredient = async (businessId: string, input: CreateIngredientInput): Promise<Ingredient> => {
   const firestore = getClientFirestore();
   const ingredientId = ensureId(input.id, input.name);
-  const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+  const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', ingredientId);
 
   // For batch ingredients, unit cost will be calculated dynamically, but we still need to store case price and units per case
   const unitCost = input.isBatch ? 0 : toUnitCost(input.casePrice, input.unitsPerCase);
@@ -180,7 +180,7 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
 
     transaction.set(ingredientRef, ingredientData);
 
-    const versionRef = doc(firestore, 'ingredients', ingredientId, 'versions', versionId);
+    const versionRef = doc(firestore, 'businesses', businessId, 'ingredients', ingredientId, 'versions', versionId);
     transaction.set(versionRef, {
       casePrice: input.casePrice,
       unitsPerCase: input.unitsPerCase,
@@ -210,10 +210,10 @@ export const createIngredient = async (input: CreateIngredientInput): Promise<In
   } satisfies Ingredient;
 };
 
-export const updateIngredient = async (input: UpdateIngredientInput): Promise<void> => {
+export const updateIngredient = async (businessId: string, input: UpdateIngredientInput): Promise<void> => {
   const firestore = getClientFirestore();
-  const ingredientRef = doc(firestore, 'ingredients', input.id);
-  const versionsRef = collection(firestore, 'ingredients', input.id, 'versions');
+  const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', input.id);
+  const versionsRef = collection(firestore, 'businesses', businessId, 'ingredients', input.id, 'versions');
 
   // For batch ingredients, unit cost will be calculated dynamically
   const unitCost = input.isBatch ? 0 : toUnitCost(input.casePrice, input.unitsPerCase);
@@ -276,25 +276,25 @@ export const updateIngredient = async (input: UpdateIngredientInput): Promise<vo
   });
 };
 
-export const setIngredientActiveState = async (ingredientId: string, isActive: boolean) => {
+export const setIngredientActiveState = async (businessId: string, ingredientId: string, isActive: boolean) => {
   const firestore = getClientFirestore();
-  const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+  const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', ingredientId);
   await updateDoc(ingredientRef, {
     isActive,
     updatedAt: serverTimestamp()
   });
 };
 
-export const getActiveIngredientIds = async (): Promise<string[]> => {
+export const getActiveIngredientIds = async (businessId: string): Promise<string[]> => {
   const firestore = getClientFirestore();
-  const ingredientsRef = collection(firestore, 'ingredients');
+  const ingredientsRef = collection(firestore, 'businesses', businessId, 'ingredients');
   const snapshot = await getDocs(query(ingredientsRef, where('isActive', '==', true), limit(200)));
   return snapshot.docs.map((docSnapshot) => docSnapshot.id);
 };
 
-export const getIngredient = async (ingredientId: string): Promise<Ingredient | null> => {
+export const getIngredient = async (businessId: string, ingredientId: string): Promise<Ingredient | null> => {
   const firestore = getClientFirestore();
-  const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+  const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', ingredientId);
   const snapshot = await getDoc(ingredientRef);
   if (!snapshot.exists()) {
     return null;
@@ -320,13 +320,13 @@ export const getIngredient = async (ingredientId: string): Promise<Ingredient | 
   } satisfies Ingredient;
 };
 
-export const deleteIngredient = async (ingredientId: string) => {
+export const deleteIngredient = async (businessId: string, ingredientId: string) => {
   const firestore = getClientFirestore();
-  const versionsRef = collection(firestore, 'ingredients', ingredientId, 'versions');
+  const versionsRef = collection(firestore, 'businesses', businessId, 'ingredients', ingredientId, 'versions');
   const versionSnapshot = await getDocs(versionsRef);
   const batch = writeBatch(firestore);
   versionSnapshot.docs.forEach((docSnapshot) => batch.delete(docSnapshot.ref));
-  const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+  const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', ingredientId);
   batch.delete(ingredientRef);
   await batch.commit();
 };

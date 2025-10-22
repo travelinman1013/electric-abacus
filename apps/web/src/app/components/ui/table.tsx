@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { cn } from '../../lib/utils';
+import { ColumnResizeHandle } from './column-resize-handle';
 
 export const Table = ({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) => (
   <table className={cn('w-full border-collapse text-left text-sm', className)} {...props} />
@@ -25,3 +26,48 @@ export const TableHead = ({ className, ...props }: React.ThHTMLAttributes<HTMLTa
 export const TableCell = ({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
   <td className={cn('px-4 py-2 align-middle', className)} {...props} />
 );
+
+interface TableHeadResizableProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
+  onResize?: (newWidth: number) => void;
+  onResizeEnd?: () => void;
+  isLocked?: boolean;
+  isResizing?: boolean;
+  width?: number;
+}
+
+export const TableHeadResizable = ({
+  className,
+  children,
+  onResize,
+  onResizeEnd,
+  isLocked,
+  isResizing,
+  width,
+  style,
+  ...props
+}: TableHeadResizableProps) => {
+  const combinedStyle: React.CSSProperties = {
+    ...style,
+    position: 'relative',
+    ...(width ? { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` } : {}),
+  };
+
+  return (
+    <th
+      className={cn('px-4 py-2 font-semibold', className)}
+      style={combinedStyle}
+      {...props}
+    >
+      {children}
+      {onResize && width && (
+        <ColumnResizeHandle
+          onResize={onResize}
+          onResizeEnd={onResizeEnd}
+          currentWidth={width}
+          isLocked={isLocked}
+          isResizing={isResizing}
+        />
+      )}
+    </th>
+  );
+};

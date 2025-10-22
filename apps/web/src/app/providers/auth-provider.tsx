@@ -9,17 +9,24 @@ import {
 } from 'react';
 
 import type { User as FirebaseUser } from 'firebase/auth';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
-import type { UserProfile, UserRole } from '@domain/costing';
-import { getClientAuth, getClientFirestore } from '@electric/firebase';
+import type { BusinessDetails, UserProfile, UserRole } from '@domain/costing';
+import { getClientAuth, getClientFirestore, getClientFunctions } from '@electric/firebase';
 
 interface AuthContextValue {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, businessDetails: BusinessDetails) => Promise<void>;
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
 }
@@ -35,6 +42,92 @@ type AuthState = {
   profile: UserProfile | null;
   loading: boolean;
 };
+
+/**
+ * Polls for custom claims (businessId and role) with exponential backoff.
+ * This handles the eventual consistency of Firebase Auth custom claims.
+ *
+ * @param user - The Firebase user to check claims for
+ * @param maxAttempts - Maximum number of polling attempts (default: 10)
+ * @param initialDelay - Initial delay in milliseconds (default: 500ms)
+ * @returns Promise<boolean> - True if claims are available, false if timeout
+ */
+async function waitForCustomClaims(
+  user: FirebaseUser,
+  maxAttempts = 10,
+  initialDelay = 500
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Force refresh the token to get latest claims
+    const tokenResult = await user.getIdTokenResult(true);
+
+    if (tokenResult.claims.businessId && tokenResult.claims.role) {
+      console.log(`✅ Claims available after ${attempt + 1} attempt(s)`, {
+        businessId: tokenResult.claims.businessId,
+        role: tokenResult.claims.role
+      });
+      return true;
+    }
+
+    // Exponential backoff: 500ms, 1s, 2s, 4s, 8s, 16s...
+    const delay = initialDelay * Math.pow(2, attempt);
+    console.log(`⏳ Waiting for claims... attempt ${attempt + 1}/${maxAttempts} (${delay}ms delay)`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  console.error('❌ Claims never appeared after maximum attempts', {
+    maxAttempts,
+    totalWaitTime: initialDelay * (Math.pow(2, maxAttempts) - 1)
+  });
+  return false;
+}
+
+/**
+ * Polls for user profile document with exponential backoff.
+ * This handles the delay between auth user creation and Cloud Function creating the profile.
+ *
+ * @param userId - The user ID to check profile for
+ * @param firestore - Firestore instance
+ * @param maxAttempts - Maximum number of polling attempts (default: 10)
+ * @param initialDelay - Initial delay in milliseconds (default: 500ms)
+ * @returns Promise<UserProfile | null> - Profile if found, null if timeout
+ */
+async function waitForUserProfile(
+  userId: string,
+  firestore: ReturnType<typeof getClientFirestore>,
+  maxAttempts = 10,
+  initialDelay = 500
+): Promise<UserProfile | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const profileSnapshot = await getDoc(doc(firestore, `users/${userId}`));
+
+    if (profileSnapshot.exists()) {
+      const profile = {
+        uid: userId,
+        ...profileSnapshot.data()
+      } as UserProfile;
+      console.log(`✅ Profile available after ${attempt + 1} attempt(s)`, {
+        displayName: profile.displayName,
+        role: profile.role
+      });
+      return profile;
+    }
+
+    // Don't wait after the last attempt
+    if (attempt < maxAttempts - 1) {
+      // Exponential backoff: 500ms, 1s, 2s, 4s, 8s, 16s...
+      const delay = initialDelay * Math.pow(2, attempt);
+      console.log(`⏳ Waiting for profile... attempt ${attempt + 1}/${maxAttempts} (${delay}ms delay)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  console.error('❌ Profile never appeared after maximum attempts', {
+    maxAttempts,
+    totalWaitTime: initialDelay * (Math.pow(2, maxAttempts) - 1)
+  });
+  return null;
+}
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [state, setState] = useState<AuthState>({ user: null, profile: null, loading: true });
@@ -60,14 +153,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const profileSnapshot = await getDoc(doc(firestore, `users/${firebaseUser.uid}`));
         console.log('📄 Profile snapshot exists:', profileSnapshot.exists());
 
-        const profile = profileSnapshot.exists()
-          ? ({
-              uid: firebaseUser.uid,
-              ...profileSnapshot.data()
-            } as UserProfile)
-          : null;
+        let profile: UserProfile | null;
 
-        console.log('✅ User profile loaded:', profile);
+        if (profileSnapshot.exists()) {
+          // Profile exists immediately (returning user)
+          profile = {
+            uid: firebaseUser.uid,
+            ...profileSnapshot.data()
+          } as UserProfile;
+          console.log('✅ User profile loaded:', profile);
+        } else {
+          // Profile doesn't exist yet - likely a new signup
+          // Poll for the profile document with exponential backoff
+          console.log('🔄 Profile not found, polling for profile document...');
+          profile = await waitForUserProfile(firebaseUser.uid, firestore);
+
+          if (!profile) {
+            console.warn('⚠️ Profile never appeared after polling');
+          }
+        }
+
         setState({ user: firebaseUser, profile, loading: false });
       } catch (error) {
         console.error('❌ Failed to load user profile', error);
@@ -98,6 +203,65 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
+  const signUp = useCallback(
+    async (email: string, password: string, businessDetails: BusinessDetails) => {
+      console.log('✍️ signUp called with email:', email);
+      const auth = getClientAuth();
+      const functions = getClientFunctions();
+
+      try {
+        // 1. Create Firebase Auth user
+        console.log('✍️ Creating Firebase Auth user...');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        console.log('✅ Firebase Auth user created:', { uid: user.uid, email: user.email });
+
+        // 2. Call Cloud Function to set up business
+        console.log('🏢 Calling setupNewBusinessAccountCallable...');
+        const setupFunction = httpsCallable<BusinessDetails, { success: boolean; businessId: string; message: string }>(
+          functions,
+          'setupNewBusinessAccountCallable'
+        );
+        const result = await setupFunction(businessDetails);
+        console.log('✅ Business setup result:', result.data);
+
+        // 3. Poll for custom claims with exponential backoff
+        console.log('🔄 Waiting for custom claims to propagate...');
+        const claimsAvailable = await waitForCustomClaims(user);
+
+        if (!claimsAvailable) {
+          throw new Error(
+            'Account setup is taking longer than expected. Please try signing in again in a few moments.'
+          );
+        }
+
+        // 4. Auth state will update automatically via onAuthStateChanged
+        console.log('✅ Signup complete, auth state will update automatically...');
+      } catch (error: unknown) {
+        console.error('❌ Signup error:', error);
+
+        // Enhanced error handling
+        const firebaseError = error as { code?: string; message?: string };
+        if (firebaseError.code === 'auth/email-already-in-use') {
+          throw new Error('This email is already registered. Please sign in instead.');
+        } else if (firebaseError.code === 'auth/weak-password') {
+          throw new Error('Password is too weak. Please use a stronger password.');
+        } else if (firebaseError.code === 'auth/invalid-email') {
+          throw new Error('Please enter a valid email address.');
+        } else if (firebaseError.code === 'functions/already-exists') {
+          throw new Error('Account setup already completed. Please sign in.');
+        } else if (firebaseError.code === 'functions/invalid-argument') {
+          throw new Error('Invalid business details. Please check your information.');
+        } else {
+          throw new Error(
+            firebaseError.message || 'Failed to create account. Please try again.'
+          );
+        }
+      }
+    },
+    []
+  );
+
   const signOutUser = useCallback(async () => {
     const auth = getClientAuth();
     await signOut(auth);
@@ -114,10 +278,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       profile: state.profile,
       loading: state.loading,
       signIn,
+      signUp,
       signOut: signOutUser,
       hasRole
     }),
-    [hasRole, signIn, signOutUser, state.loading, state.profile, state.user]
+    [hasRole, signIn, signUp, signOutUser, state.loading, state.profile, state.user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

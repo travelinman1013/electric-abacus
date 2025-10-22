@@ -11,24 +11,30 @@ import {
   type MenuItemWithRecipes,
   type RecipeInput
 } from '../services/firestore';
+import { useBusiness } from '../providers/business-provider';
 
-export const useMenuItems = () =>
-  useQuery<MenuItem[]>({
-    queryKey: ['menu-items'],
-    queryFn: () => listMenuItems()
+export const useMenuItems = () => {
+  const { businessId } = useBusiness();
+  return useQuery<MenuItem[]>({
+    queryKey: ['menu-items', businessId],
+    queryFn: () => listMenuItems(businessId!),
+    enabled: !!businessId
   });
+};
 
-export const useMenuItemWithRecipes = (menuItemId: string | undefined) =>
-  useQuery<MenuItemWithRecipes | null>({
-    queryKey: ['menu-item', menuItemId],
+export const useMenuItemWithRecipes = (menuItemId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<MenuItemWithRecipes | null>({
+    queryKey: ['menu-item', businessId, menuItemId],
     queryFn: () => {
-      if (!menuItemId) {
+      if (!menuItemId || !businessId) {
         return Promise.resolve(null);
       }
-      return getMenuItemWithRecipes(menuItemId);
+      return getMenuItemWithRecipes(businessId, menuItemId);
     },
-    enabled: Boolean(menuItemId)
+    enabled: Boolean(menuItemId) && Boolean(businessId)
   });
+};
 
 interface UpsertMenuItemVariables {
   item: MenuItemInput;
@@ -37,35 +43,39 @@ interface UpsertMenuItemVariables {
 
 export const useUpsertMenuItem = () => {
   const queryClient = useQueryClient();
+  const { businessId } = useBusiness();
   return useMutation<MenuItem, Error, UpsertMenuItemVariables>({
-    mutationFn: ({ item, recipes }) => upsertMenuItem(item, recipes),
+    mutationFn: ({ item, recipes }) => upsertMenuItem(businessId!, item, recipes),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      queryClient.invalidateQueries({ queryKey: ['menu-item', result.id] });
+      queryClient.invalidateQueries({ queryKey: ['menu-items', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['menu-item', businessId, result.id] });
     }
   });
 };
 
 export const useDeleteMenuItem = () => {
   const queryClient = useQueryClient();
+  const { businessId } = useBusiness();
   return useMutation<void, Error, string>({
-    mutationFn: (menuItemId) => deleteMenuItem(menuItemId),
+    mutationFn: (menuItemId) => deleteMenuItem(businessId!, menuItemId),
     onSuccess: (_, menuItemId) => {
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      queryClient.invalidateQueries({ queryKey: ['menu-item', menuItemId] });
+      queryClient.invalidateQueries({ queryKey: ['menu-items', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['menu-item', businessId, menuItemId] });
     }
   });
 };
 
-export const useMenuItemRecipes = (menuItemId: string | undefined) =>
-  useQuery<RecipeIngredient[]>({
-    queryKey: ['menu-item-recipes', menuItemId],
+export const useMenuItemRecipes = (menuItemId: string | undefined) => {
+  const { businessId } = useBusiness();
+  return useQuery<RecipeIngredient[]>({
+    queryKey: ['menu-item-recipes', businessId, menuItemId],
     queryFn: () => {
-      if (!menuItemId) {
+      if (!menuItemId || !businessId) {
         return Promise.resolve([]);
       }
-      return getMenuItemWithRecipes(menuItemId).then((result) => result?.recipes ?? []);
+      return getMenuItemWithRecipes(businessId, menuItemId).then((result) => result?.recipes ?? []);
     },
-    enabled: Boolean(menuItemId),
+    enabled: Boolean(menuItemId) && Boolean(businessId),
     initialData: []
   });
+};

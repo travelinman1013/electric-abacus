@@ -99,7 +99,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     return (
       <div
         className={cn(
-          'flex h-10 min-w-[6rem] items-stretch rounded-md border border-input bg-white shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0',
+          'flex h-10 w-full max-w-[5rem] items-stretch rounded-md border border-input bg-white shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0',
           disabled ? 'cursor-not-allowed bg-slate-100' : 'cursor-text',
           className,
         )}
@@ -123,7 +123,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           step={increment}
           {...props}
         />
-        <div className="flex h-full w-9 flex-col border-l border-input">
+        <div className="flex h-full w-7 flex-col border-l border-input">
           <Button
             type="button"
             variant="ghost"
@@ -134,7 +134,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             tabIndex={-1}
           >
             <svg
-              className="h-3 w-3"
+              className="h-2.5 w-2.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -152,7 +152,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             tabIndex={-1}
           >
             <svg
-              className="h-3 w-3"
+              className="h-2.5 w-2.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

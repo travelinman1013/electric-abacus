@@ -83,9 +83,9 @@ const defaultSalesDoc = (): Omit<WeeklySales, 'id' | 'weekId'> => ({
   days: makeEmptySalesDays()
 });
 
-export const listWeeks = async (): Promise<Week[]> => {
+export const listWeeks = async (businessId: string): Promise<Week[]> => {
   const firestore = getClientFirestore();
-  const weeksRef = collection(firestore, 'weeks');
+  const weeksRef = collection(firestore, 'businesses', businessId, 'weeks');
   const snapshot = await getDocs(query(weeksRef, orderBy('createdAt', 'desc')));
 
   return snapshot.docs.map((docSnapshot) => {
@@ -106,10 +106,10 @@ interface CreateWeekOptions {
   initialInventory?: WeeklyInventoryEntry[];
 }
 
-export const createWeek = async (weekId: string, options?: CreateWeekOptions) => {
+export const createWeek = async (businessId: string, weekId: string, options?: CreateWeekOptions) => {
   const firestore = getClientFirestore();
-  const weekRef = doc(firestore, 'weeks', weekId);
-  const salesRef = doc(firestore, 'weeks', weekId, 'sales', SALES_DOC_ID);
+  const weekRef = doc(firestore, 'businesses', businessId, 'weeks', weekId);
+  const salesRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'sales', SALES_DOC_ID);
   const auth = getClientAuth();
   const currentUser = auth.currentUser;
 
@@ -139,7 +139,7 @@ export const createWeek = async (weekId: string, options?: CreateWeekOptions) =>
   if (options?.initialInventory?.length) {
     // Use provided initial inventory (with begin values from previous week's end)
     options.initialInventory.forEach((entry) => {
-      const inventoryRef = doc(firestore, 'weeks', weekId, 'inventory', entry.ingredientId);
+      const inventoryRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'inventory', entry.ingredientId);
       batch.set(
         inventoryRef,
         {
@@ -154,7 +154,7 @@ export const createWeek = async (weekId: string, options?: CreateWeekOptions) =>
   } else if (options?.ingredientIds?.length) {
     // Fallback: create empty inventory entries
     options.ingredientIds.forEach((ingredientId) => {
-      const inventoryRef = doc(firestore, 'weeks', weekId, 'inventory', ingredientId);
+      const inventoryRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'inventory', ingredientId);
       batch.set(
         inventoryRef,
         {
@@ -173,9 +173,9 @@ export const createWeek = async (weekId: string, options?: CreateWeekOptions) =>
   }
 };
 
-export const getWeek = async (weekId: string): Promise<Week | null> => {
+export const getWeek = async (businessId: string, weekId: string): Promise<Week | null> => {
   const firestore = getClientFirestore();
-  const weekRef = doc(firestore, 'weeks', weekId);
+  const weekRef = doc(firestore, 'businesses', businessId, 'weeks', weekId);
   const snapshot = await getDoc(weekRef);
 
   if (!snapshot.exists()) {
@@ -227,9 +227,9 @@ const normalizeSalesDays = (
   return normalized;
 };
 
-export const getWeekSales = async (weekId: string): Promise<WeeklySales> => {
+export const getWeekSales = async (businessId: string, weekId: string): Promise<WeeklySales> => {
   const firestore = getClientFirestore();
-  const salesRef = doc(firestore, 'weeks', weekId, 'sales', SALES_DOC_ID);
+  const salesRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'sales', SALES_DOC_ID);
   const snapshot = await getDoc(salesRef);
   const data = snapshot.exists() ? snapshot.data() : undefined;
 
@@ -240,9 +240,9 @@ export const getWeekSales = async (weekId: string): Promise<WeeklySales> => {
   } satisfies WeeklySales;
 };
 
-export const saveWeekSales = async (weekId: string, input: Omit<WeeklySales, 'id' | 'weekId'>) => {
+export const saveWeekSales = async (businessId: string, weekId: string, input: Omit<WeeklySales, 'id' | 'weekId'>) => {
   const firestore = getClientFirestore();
-  const salesRef = doc(firestore, 'weeks', weekId, 'sales', SALES_DOC_ID);
+  const salesRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'sales', SALES_DOC_ID);
   await setDoc(
     salesRef,
     {
@@ -253,9 +253,9 @@ export const saveWeekSales = async (weekId: string, input: Omit<WeeklySales, 'id
   );
 };
 
-export const getWeekInventory = async (weekId: string): Promise<WeeklyInventoryEntry[]> => {
+export const getWeekInventory = async (businessId: string, weekId: string): Promise<WeeklyInventoryEntry[]> => {
   const firestore = getClientFirestore();
-  const inventoryRef = collection(firestore, 'weeks', weekId, 'inventory');
+  const inventoryRef = collection(firestore, 'businesses', businessId, 'weeks', weekId, 'inventory');
   const snapshot = await getDocs(inventoryRef);
 
   return snapshot.docs.map((docSnapshot) => {
@@ -269,12 +269,12 @@ export const getWeekInventory = async (weekId: string): Promise<WeeklyInventoryE
   });
 };
 
-export const saveWeekInventory = async (weekId: string, entries: WeeklyInventoryEntry[]) => {
+export const saveWeekInventory = async (businessId: string, weekId: string, entries: WeeklyInventoryEntry[]) => {
   const firestore = getClientFirestore();
   const batch = writeBatch(firestore);
 
   entries.forEach((entry) => {
-    const inventoryRef = doc(firestore, 'weeks', weekId, 'inventory', entry.ingredientId);
+    const inventoryRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'inventory', entry.ingredientId);
     batch.set(
       inventoryRef,
       {
@@ -290,9 +290,9 @@ export const saveWeekInventory = async (weekId: string, entries: WeeklyInventory
   await batch.commit();
 };
 
-export const getCostSnapshots = async (weekId: string): Promise<WeeklyCostSnapshotEntry[]> => {
+export const getCostSnapshots = async (businessId: string, weekId: string): Promise<WeeklyCostSnapshotEntry[]> => {
   const firestore = getClientFirestore();
-  const snapshotRef = collection(firestore, 'weeks', weekId, 'costSnapshot');
+  const snapshotRef = collection(firestore, 'businesses', businessId, 'weeks', weekId, 'costSnapshot');
   const snapshot = await getDocs(snapshotRef);
 
   return snapshot.docs.map((docSnapshot) => {
@@ -305,9 +305,9 @@ export const getCostSnapshots = async (weekId: string): Promise<WeeklyCostSnapsh
   });
 };
 
-export const getWeekReport = async (weekId: string): Promise<ReportSummary | null> => {
+export const getWeekReport = async (businessId: string, weekId: string): Promise<ReportSummary | null> => {
   const firestore = getClientFirestore();
-  const reportRef = doc(firestore, 'weeks', weekId, 'report', 'summary');
+  const reportRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'report', 'summary');
   const snapshot = await getDoc(reportRef);
 
   if (!snapshot.exists()) {
@@ -326,9 +326,9 @@ export const getWeekReport = async (weekId: string): Promise<ReportSummary | nul
   } satisfies ReportSummary;
 };
 
-export const getDraftWeeks = async (): Promise<Week[]> => {
+export const getDraftWeeks = async (businessId: string): Promise<Week[]> => {
   const firestore = getClientFirestore();
-  const weeksRef = collection(firestore, 'weeks');
+  const weeksRef = collection(firestore, 'businesses', businessId, 'weeks');
   const snapshot = await getDocs(query(weeksRef, where('status', '==', 'draft')));
 
   return snapshot.docs.map((docSnapshot) => {
@@ -343,20 +343,20 @@ export const getDraftWeeks = async (): Promise<Week[]> => {
   });
 };
 
-export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
+export const finalizeWeek = async (businessId: string, weekId: string): Promise<ReportSummary> => {
   const firestore = getClientFirestore();
   const auth = getClientAuth();
   const currentUser = auth.currentUser;
 
   // Fetch inventory entries before the transaction to avoid Firestore transaction query limitations
-  const inventoryEntries = await getWeekInventory(weekId);
+  const inventoryEntries = await getWeekInventory(businessId, weekId);
 
   if (inventoryEntries.length === 0) {
     throw new Error('Cannot finalize a week without inventory entries.');
   }
 
   const summary = await runTransaction(firestore, async (transaction) => {
-    const weekRef = doc(firestore, 'weeks', weekId);
+    const weekRef = doc(firestore, 'businesses', businessId, 'weeks', weekId);
     const weekSnapshot = await transaction.get(weekRef);
     if (!weekSnapshot.exists()) {
       throw new Error(`Week ${weekId} does not exist.`);
@@ -370,7 +370,7 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
 
     const costSnapshots = await Promise.all(
       inventoryEntries.map(async (entry) => {
-        const ingredientRef = doc(firestore, 'ingredients', entry.ingredientId);
+        const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', entry.ingredientId);
         const ingredientSnapshot = await transaction.get(ingredientRef);
 
         if (!ingredientSnapshot.exists()) {
@@ -394,7 +394,7 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
 
     // Write cost snapshots (no need to clean up old ones - they'll be overwritten or ignored)
     costSnapshots.forEach((snapshot) => {
-      const snapshotRef = doc(firestore, 'weeks', weekId, 'costSnapshot', snapshot.ingredientId);
+      const snapshotRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'costSnapshot', snapshot.ingredientId);
       transaction.set(snapshotRef, {
         unitCost: snapshot.unitCost,
         sourceVersionId: snapshot.sourceVersionId,
@@ -402,7 +402,7 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
       });
     });
 
-    const reportRef = doc(firestore, 'weeks', weekId, 'report', 'summary');
+    const reportRef = doc(firestore, 'businesses', businessId, 'weeks', weekId, 'report', 'summary');
     transaction.set(reportRef, {
       ...summaryResult,
       generatedAt: serverTimestamp()
@@ -422,7 +422,7 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
     const nextWeekId = calculateNextWeekId(weekId);
 
     // Check if next week already exists to avoid duplicates
-    const nextWeekExists = await getWeek(nextWeekId);
+    const nextWeekExists = await getWeek(businessId, nextWeekId);
     if (!nextWeekExists) {
       // Prepare initial inventory: begin = current week's end
       const initialInventory = inventoryEntries.map((entry) => ({
@@ -433,7 +433,7 @@ export const finalizeWeek = async (weekId: string): Promise<ReportSummary> => {
       }));
 
       // Create the next week with carried-forward inventory
-      await createWeek(nextWeekId, { initialInventory });
+      await createWeek(businessId, nextWeekId, { initialInventory });
     }
   } catch (error) {
     // Log the error but don't fail the finalization if next week creation fails
