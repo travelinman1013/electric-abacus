@@ -56,6 +56,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid == uid;
       allow update: if isAuthenticated() && request.auth.uid == uid;
       allow delete: if false;
+
+      // User preferences subcollection
+      match /preferences/{docId} {
+        allow read: if isAuthenticated() && request.auth.uid == uid;
+        allow create, update: if isAuthenticated() && request.auth.uid == uid;
+        allow delete: if false;
+      }
     }
 
     // Business profiles

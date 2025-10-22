@@ -829,11 +829,11 @@ export const MenuItemsPage = () => {
                 <div className="overflow-x-auto -mx-6 px-6">
                   <Table className="w-full text-xs">
                     <colgroup>
-                      <col /> {/* Ingredient - auto width */}
-                      <col style={{ width: '90px' }} /> {/* Qty - fits NumberInput */}
-                      <col style={{ width: '100px' }} /> {/* Unit */}
-                      <col style={{ width: '100px' }} /> {/* Total */}
-                      <col style={{ width: '120px' }} /> {/* Remove */}
+                      <col />
+                      <col style={{ width: '90px' }} />
+                      <col style={{ width: '100px' }} />
+                      <col style={{ width: '100px' }} />
+                      <col style={{ width: '120px' }} />
                     </colgroup>
                     <TableHeader>
                       <TableRow>
@@ -902,7 +902,6 @@ export const MenuItemsPage = () => {
         <Dialog open={!!editingMenuItemId} onOpenChange={(open) => !open && setEditingMenuItemId(null)}>
             <DialogContent
               className="h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none lg:h-auto lg:max-h-[90vh] lg:max-w-4xl lg:rounded-lg flex flex-col gap-0"
-              onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
                 <div className="flex items-start justify-between gap-4">
