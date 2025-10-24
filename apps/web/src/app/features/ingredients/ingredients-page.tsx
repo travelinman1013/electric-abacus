@@ -516,66 +516,73 @@ export const IngredientsPage = () => {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
+          <CardContent>
             {isLoading ? (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
                 Loading ingredients...
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead className="text-right">Units / case</TableHead>
-                    <TableHead className="text-right">Case price</TableHead>
-                    <TableHead className="text-right">Unit cost</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedIngredients.map((ingredient) => (
-                    <TableRow key={ingredient.id}>
-                      <TableCell className="font-medium text-slate-800">{ingredient.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={ingredient.isActive ? 'success' : 'warning'}>
-                          {ingredient.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{ingredient.inventoryUnit}</TableCell>
-                      <TableCell className="text-right">{ingredient.unitsPerCase}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(ingredient.casePrice)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(ingredient.unitCost)}</TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void handleToggleActive(ingredient)}
-                          disabled={setActiveMutation.isPending}
-                        >
-                          {ingredient.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => setEditingIngredientId(ingredient.id)}
-                          variant={editingIngredientId === ingredient.id ? 'secondary' : 'ghost'}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteClick(ingredient.id)}
-                          disabled={deleteIngredientMutation.isPending}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+                <Table className="w-full text-xs sm:text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-auto min-w-[100px] sm:min-w-[120px]">Name</TableHead>
+                      <TableHead className="w-16 sm:w-24">Status</TableHead>
+                      <TableHead className="w-16 sm:w-20">Unit</TableHead>
+                      <TableHead className="hidden sm:table-cell w-20 sm:w-24 text-right">Units / case</TableHead>
+                      <TableHead className="hidden md:table-cell w-20 sm:w-24 text-right">Case price</TableHead>
+                      <TableHead className="w-20 sm:w-24 text-right">Unit cost</TableHead>
+                      <TableHead className="w-24 sm:w-32 text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedIngredients.map((ingredient) => (
+                      <TableRow key={ingredient.id}>
+                        <TableCell className="font-medium text-slate-800">{ingredient.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={ingredient.isActive ? 'success' : 'warning'} className="text-[10px] sm:text-xs">
+                            {ingredient.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm">{ingredient.inventoryUnit}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">{ingredient.unitsPerCase}</TableCell>
+                        <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">{formatCurrency(ingredient.casePrice)}</TableCell>
+                        <TableCell className="text-right font-mono text-xs sm:text-sm text-slate-600">{formatCurrency(ingredient.unitCost)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void handleToggleActive(ingredient)}
+                              disabled={setActiveMutation.isPending}
+                              className="text-xs whitespace-nowrap"
+                            >
+                              {ingredient.isActive ? 'Deactivate' : 'Activate'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => setEditingIngredientId(ingredient.id)}
+                              variant={editingIngredientId === ingredient.id ? 'secondary' : 'ghost'}
+                              className="text-xs whitespace-nowrap"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(ingredient.id)}
+                              disabled={deleteIngredientMutation.isPending}
+                              className="text-xs whitespace-nowrap"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
           <CardFooter className="text-sm text-slate-500">
