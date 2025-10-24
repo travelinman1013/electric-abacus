@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { getFormInput, waitForSignupForm, fillAccountDetails, fillBusinessDetails } from '../helpers/form-helpers';
 
 test.describe('Signup Flow', () => {
   test('should display the signup page correctly', async ({ page }) => {
     await page.goto('/signup');
+
+    // Wait for page to fully load
+    await waitForSignupForm(page, 1);
 
     // Check page title and description
     await expect(page.getByRole('heading', { name: 'Create Your Account' })).toBeVisible();
@@ -11,14 +15,17 @@ test.describe('Signup Flow', () => {
     ).toBeVisible();
 
     // Check stepper shows step 1 (Account)
-    await expect(page.getByText('Account')).toBeVisible();
-    await expect(page.getByText('Business')).toBeVisible();
-    await expect(page.getByText('Review')).toBeVisible();
+    const stepper = page.getByRole('navigation', { name: 'Signup progress' });
+    await expect(stepper).toBeVisible();
+    // Use locator with first() to avoid strict mode violations from multiple matches
+    await expect(stepper.locator('text=Account').first()).toBeVisible();
+    await expect(stepper.locator('text=Business').first()).toBeVisible();
+    await expect(stepper.locator('text=Review').first()).toBeVisible();
 
-    // Check form fields for step 1
-    await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Confirm Password')).toBeVisible();
+    // Check form fields for step 1 - use resilient selectors
+    await expect(getFormInput(page, 'Email', { exact: true })).toBeVisible();
+    await expect(getFormInput(page, 'Password', { exact: true })).toBeVisible();
+    await expect(getFormInput(page, 'Confirm Password')).toBeVisible();
     await expect(page.getByText(/I agree to the Terms of Service/)).toBeVisible();
   });
 
@@ -35,7 +42,10 @@ test.describe('Signup Flow', () => {
   test('should show password strength indicator', async ({ page }) => {
     await page.goto('/signup');
 
-    const passwordField = page.getByLabel('Password', { exact: true });
+    // Wait for form to be ready
+    await waitForSignupForm(page, 1);
+
+    const passwordField = getFormInput(page, 'Password', { exact: true });
 
     // Type a weak password
     await passwordField.fill('weak');
@@ -50,28 +60,31 @@ test.describe('Signup Flow', () => {
     await page.goto('/signup');
 
     // Step 1: Account Details
-    await page.getByLabel('Email', { exact: true }).fill('test@example.com');
-    await page.getByLabel('Password', { exact: true }).fill('TestPassword123!');
-    await page.getByLabel('Confirm Password').fill('TestPassword123!');
-    await page.getByRole('checkbox').check();
+    await fillAccountDetails(page, {
+      email: 'test@example.com',
+      password: 'TestPassword123!',
+      confirmPassword: 'TestPassword123!'
+    });
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Should now be on Step 2: Business Details
-    await expect(page.getByLabel('Business Name')).toBeVisible();
-    await expect(page.getByLabel('Industry')).toBeVisible();
-    await expect(page.getByLabel('Team Size')).toBeVisible();
+    await expect(getFormInput(page, 'Business Name')).toBeVisible();
+    await expect(getFormInput(page, 'Industry')).toBeVisible();
+    await expect(getFormInput(page, 'Team Size')).toBeVisible();
 
     // Fill business details
-    await page.getByLabel('Business Name').fill('Test Restaurant');
-    await page.getByLabel('Industry').selectOption('restaurant');
-    await page.getByLabel('Team Size').selectOption('1-5');
+    await fillBusinessDetails(page, {
+      name: 'Test Restaurant',
+      industry: 'restaurant',
+      teamSize: '1-5'
+    });
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Should now be on Step 3: Review
     await expect(page.getByRole('heading', { name: 'Review Your Information' })).toBeVisible();
     await expect(page.getByText('test@example.com')).toBeVisible();
     await expect(page.getByText('Test Restaurant')).toBeVisible();
-    await expect(page.getByText('Restaurant')).toBeVisible();
+    await expect(page.getByText('Restaurant', { exact: true })).toBeVisible();
     await expect(page.getByText('1-5 people')).toBeVisible();
   });
 
@@ -79,35 +92,37 @@ test.describe('Signup Flow', () => {
     await page.goto('/signup');
 
     // Complete step 1
-    await page.getByLabel('Email', { exact: true }).fill('test@example.com');
-    await page.getByLabel('Password', { exact: true }).fill('TestPassword123!');
-    await page.getByLabel('Confirm Password').fill('TestPassword123!');
-    await page.getByRole('checkbox').check();
+    await fillAccountDetails(page, {
+      email: 'test@example.com',
+      password: 'TestPassword123!',
+      confirmPassword: 'TestPassword123!'
+    });
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Now on step 2
-    await expect(page.getByLabel('Business Name')).toBeVisible();
+    await expect(getFormInput(page, 'Business Name')).toBeVisible();
 
     // Go back
     await page.getByRole('button', { name: 'Back' }).click();
 
     // Should be back on step 1
-    await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Email', { exact: true })).toHaveValue('test@example.com');
+    await expect(getFormInput(page, 'Email', { exact: true })).toBeVisible();
+    await expect(getFormInput(page, 'Email', { exact: true })).toHaveValue('test@example.com');
   });
 
   test('should validate business name is required', async ({ page }) => {
     await page.goto('/signup');
 
     // Complete step 1
-    await page.getByLabel('Email', { exact: true }).fill('test@example.com');
-    await page.getByLabel('Password', { exact: true }).fill('TestPassword123!');
-    await page.getByLabel('Confirm Password').fill('TestPassword123!');
-    await page.getByRole('checkbox').check();
+    await fillAccountDetails(page, {
+      email: 'test@example.com',
+      password: 'TestPassword123!',
+      confirmPassword: 'TestPassword123!'
+    });
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Try to proceed without business name
-    await page.getByLabel('Business Name').fill('');
+    await getFormInput(page, 'Business Name').fill('');
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Should show validation error
@@ -152,7 +167,8 @@ test.describe('Legal Pages', () => {
 
     await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
     await expect(page.getByText('Last updated: October 17, 2025')).toBeVisible();
-    await expect(page.getByText('Information We Collect')).toBeVisible();
+    // Use more specific heading selector with level
+    await expect(page.locator('h2', { hasText: /Information We Collect/ }).first()).toBeVisible();
   });
 });
 
