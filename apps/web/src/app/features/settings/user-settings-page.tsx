@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type {
   ThemeName,
   TableDensity,
@@ -164,6 +165,27 @@ export const UserSettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Business Terminology - Owner Only */}
+      {profile?.role === 'owner' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Terminology</CardTitle>
+            <CardDescription>
+              Customize the labels used throughout the app to match your business language
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-slate-600 mb-4">
+              Change how ingredients, menu items, and other business entities are labeled in your
+              workspace. For example, change "Ingredients" to "Products" or "Menu Items" to "Dishes".
+            </p>
+            <Link to="/app/settings/terminology">
+              <Button>Manage Terminology</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Theme Selection */}
       <Card>

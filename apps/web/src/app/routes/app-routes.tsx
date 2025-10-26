@@ -13,6 +13,7 @@ import { SalesEntryPage } from '../features/weeks/sales-entry-page';
 import { WeekListPage } from '../features/weeks/week-list-page';
 import { WeekReviewPage } from '../features/weeks/week-review-page';
 import { UserSettingsPage } from '../features/settings/user-settings-page';
+import { BusinessTerminology } from '../features/settings/BusinessTerminology';
 import { useAuthContext } from '../providers/auth-provider';
 import { LoadingScreen } from '../components/layout/loading-screen';
 import { ProtectedRoute } from './protected-route';
@@ -58,6 +59,7 @@ export const AppRoutes = () => {
             <Route path="ingredients" element={<IngredientsPage />} />
             <Route path="menu-items" element={<MenuItemsPage />} />
             <Route path="weeks/:weekId/review" element={<WeekReviewPage />} />
+            <Route path="settings/terminology" element={<BusinessTerminology />} />
           </Route>
         </Route>
       </Route>

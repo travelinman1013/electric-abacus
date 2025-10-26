@@ -9,6 +9,7 @@ import { calculateFoodCostPercentage, calculateRecipeCostWithPercentage } from '
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { useTerminology } from '../../hooks/use-terminology';
 import {
   Card,
   CardContent,
@@ -114,6 +115,7 @@ const foodCostPercentageClass = (percentage: number) => {
 };
 
 export const MenuItemsPage = () => {
+  const { terms } = useTerminology();
   const { businessId } = useBusiness();
   const {
     data: menuItems = [],
@@ -625,9 +627,9 @@ export const MenuItemsPage = () => {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">Menu items & recipes</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">{terms.menuItems} & {terms.recipes.toLowerCase()}</h1>
         <p className="text-sm text-slate-500">
-          Keep menu items in sync with ingredient recipes. Costs roll up automatically in the review
+          Keep {terms.menuItems.toLowerCase()} in sync with {terms.ingredient.toLowerCase()} {terms.recipes.toLowerCase()}. Costs roll up automatically in the review
           step.
         </p>
       </header>
@@ -654,7 +656,7 @@ export const MenuItemsPage = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle>Menu catalog</CardTitle>
+                <CardTitle>{terms.menuItem} catalog</CardTitle>
                 <CardDescription>
                   Deactivate items to hide them from costing and reporting.
                 </CardDescription>
@@ -665,14 +667,14 @@ export const MenuItemsPage = () => {
                   setEditingMenuItemId(null);
                 }}
               >
-                Create New Menu Item
+                Create New {terms.menuItem}
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-                Loading menu items...
+                Loading {terms.menuItems.toLowerCase()}...
               </div>
             ) : (
               <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
@@ -681,8 +683,8 @@ export const MenuItemsPage = () => {
                     <TableRow>
                       <TableHead className="w-auto min-w-[100px] sm:min-w-[120px]">Name</TableHead>
                       <TableHead className="w-16 sm:w-24">Status</TableHead>
-                      <TableHead className="hidden lg:table-cell max-w-[200px] whitespace-normal">Recipe</TableHead>
-                      <TableHead className="hidden md:table-cell w-20 sm:w-24 text-right">Recipe Total</TableHead>
+                      <TableHead className="hidden lg:table-cell max-w-[200px] whitespace-normal">{terms.recipe}</TableHead>
+                      <TableHead className="hidden md:table-cell w-20 sm:w-24 text-right">{terms.recipe} Total</TableHead>
                       <TableHead className="hidden sm:table-cell w-20 sm:w-24 text-right">Selling Price</TableHead>
                       <TableHead className="w-16 sm:w-20 text-right">Food Cost %</TableHead>
                       <TableHead className="w-24 sm:w-32 text-right">Actions</TableHead>
@@ -716,7 +718,7 @@ export const MenuItemsPage = () => {
                                     recipe.ingredientId,
                                   ),
                                 )
-                              : 'Select to view recipe'}
+                              : `Select to view ${terms.recipe.toLowerCase()}`}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">
                             {recipeSummary ? formatCurrency(recipeSummary.totalRecipeCost) : '—'}
@@ -763,7 +765,7 @@ export const MenuItemsPage = () => {
             )}
           </CardContent>
           <CardFooter className="text-sm text-slate-500">
-            Recipes are versioned implicitly via ingredient history; finalize to snapshot costs.
+            {terms.recipes} are versioned implicitly via {terms.ingredient.toLowerCase()} history; finalize to snapshot costs.
           </CardFooter>
         </Card>
 
@@ -781,8 +783,8 @@ export const MenuItemsPage = () => {
             }}
           >
             <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
-              <DialogTitle>Create menu item</DialogTitle>
-              <DialogDescription>Define an item and its ingredient recipe.</DialogDescription>
+              <DialogTitle>Create {terms.menuItem.toLowerCase()}</DialogTitle>
+              <DialogDescription>Define an item and its {terms.ingredient.toLowerCase()} {terms.recipe.toLowerCase()}.</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
               <form className="space-y-4" onSubmit={handleCreate} noValidate id="create-menu-item-form">
@@ -817,7 +819,7 @@ export const MenuItemsPage = () => {
 
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">Recipe Cost:</span>
+                    <span className="font-medium text-slate-700">{terms.recipe} Cost:</span>
                     <span className="font-mono text-slate-900">
                       {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
                     </span>
@@ -859,7 +861,7 @@ export const MenuItemsPage = () => {
                     </colgroup>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Ingredient</TableHead>
+                        <TableHead>{terms.ingredient}</TableHead>
                         <TableHead className="text-right">Qty</TableHead>
                         <TableHead className="text-right">Unit</TableHead>
                         <TableHead className="text-right">Total</TableHead>
@@ -870,7 +872,7 @@ export const MenuItemsPage = () => {
                       {renderRecipeRows(createRecipes, createForm, activeIngredients)}
                       <TableRow className="border-t-2 bg-slate-50">
                         <TableCell colSpan={3} className="text-right font-medium text-slate-900 text-sm">
-                          Recipe Total:
+                          {terms.recipe} Total:
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold text-slate-900 text-sm">
                           {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
@@ -893,7 +895,7 @@ export const MenuItemsPage = () => {
                   onClick={() => handleAddRecipeRow('create')}
                   disabled={createRecipes.fields.length >= activeIngredients.length}
                 >
-                  Add ingredient
+                  Add {terms.ingredient.toLowerCase()}
                 </Button>
               </form>
             </div>
@@ -916,7 +918,7 @@ export const MenuItemsPage = () => {
                   !activeIngredients.length
                 }
               >
-                {upsertMenuItemMutation.isPending ? 'Saving...' : 'Save menu item'}
+                {upsertMenuItemMutation.isPending ? 'Saving...' : `Save ${terms.menuItem.toLowerCase()}`}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -940,9 +942,9 @@ export const MenuItemsPage = () => {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <DialogTitle>
-                      {editingMenuItem.data?.item.name ? `Edit ${editingMenuItem.data.item.name}` : 'Edit menu item'}
+                      {editingMenuItem.data?.item.name ? `Edit ${editingMenuItem.data.item.name}` : `Edit ${terms.menuItem.toLowerCase()}`}
                     </DialogTitle>
-                    <DialogDescription>Adjust the recipe or toggle active state.</DialogDescription>
+                    <DialogDescription>Adjust the {terms.recipe.toLowerCase()} or toggle active state.</DialogDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1013,7 +1015,7 @@ export const MenuItemsPage = () => {
 
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-700">Recipe Cost:</span>
+                      <span className="font-medium text-slate-700">{terms.recipe} Cost:</span>
                       <span className="font-mono text-slate-900">
                         {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
                       </span>
@@ -1054,7 +1056,7 @@ export const MenuItemsPage = () => {
                           onResizeEnd={handleResizeEnd}
                           isLocked={isLocked}
                         >
-                          Ingredient
+                          {terms.ingredient}
                         </TableHeadResizable>
                         <TableHeadResizable
                           className="text-center"
@@ -1090,7 +1092,7 @@ export const MenuItemsPage = () => {
                         {renderRecipeRows(editRecipes, editForm, activeIngredients)}
                         <TableRow className="border-t-2 bg-slate-50">
                           <TableCell colSpan={3} className="text-right font-medium text-slate-900 text-sm">
-                            Recipe Total:
+                            {terms.recipe} Total:
                           </TableCell>
                           <TableCell className="text-right font-mono font-bold text-slate-900 text-sm">
                             {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
@@ -1113,7 +1115,7 @@ export const MenuItemsPage = () => {
                     onClick={() => handleAddRecipeRow('edit')}
                     disabled={editRecipes.fields.length >= activeIngredients.length}
                   >
-                    Add ingredient
+                    Add {terms.ingredient.toLowerCase()}
                   </Button>
                 </form>
               </div>

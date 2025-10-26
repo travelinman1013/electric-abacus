@@ -105,7 +105,14 @@ service cloud.firestore {
     // Business profiles
     match /businesses/{businessId} {
       allow read: if belongsToBusiness(businessId);
-      allow write: if belongsToBusiness(businessId) && isOwner();
+      allow create: if belongsToBusiness(businessId) && isOwner();
+      allow delete: if belongsToBusiness(businessId) && isOwner();
+      // Allow owners to update customTerminology, but protect core fields like createdAt
+      allow update: if belongsToBusiness(businessId) && isOwner() &&
+        // Only allow updates to customTerminology field
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['customTerminology']) &&
+        // Ensure createdAt is never modified
+        (!request.resource.data.keys().hasAll(['createdAt']) || request.resource.data.createdAt == resource.data.createdAt);
 
       // Ingredients + Versions
       match /ingredients/{ingredientId} {

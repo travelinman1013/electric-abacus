@@ -16,6 +16,7 @@ import { cn } from '../../lib/utils';
 import { useAuthContext } from '../../providers/auth-provider';
 import { useActiveIngredientIds } from '../../hooks/use-ingredients';
 import { useCreateWeek, useWeeks } from '../../hooks/use-weeks';
+import { useTerminology } from '../../hooks/use-terminology';
 
 const weekIdSchema = z.object({
   weekId: z
@@ -58,7 +59,7 @@ type WeekRowAction = {
   variant?: 'default' | 'outline';
 };
 
-const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
+const actionsForRole = (role: UserRole, week: Week, inventoryLabel: string): WeekRowAction[] => {
   if (role === 'owner') {
     return [
       {
@@ -67,7 +68,7 @@ const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
         variant: 'default'
       },
       {
-        label: 'Inventory',
+        label: inventoryLabel,
         to: `/app/weeks/${week.id}/inventory`,
         variant: 'outline'
       }
@@ -82,7 +83,7 @@ const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
         variant: 'default'
       },
       {
-        label: 'Inventory',
+        label: inventoryLabel,
         to: `/app/weeks/${week.id}/inventory`,
         variant: 'outline'
       }
@@ -93,6 +94,7 @@ const actionsForRole = (role: UserRole, week: Week): WeekRowAction[] => {
 };
 
 export const WeekListPage = () => {
+  const { terms } = useTerminology();
   const { profile } = useAuthContext();
   const { data: weeks = [], isLoading, isError, error } = useWeeks();
   const { data: activeIngredientIds = [] } = useActiveIngredientIds();
@@ -127,11 +129,11 @@ export const WeekListPage = () => {
         weekId: values.weekId,
         ingredientIds: activeIngredientIds
       });
-      setFormSuccess(`Week ${values.weekId} created`);
+      setFormSuccess(`${terms.week} ${values.weekId} created`);
       form.reset({ weekId: nextWeekId() });
     } catch (mutationError) {
       const message =
-        mutationError instanceof Error ? mutationError.message : 'Unable to create week right now.';
+        mutationError instanceof Error ? mutationError.message : `Unable to create ${terms.week.toLowerCase()} right now.`;
       setFormError(message);
     }
   });
@@ -141,32 +143,32 @@ export const WeekListPage = () => {
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold text-slate-900">Weekly Operations</h1>
         <p className="text-sm text-slate-500">
-          Track draft weeks, capture team inputs, and finalize reports for franchise fee submission.
+          Track draft {terms.weeks.toLowerCase()}, capture team inputs, and finalize reports for franchise fee submission.
         </p>
       </header>
 
       {isError ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error instanceof Error ? error.message : 'Failed to load weeks.'}
+          {error instanceof Error ? error.message : `Failed to load ${terms.weeks.toLowerCase()}.`}
         </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Active weeks</CardTitle>
+            <CardTitle>Active {terms.weeks.toLowerCase()}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-                Loading weeks...
+                Loading {terms.weeks.toLowerCase()}...
               </div>
             ) : sortedWeeks.length ? (
               <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[80px]">Week</TableHead>
+                      <TableHead className="min-w-[80px]">{terms.week}</TableHead>
                       <TableHead className="min-w-[80px]">Status</TableHead>
                       <TableHead className="hidden sm:table-cell">Created</TableHead>
                       <TableHead className="text-right min-w-[140px] sm:min-w-[180px]">Actions</TableHead>
@@ -174,7 +176,7 @@ export const WeekListPage = () => {
                   </TableHeader>
                   <TableBody>
                     {sortedWeeks.map((week) => {
-                      const actions = profile ? actionsForRole(profile.role, week) : [];
+                      const actions = profile ? actionsForRole(profile.role, week, terms.inventory) : [];
                       return (
                         <TableRow key={week.id}>
                           <TableCell className="font-medium text-slate-800">{week.id}</TableCell>
@@ -213,7 +215,7 @@ export const WeekListPage = () => {
               </div>
             ) : (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-                No weeks yet. Owners can create the first week to kick off data collection.
+                No {terms.weeks.toLowerCase()} yet. Owners can create the first {terms.week.toLowerCase()} to kick off data collection.
               </div>
             )}
           </CardContent>
@@ -221,7 +223,7 @@ export const WeekListPage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>{canCreateWeek ? 'Create a new week' : 'Need a week?'}</CardTitle>
+            <CardTitle>{canCreateWeek ? `Create a new ${terms.week.toLowerCase()}` : `Need a ${terms.week.toLowerCase()}?`}</CardTitle>
           </CardHeader>
           <CardContent>
             {canCreateWeek ? (
@@ -238,7 +240,7 @@ export const WeekListPage = () => {
                 ) : null}
 
                 <FormField
-                  label="Week ID"
+                  label={`${terms.week} ID`}
                   htmlFor="weekId"
                   required
                   description="Use ISO week format: YYYY-W##"
@@ -252,18 +254,18 @@ export const WeekListPage = () => {
                   className="w-full"
                   disabled={createWeekMutation.isPending || form.formState.isSubmitting}
                 >
-                  {createWeekMutation.isPending ? 'Creating...' : 'Create week'}
+                  {createWeekMutation.isPending ? 'Creating...' : `Create ${terms.week.toLowerCase()}`}
                 </Button>
                 <p className="text-xs text-slate-500">
-                  Opening a week records a draft shell for the team to provide sales and inventory. Active
-                  ingredients are preloaded for inventory tracking.
+                  Opening a {terms.week.toLowerCase()} records a draft shell for the team to provide sales and {terms.inventory.toLowerCase()}. Active
+                  {terms.ingredients.toLowerCase()} are preloaded for {terms.inventory.toLowerCase()} tracking.
                 </p>
               </form>
             ) : (
               <div className="space-y-3 text-sm text-slate-600">
                 <p>
-                  Only owners can open a new week. Request an owner to create the week before entering
-                  sales or inventory.
+                  Only owners can open a new {terms.week.toLowerCase()}. Request an owner to create the {terms.week.toLowerCase()} before entering
+                  sales or {terms.inventory.toLowerCase()}.
                 </p>
                 <p className="text-xs text-slate-500">
                   Tip: Use the Seed script to provision a sample draft week during local development.

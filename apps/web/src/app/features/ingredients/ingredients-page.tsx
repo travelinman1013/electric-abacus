@@ -8,6 +8,7 @@ import { calculateRecipeCost } from '@domain/costing';
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { useTerminology } from '../../hooks/use-terminology';
 import {
   Card,
   CardContent,
@@ -123,6 +124,7 @@ const calculateBatchCost = (
 };
 
 export const IngredientsPage = () => {
+  const { terms } = useTerminology();
   const {
     data: ingredients = [],
     isLoading,
@@ -485,16 +487,16 @@ export const IngredientsPage = () => {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">Ingredient catalog</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">{terms.ingredient} catalog</h1>
         <p className="text-sm text-slate-500">
-          Manage cost inputs that drive the weekly franchise fee report. Ingredient versions capture price
+          Manage cost inputs that drive the weekly franchise fee report. {terms.ingredient} versions capture price
           changes over time.
         </p>
       </header>
 
       {isError ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {ingredientsError instanceof Error ? ingredientsError.message : 'Failed to load ingredients.'}
+          {ingredientsError instanceof Error ? ingredientsError.message : `Failed to load ${terms.ingredients.toLowerCase()}.`}
         </div>
       ) : null}
 
@@ -505,7 +507,7 @@ export const IngredientsPage = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle>Current ingredients</CardTitle>
+                <CardTitle>Current {terms.ingredients.toLowerCase()}</CardTitle>
                 <CardDescription>Unit costs update automatically from case price and pack size.</CardDescription>
               </div>
               <Button
@@ -514,14 +516,14 @@ export const IngredientsPage = () => {
                   setEditingIngredientId(null);
                 }}
               >
-                Create Ingredient
+                Create {terms.ingredient}
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-                Loading ingredients...
+                Loading {terms.ingredients.toLowerCase()}...
               </div>
             ) : (
               <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
@@ -588,7 +590,7 @@ export const IngredientsPage = () => {
             )}
           </CardContent>
           <CardFooter className="text-sm text-slate-500">
-            Updating an ingredient will spawn a new version record used for future weeks.
+            Updating {terms.ingredient.toLowerCase()} will spawn a new version record used for future {terms.weeks.toLowerCase()}.
           </CardFooter>
         </Card>
 
@@ -606,7 +608,7 @@ export const IngredientsPage = () => {
             }}
           >
             <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
-              <DialogTitle>Create ingredient</DialogTitle>
+              <DialogTitle>Create {terms.ingredient.toLowerCase()}</DialogTitle>
               <DialogDescription>Add new cost inputs to the catalog.</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
@@ -769,7 +771,7 @@ export const IngredientsPage = () => {
 
                     <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium text-slate-700">Recipe Ingredients</h4>
+                        <h4 className="text-sm font-medium text-slate-700">{terms.recipe} {terms.ingredients}</h4>
                         <Button
                           type="button"
                           size="sm"
@@ -777,7 +779,7 @@ export const IngredientsPage = () => {
                           onClick={() => handleAddRecipeIngredient(createRecipeIngredients)}
                           disabled={availableForBatch.length === createRecipeIngredients.fields.length}
                         >
-                          Add Ingredient
+                          Add {terms.ingredient}
                         </Button>
                       </div>
                       <Table className="w-full text-xs">
@@ -790,7 +792,7 @@ export const IngredientsPage = () => {
                         </colgroup>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Ingredient</TableHead>
+                            <TableHead>{terms.ingredient}</TableHead>
                             <TableHead className="text-right">Quantity</TableHead>
                             <TableHead className="text-right">Unit</TableHead>
                             <TableHead className="text-right">Line Cost</TableHead>
@@ -856,7 +858,7 @@ export const IngredientsPage = () => {
                 size="sm"
                 disabled={createIngredientMutation.isPending || createForm.formState.isSubmitting}
               >
-                {createIngredientMutation.isPending ? 'Creating...' : 'Add ingredient'}
+                {createIngredientMutation.isPending ? 'Creating...' : `Add ${terms.ingredient.toLowerCase()}`}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -876,7 +878,7 @@ export const IngredientsPage = () => {
             }}
           >
             <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
-              <DialogTitle>Edit ingredient</DialogTitle>
+              <DialogTitle>Edit {terms.ingredient.toLowerCase()}</DialogTitle>
               <DialogDescription>
                 Update pricing or pack sizes to spawn a new cost version.
               </DialogDescription>
@@ -1041,7 +1043,7 @@ export const IngredientsPage = () => {
 
                       <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-slate-700">Recipe Ingredients</h4>
+                          <h4 className="text-sm font-medium text-slate-700">{terms.recipe} {terms.ingredients}</h4>
                           <Button
                             type="button"
                             size="sm"
@@ -1049,7 +1051,7 @@ export const IngredientsPage = () => {
                             onClick={() => handleAddRecipeIngredient(editRecipeIngredients)}
                             disabled={editRecipeIngredients.fields.length >= availableForBatch.length}
                           >
-                            Add Ingredient
+                            Add {terms.ingredient}
                           </Button>
                         </div>
 
@@ -1064,7 +1066,7 @@ export const IngredientsPage = () => {
                             </colgroup>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Ingredient</TableHead>
+                                <TableHead>{terms.ingredient}</TableHead>
                                 <TableHead className="text-right">Quantity</TableHead>
                                 <TableHead className="text-right">Unit</TableHead>
                                 <TableHead className="text-right">Line Cost</TableHead>
@@ -1169,9 +1171,9 @@ export const IngredientsPage = () => {
       <Dialog open={Boolean(deletingIngredientId)} onOpenChange={(open) => !open && setDeletingIngredientId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Ingredient</DialogTitle>
+            <DialogTitle>Delete {terms.ingredient}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this ingredient? This action cannot be undone.
+              Are you sure you want to delete this {terms.ingredient.toLowerCase()}? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           {(() => {
@@ -1180,10 +1182,10 @@ export const IngredientsPage = () => {
 
             return hasUsage ? (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                <p className="font-semibold mb-1">Warning: This ingredient is currently in use</p>
+                <p className="font-semibold mb-1">Warning: This {terms.ingredient.toLowerCase()} is currently in use</p>
                 {usage.usedInBatchIngredients.length > 0 && (
                   <div>
-                    <p className="font-medium">Used in batch ingredients:</p>
+                    <p className="font-medium">Used in batch {terms.ingredients.toLowerCase()}:</p>
                     <ul className="list-disc list-inside ml-2">
                       {usage.usedInBatchIngredients.map(name => (
                         <li key={name}>{name}</li>
@@ -1191,7 +1193,7 @@ export const IngredientsPage = () => {
                     </ul>
                   </div>
                 )}
-                <p className="mt-2">Deleting this ingredient may cause issues with these recipes.</p>
+                <p className="mt-2">Deleting this {terms.ingredient.toLowerCase()} may cause issues with these {terms.recipes.toLowerCase()}.</p>
               </div>
             ) : null;
           })()}

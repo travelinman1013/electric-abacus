@@ -3,26 +3,34 @@ import { NavLink } from 'react-router-dom';
 import type { UserRole } from '@domain/costing';
 
 import { cn } from '../../lib/utils';
+import { useTerminology } from '../../hooks/use-terminology';
 
 interface MainNavProps {
   role: UserRole;
 }
 
 interface NavItem {
-  label: string;
+  labelKey: 'weeks' | 'ingredients' | 'menuItems' | 'settings';
   to: string;
   roles: UserRole[];
 }
 
 const navItems: NavItem[] = [
-  { label: 'Weeks', to: '/app/weeks', roles: ['owner', 'teamMember'] },
-  { label: 'Ingredients', to: '/app/ingredients', roles: ['owner'] },
-  { label: 'Menu Items', to: '/app/menu-items', roles: ['owner'] },
-  { label: 'Settings', to: '/app/settings', roles: ['owner', 'teamMember'] }
+  { labelKey: 'weeks', to: '/app/weeks', roles: ['owner', 'teamMember'] },
+  { labelKey: 'ingredients', to: '/app/ingredients', roles: ['owner'] },
+  { labelKey: 'menuItems', to: '/app/menu-items', roles: ['owner'] },
+  { labelKey: 'settings', to: '/app/settings', roles: ['owner', 'teamMember'] }
 ];
 
 export const MainNav = ({ role }: MainNavProps) => {
+  const { terms } = useTerminology();
   const items = navItems.filter((item) => item.roles.includes(role));
+
+  // Map labelKey to dynamic label from terms, with fallback for 'settings'
+  const getLabel = (labelKey: NavItem['labelKey']): string => {
+    if (labelKey === 'settings') return 'Settings';
+    return terms[labelKey];
+  };
 
   return (
     <nav className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 overflow-x-auto">
@@ -37,7 +45,7 @@ export const MainNav = ({ role }: MainNavProps) => {
             )
           }
         >
-          {item.label}
+          {getLabel(item.labelKey)}
         </NavLink>
       ))}
     </nav>

@@ -12,6 +12,7 @@ import { Input } from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { useIngredients } from '../../hooks/use-ingredients';
 import { useSaveWeekInventory, useWeek, useWeekInventory } from '../../hooks/use-weeks';
+import { useTerminology } from '../../hooks/use-terminology';
 
 const inventoryEntrySchema = z.object({
   ingredientId: z.string(),
@@ -37,6 +38,7 @@ const formatCurrency = (value: number) =>
   currencyFormatter.format(Number.isFinite(value) ? value : 0);
 
 export const InventoryPage = () => {
+  const { terms } = useTerminology();
   const { weekId } = useParams<{ weekId: string }>();
   const { data: week } = useWeek(weekId);
   const {
@@ -129,12 +131,12 @@ export const InventoryPage = () => {
 
     try {
       await saveInventoryMutation.mutateAsync({ weekId, entries: values.entries });
-      setFormSuccess('Inventory saved');
+      setFormSuccess(`${terms.inventory} saved`);
     } catch (mutationError) {
       const message =
         mutationError instanceof Error
           ? mutationError.message
-          : 'Unable to save inventory right now.';
+          : `Unable to save ${terms.inventory.toLowerCase()} right now.`;
       setFormError(message);
     }
   });
@@ -142,8 +144,8 @@ export const InventoryPage = () => {
   if (!weekId) {
     return (
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-slate-900">Inventory recount</h1>
-        <p className="text-sm text-slate-500">Select a week from the week list to continue.</p>
+        <h1 className="text-3xl font-semibold text-slate-900">{terms.inventory} recount</h1>
+        <p className="text-sm text-slate-500">Select a {terms.week.toLowerCase()} from the {terms.week.toLowerCase()} list to continue.</p>
       </div>
     );
   }
@@ -155,14 +157,14 @@ export const InventoryPage = () => {
       ? inventoryErrorObject.message
       : ingredientsErrorObject instanceof Error
         ? ingredientsErrorObject.message
-        : 'Failed to load inventory data.';
+        : `Failed to load ${terms.inventory.toLowerCase()} data.`;
 
   return (
     <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-slate-500">{weekId}</p>
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-semibold text-slate-900">Inventory recount</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">{terms.inventory} recount</h1>
           {week ? (
             <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
               {week.status}
@@ -170,19 +172,19 @@ export const InventoryPage = () => {
           ) : null}
         </div>
         <p className="text-sm text-slate-500">
-          Enter beginning, received, and ending inventory for each tracked ingredient. Numbers must be
+          Enter beginning, received, and ending {terms.inventory.toLowerCase()} for each tracked {terms.ingredient.toLowerCase()}. Numbers must be
           non-negative.
         </p>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Ingredient usage</CardTitle>
+          <CardTitle>{terms.ingredient} usage</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-              Loading inventory...
+              Loading {terms.inventory.toLowerCase()}...
             </div>
           ) : combinedError ? (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -190,7 +192,7 @@ export const InventoryPage = () => {
             </div>
           ) : !rows.length ? (
             <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-              No active ingredients configured. Owners can add ingredients to begin tracking inventory.
+              No active {terms.ingredients.toLowerCase()} configured. Owners can add {terms.ingredients.toLowerCase()} to begin tracking {terms.inventory.toLowerCase()}.
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -209,7 +211,7 @@ export const InventoryPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Ingredient</TableHead>
+                      <TableHead>{terms.ingredient}</TableHead>
                       <TableHead>Begin</TableHead>
                       <TableHead>Received</TableHead>
                       <TableHead>End</TableHead>
@@ -306,13 +308,13 @@ export const InventoryPage = () => {
 
               <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-sm text-slate-500">
                 <p>
-                  Inventory saves with each submit. Owners lock values when finalizing the week.
+                  {terms.inventory} saves with each submit. Owners lock values when finalizing the {terms.week.toLowerCase()}.
                 </p>
                 <Button
                   type="submit"
                   disabled={isFinalized || form.formState.isSubmitting || saveInventoryMutation.isPending}
                 >
-                  {saveInventoryMutation.isPending ? 'Saving...' : isFinalized ? 'Finalized' : 'Save inventory'}
+                  {saveInventoryMutation.isPending ? 'Saving...' : isFinalized ? 'Finalized' : `Save ${terms.inventory.toLowerCase()}`}
                 </Button>
               </div>
             </form>
