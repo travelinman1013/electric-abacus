@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppLayout } from '../layout/app-layout';
+import { DashboardPage } from '../features/dashboard/dashboard-page';
 import { IngredientsPage } from '../features/ingredients/ingredients-page';
 import { LoginPage } from '../features/auth/login-page';
 import { SignupPage } from '../features/auth/signup-page';
@@ -19,7 +20,7 @@ import { LoadingScreen } from '../components/layout/loading-screen';
 import { ProtectedRoute } from './protected-route';
 import { RoleGuard } from './role-guard';
 
-const DEFAULT_AUTHENTICATED_PATH = '/app/weeks';
+const DEFAULT_AUTHENTICATED_PATH = '/app';
 
 export const AppRoutes = () => {
   const { user, loading } = useAuthContext();
@@ -49,7 +50,7 @@ export const AppRoutes = () => {
       {/* Protected app routes */}
       <Route path="/app" element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/app/weeks" replace />} />
+          <Route index element={<DashboardPage />} />
           <Route path="weeks" element={<WeekListPage />} />
           <Route path="weeks/:weekId/sales" element={<SalesEntryPage />} />
           <Route path="weeks/:weekId/inventory" element={<InventoryPage />} />

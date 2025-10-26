@@ -10,12 +10,13 @@ interface MainNavProps {
 }
 
 interface NavItem {
-  labelKey: 'weeks' | 'ingredients' | 'menuItems' | 'settings';
+  labelKey: 'dashboard' | 'weeks' | 'ingredients' | 'menuItems' | 'settings';
   to: string;
   roles: UserRole[];
 }
 
 const navItems: NavItem[] = [
+  { labelKey: 'dashboard', to: '/app', roles: ['owner', 'teamMember'] },
   { labelKey: 'weeks', to: '/app/weeks', roles: ['owner', 'teamMember'] },
   { labelKey: 'ingredients', to: '/app/ingredients', roles: ['owner'] },
   { labelKey: 'menuItems', to: '/app/menu-items', roles: ['owner'] },
@@ -26,8 +27,9 @@ export const MainNav = ({ role }: MainNavProps) => {
   const { terms } = useTerminology();
   const items = navItems.filter((item) => item.roles.includes(role));
 
-  // Map labelKey to dynamic label from terms, with fallback for 'settings'
+  // Map labelKey to dynamic label from terms, with fallback for 'dashboard' and 'settings'
   const getLabel = (labelKey: NavItem['labelKey']): string => {
+    if (labelKey === 'dashboard') return 'Dashboard';
     if (labelKey === 'settings') return 'Settings';
     return terms[labelKey];
   };
