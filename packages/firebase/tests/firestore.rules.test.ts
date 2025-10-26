@@ -18,6 +18,7 @@ import {
 let testEnv: RulesTestEnvironment;
 
 const PROJECT_ID = 'taco-casa-demo';
+const BUSINESS_ID = 'business-1';
 
 beforeAll(async () => {
   const rules = await readFile('../../firestore.rules', 'utf8');
@@ -38,13 +39,25 @@ beforeEach(async () => {
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
-    await setDoc(doc(db, 'users/owner-1'), { displayName: 'Owner', role: 'owner' });
-    await setDoc(doc(db, 'users/team-1'), { displayName: 'Team', role: 'teamMember' });
-    await setDoc(doc(db, 'weeks/2025-W01'), {
+    // Create users
+    await setDoc(doc(db, 'users/owner-1'), {
+      displayName: 'Owner',
+      role: 'owner',
+      businesses: { [BUSINESS_ID]: { businessId: BUSINESS_ID, role: 'owner', joinedAt: new Date() } }
+    });
+    await setDoc(doc(db, 'users/team-1'), {
+      displayName: 'Team',
+      role: 'teamMember',
+      businesses: { [BUSINESS_ID]: { businessId: BUSINESS_ID, role: 'teamMember', joinedAt: new Date() } }
+    });
+    // Create business
+    await setDoc(doc(db, `businesses/${BUSINESS_ID}`), { name: 'Test Business', createdAt: new Date() });
+    // Create weeks in business context
+    await setDoc(doc(db, `businesses/${BUSINESS_ID}/weeks/2025-W01`), {
       status: 'draft',
       createdAt: '2025-01-01T00:00:00.000Z'
     });
-    await setDoc(doc(db, 'weeks/2025-W02'), {
+    await setDoc(doc(db, `businesses/${BUSINESS_ID}/weeks/2025-W02`), {
       status: 'finalized',
       createdAt: '2025-01-08T00:00:00.000Z'
     });
@@ -52,10 +65,179 @@ beforeEach(async () => {
 });
 
 describe('Firestore security rules', () => {
+  describe('Batch ingredient validation', () => {
+    it('allows creating a valid batch ingredient', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertSucceeds(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yield: 8,
+          yieldUnit: 'lb',
+          recipeIngredients: [
+            { ingredientId: 'beef', quantity: 10, unitOfMeasure: 'lb' },
+            { ingredientId: 'seasoning', quantity: 2, unitOfMeasure: 'oz' }
+          ]
+        })
+      );
+    });
+
+    it('rejects batch ingredient with missing yield', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertFails(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yieldUnit: 'lb',
+          recipeIngredients: [
+            { ingredientId: 'beef', quantity: 10, unitOfMeasure: 'lb' }
+          ]
+        })
+      );
+    });
+
+    it('rejects batch ingredient with zero yield', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertFails(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yield: 0,
+          yieldUnit: 'lb',
+          recipeIngredients: [
+            { ingredientId: 'beef', quantity: 10, unitOfMeasure: 'lb' }
+          ]
+        })
+      );
+    });
+
+    it('rejects batch ingredient with missing yieldUnit', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertFails(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yield: 8,
+          recipeIngredients: [
+            { ingredientId: 'beef', quantity: 10, unitOfMeasure: 'lb' }
+          ]
+        })
+      );
+    });
+
+    it('rejects batch ingredient with empty recipeIngredients', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertFails(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yield: 8,
+          yieldUnit: 'lb',
+          recipeIngredients: []
+        })
+      );
+    });
+
+    it('rejects batch ingredient with invalid recipe ingredient (missing ingredientId)', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertFails(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yield: 8,
+          yieldUnit: 'lb',
+          recipeIngredients: [
+            { quantity: 10, unitOfMeasure: 'lb' }
+          ]
+        })
+      );
+    });
+
+    it('rejects batch ingredient with invalid recipe ingredient (zero quantity)', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertFails(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/seasoned-beef`), {
+          name: 'Seasoned Beef',
+          inventoryUnit: 'lb',
+          unitsPerCase: 10,
+          casePrice: 0,
+          unitCost: 0,
+          isActive: true,
+          category: 'food',
+          isBatch: true,
+          yield: 8,
+          yieldUnit: 'lb',
+          recipeIngredients: [
+            { ingredientId: 'beef', quantity: 0, unitOfMeasure: 'lb' }
+          ]
+        })
+      );
+    });
+
+    it('allows creating a regular (non-batch) ingredient', async () => {
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+
+      await assertSucceeds(
+        setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/cheese`), {
+          name: 'Cheese',
+          inventoryUnit: 'lb',
+          casePrice: 30,
+          unitsPerCase: 10,
+          unitCost: 3,
+          isActive: true,
+          category: 'food'
+        })
+      );
+    });
+  });
+
   it('allows team members to edit sales in draft weeks only', async () => {
-    const teamDb = testEnv.authenticatedContext('team-1').firestore();
-    const draftRef = doc(teamDb, 'weeks/2025-W01/sales/daily');
-    const finalizedRef = doc(teamDb, 'weeks/2025-W02/sales/daily');
+    const teamDb = testEnv.authenticatedContext('team-1', { businessId: BUSINESS_ID, role: 'teamMember' }).firestore();
+    const draftRef = doc(teamDb, `businesses/${BUSINESS_ID}/weeks/2025-W01/sales/daily`);
+    const finalizedRef = doc(teamDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/sales/daily`);
 
     await assertSucceeds(
       setDoc(draftRef, { mon: 100, tue: 110, wed: 120, thu: 130, fri: 140, sat: 150, sun: 160 })
@@ -77,22 +259,22 @@ describe('Firestore security rules', () => {
   it('prevents team members from reading cost snapshot data', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
-      await setDoc(doc(db, 'weeks/2025-W01/costSnapshot/cheese'), {
+      await setDoc(doc(db, `businesses/${BUSINESS_ID}/weeks/2025-W01/costSnapshot/cheese`), {
         unitCost: 1.25,
         sourceVersionId: 'v1'
       });
     });
 
-    const teamDb = testEnv.authenticatedContext('team-1').firestore();
-    const snapshotRef = doc(teamDb, 'weeks/2025-W01/costSnapshot/cheese');
+    const teamDb = testEnv.authenticatedContext('team-1', { businessId: BUSINESS_ID, role: 'teamMember' }).firestore();
+    const snapshotRef = doc(teamDb, `businesses/${BUSINESS_ID}/weeks/2025-W01/costSnapshot/cheese`);
 
     await assertFails(getDoc(snapshotRef));
   });
 
   it('allows owners to manage cost snapshots while draft and blocks after finalization', async () => {
-    const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-    const draftSnapshot = doc(ownerDb, 'weeks/2025-W01/costSnapshot/beef');
-    const finalSnapshot = doc(ownerDb, 'weeks/2025-W02/costSnapshot/beef');
+    const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+    const draftSnapshot = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W01/costSnapshot/beef`);
+    const finalSnapshot = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/costSnapshot/beef`);
 
     await assertSucceeds(
       setDoc(draftSnapshot, { unitCost: 2.5, sourceVersionId: 'v5' })
@@ -104,34 +286,36 @@ describe('Firestore security rules', () => {
   });
 
   it('allows owners to create ingredients while blocking team members', async () => {
-    const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
+    const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
     await assertSucceeds(
-      setDoc(doc(ownerDb, 'ingredients/cheese'), {
+      setDoc(doc(ownerDb, `businesses/${BUSINESS_ID}/ingredients/cheese`), {
         name: 'Cheese',
         casePrice: 30,
         unitsPerCase: 10,
-        unitOfMeasure: 'lb',
+        inventoryUnit: 'lb',
         unitCost: 3,
-        isActive: true
+        isActive: true,
+        category: 'food'
       })
     );
 
-    const teamDb = testEnv.authenticatedContext('team-1').firestore();
+    const teamDb = testEnv.authenticatedContext('team-1', { businessId: BUSINESS_ID, role: 'teamMember' }).firestore();
     await assertFails(
-      setDoc(doc(teamDb, 'ingredients/beef'), {
+      setDoc(doc(teamDb, `businesses/${BUSINESS_ID}/ingredients/beef`), {
         name: 'Beef',
         casePrice: 40,
         unitsPerCase: 5,
-        unitOfMeasure: 'lb',
+        inventoryUnit: 'lb',
         unitCost: 8,
-        isActive: true
+        isActive: true,
+        category: 'food'
       })
     );
   });
 
   it('blocks any writes to draft week inventory once finalized', async () => {
-    const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-    const finalizedInventory = doc(ownerDb, 'weeks/2025-W02/inventory/cheese');
+    const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+    const finalizedInventory = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/inventory/cheese`);
 
     await assertFails(
       setDoc(finalizedInventory, { begin: 10, received: 5, end: 3 })
@@ -140,8 +324,8 @@ describe('Firestore security rules', () => {
 
   describe('Finalize behavior restrictions', () => {
     it('blocks cost snapshot creation in finalized weeks', async () => {
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const finalizedSnapshot = doc(ownerDb, 'weeks/2025-W02/costSnapshot/beef');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const finalizedSnapshot = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/costSnapshot/beef`);
 
       await assertFails(
         setDoc(finalizedSnapshot, {
@@ -155,15 +339,15 @@ describe('Firestore security rules', () => {
     it('blocks cost snapshot updates in finalized weeks', async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const db = context.firestore();
-        await setDoc(doc(db, 'weeks/2025-W02/costSnapshot/beef'), {
+        await setDoc(doc(db, `businesses/${BUSINESS_ID}/weeks/2025-W02/costSnapshot/beef`), {
           unitCost: 8.00,
           sourceVersionId: 'v1',
           capturedAt: new Date()
         });
       });
 
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const finalizedSnapshot = doc(ownerDb, 'weeks/2025-W02/costSnapshot/beef');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const finalizedSnapshot = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/costSnapshot/beef`);
 
       await assertFails(
         updateDoc(finalizedSnapshot, { unitCost: 8.50 })
@@ -171,8 +355,8 @@ describe('Firestore security rules', () => {
     });
 
     it('allows cost snapshot creation in draft weeks', async () => {
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const draftSnapshot = doc(ownerDb, 'weeks/2025-W01/costSnapshot/beef');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const draftSnapshot = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W01/costSnapshot/beef`);
 
       await assertSucceeds(
         setDoc(draftSnapshot, {
@@ -184,8 +368,8 @@ describe('Firestore security rules', () => {
     });
 
     it('blocks report creation in finalized weeks', async () => {
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const finalizedReport = doc(ownerDb, 'weeks/2025-W02/report/summary');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const finalizedReport = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/report/summary`);
 
       await assertFails(
         setDoc(finalizedReport, {
@@ -199,15 +383,15 @@ describe('Firestore security rules', () => {
     it('blocks report updates in finalized weeks', async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const db = context.firestore();
-        await setDoc(doc(db, 'weeks/2025-W02/report/summary'), {
+        await setDoc(doc(db, `businesses/${BUSINESS_ID}/weeks/2025-W02/report/summary`), {
           totals: { totalUsageUnits: 90, totalCostOfSales: 450 },
           breakdown: [],
           generatedAt: new Date()
         });
       });
 
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const finalizedReport = doc(ownerDb, 'weeks/2025-W02/report/summary');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const finalizedReport = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/report/summary`);
 
       await assertFails(
         updateDoc(finalizedReport, {
@@ -217,8 +401,8 @@ describe('Firestore security rules', () => {
     });
 
     it('allows report creation in draft weeks', async () => {
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const draftReport = doc(ownerDb, 'weeks/2025-W01/report/summary');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const draftReport = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W01/report/summary`);
 
       await assertSucceeds(
         setDoc(draftReport, {
@@ -230,8 +414,8 @@ describe('Firestore security rules', () => {
     });
 
     it('blocks sales updates in finalized weeks', async () => {
-      const teamDb = testEnv.authenticatedContext('team-1').firestore();
-      const finalizedSales = doc(teamDb, 'weeks/2025-W02/sales/daily');
+      const teamDb = testEnv.authenticatedContext('team-1', { businessId: BUSINESS_ID, role: 'teamMember' }).firestore();
+      const finalizedSales = doc(teamDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/sales/daily`);
 
       await assertFails(
         setDoc(finalizedSales, {
@@ -247,8 +431,8 @@ describe('Firestore security rules', () => {
     });
 
     it('blocks inventory updates in finalized weeks', async () => {
-      const teamDb = testEnv.authenticatedContext('team-1').firestore();
-      const finalizedInventory = doc(teamDb, 'weeks/2025-W02/inventory/cheese');
+      const teamDb = testEnv.authenticatedContext('team-1', { businessId: BUSINESS_ID, role: 'teamMember' }).firestore();
+      const finalizedInventory = doc(teamDb, `businesses/${BUSINESS_ID}/weeks/2025-W02/inventory/cheese`);
 
       await assertFails(
         setDoc(finalizedInventory, { begin: 10, received: 5, end: 3 })
@@ -256,8 +440,8 @@ describe('Firestore security rules', () => {
     });
 
     it('blocks updating week status from finalized back to draft', async () => {
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const finalizedWeek = doc(ownerDb, 'weeks/2025-W02');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const finalizedWeek = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W02`);
 
       await assertFails(
         updateDoc(finalizedWeek, { status: 'draft' })
@@ -265,8 +449,8 @@ describe('Firestore security rules', () => {
     });
 
     it('allows updating week status from draft to finalized', async () => {
-      const ownerDb = testEnv.authenticatedContext('owner-1').firestore();
-      const draftWeek = doc(ownerDb, 'weeks/2025-W01');
+      const ownerDb = testEnv.authenticatedContext('owner-1', { businessId: BUSINESS_ID, role: 'owner' }).firestore();
+      const draftWeek = doc(ownerDb, `businesses/${BUSINESS_ID}/weeks/2025-W01`);
 
       await assertSucceeds(
         updateDoc(draftWeek, {

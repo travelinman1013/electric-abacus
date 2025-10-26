@@ -1,5 +1,6 @@
 import type {
   ComputeReportSummaryInput,
+  ConversionWarning,
   CostOfSalesBreakdown,
   Ingredient,
   RecipeCostSummary,
@@ -161,17 +162,42 @@ export const computeReportSummary = (input: ComputeReportSummaryInput): ReportSu
   } satisfies ReportSummary;
 };
 
+const MAX_BATCH_RECURSION_DEPTH = 10;
+
 export const calculateBatchIngredientCost = (
   batchIngredient: Ingredient,
-  allIngredients: Ingredient[]
+  allIngredients: Ingredient[],
+  visitedBatchIds: Set<string> = new Set(),
+  depth: number = 0
 ): number => {
   // Validate batch ingredient
   if (!batchIngredient.isBatch || !batchIngredient.recipeIngredients || !batchIngredient.yield || batchIngredient.yield <= 0) {
     return 0;
   }
 
+  // Check for circular dependency
+  if (visitedBatchIds.has(batchIngredient.id)) {
+    console.warn(`Circular dependency detected in batch ingredient: ${batchIngredient.id}`);
+    return 0;
+  }
+
+  // Check recursion depth limit
+  if (depth >= MAX_BATCH_RECURSION_DEPTH) {
+    console.warn(`Maximum batch recursion depth (${MAX_BATCH_RECURSION_DEPTH}) exceeded for ingredient: ${batchIngredient.id}`);
+    return 0;
+  }
+
+  // Add current batch to visited set
+  const newVisitedBatchIds = new Set(visitedBatchIds);
+  newVisitedBatchIds.add(batchIngredient.id);
+
   // Calculate total cost of the batch recipe
-  const recipeCostSummary = calculateRecipeCost(batchIngredient.recipeIngredients, allIngredients);
+  const recipeCostSummary = calculateRecipeCost(
+    batchIngredient.recipeIngredients,
+    allIngredients,
+    newVisitedBatchIds,
+    depth + 1
+  );
   const totalBatchCost = recipeCostSummary.totalRecipeCost;
 
   // Calculate cost per unit of yield
@@ -182,9 +208,12 @@ export const calculateBatchIngredientCost = (
 
 export const calculateRecipeCost = (
   recipes: RecipeIngredient[],
-  ingredients: Ingredient[]
+  ingredients: Ingredient[],
+  visitedBatchIds: Set<string> = new Set(),
+  depth: number = 0
 ): RecipeCostSummary => {
   const ingredientMap = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
+  const warnings: ConversionWarning[] = [];
 
   const ingredientCosts: RecipeIngredientCost[] = recipes.map((recipe) => {
     const ingredient = ingredientMap.get(recipe.ingredientId);
@@ -195,7 +224,12 @@ export const calculateRecipeCost = (
     if (ingredient) {
       if (ingredient.isBatch) {
         // For batch ingredients, calculate cost based on batch recipe
-        const batchCostPerYieldUnit = calculateBatchIngredientCost(ingredient, ingredients);
+        const batchCostPerYieldUnit = calculateBatchIngredientCost(
+          ingredient,
+          ingredients,
+          visitedBatchIds,
+          depth
+        );
 
         // Handle unit conversion from batch yield unit to recipe unit
         if (ingredient.yieldUnit && ingredient.yieldUnit !== recipe.unitOfMeasure) {
@@ -203,8 +237,13 @@ export const calculateRecipeCost = (
           if (conversionFactor !== null) {
             effectiveUnitCost = batchCostPerYieldUnit / conversionFactor;
           } else {
-            // If no conversion possible, assume same unit
+            // If no conversion possible, assume same unit and warn
             effectiveUnitCost = batchCostPerYieldUnit;
+            warnings.push({
+              ingredientId: ingredient.id,
+              ingredientName: ingredient.name,
+              message: `Cannot convert from '${ingredient.yieldUnit}' to '${recipe.unitOfMeasure}' - using fallback`
+            });
           }
         } else {
           effectiveUnitCost = batchCostPerYieldUnit;
@@ -226,6 +265,13 @@ export const calculateRecipeCost = (
             if (recipe.unitOfMeasure === ingredient.recipeUnit) {
               effectiveUnitCost = baseUnitCost / ingredient.conversionFactor;
             }
+          } else {
+            // If no conversion is possible, warn user
+            warnings.push({
+              ingredientId: ingredient.id,
+              ingredientName: ingredient.name,
+              message: `Cannot convert from '${ingredient.inventoryUnit}' to '${recipe.unitOfMeasure}' - using fallback`
+            });
           }
           // If no conversion is possible, use base unit cost (assumes same unit)
         }
@@ -250,7 +296,8 @@ export const calculateRecipeCost = (
   return {
     totalRecipeCost: Number(totalRecipeCost.toFixed(4)),
     foodCostPercentage: 0, // Will be calculated when selling price is available
-    ingredients: ingredientCosts
+    ingredients: ingredientCosts,
+    conversionWarnings: warnings.length > 0 ? warnings : undefined
   } satisfies RecipeCostSummary;
 };
 

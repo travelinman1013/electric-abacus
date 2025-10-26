@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 
 import type {
+  Ingredient,
   ReportSummary,
   Week,
   WeekStatus,
@@ -23,7 +24,7 @@ import type {
   WeeklySalesDay,
   WeekDay
 } from '@domain/costing';
-import { WEEK_DAYS, computeReportSummary } from '@domain/costing';
+import { WEEK_DAYS, computeReportSummary, calculateBatchIngredientCost } from '@domain/costing';
 
 import { getClientAuth, getClientFirestore } from '@electric/firebase';
 
@@ -368,21 +369,54 @@ export const finalizeWeek = async (businessId: string, weekId: string): Promise<
       throw new Error(`Week ${weekId} is already finalized.`);
     }
 
+    // Fetch all ingredients to calculate batch ingredient costs correctly
+    const allIngredientsSnapshot = await getDocs(
+      collection(firestore, 'businesses', businessId, 'ingredients')
+    );
+    const ingredientsMap = new Map<string, Ingredient>();
+    allIngredientsSnapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      ingredientsMap.set(docSnap.id, {
+        id: docSnap.id,
+        name: data.name,
+        inventoryUnit: data.inventoryUnit,
+        recipeUnit: data.recipeUnit,
+        conversionFactor: data.conversionFactor,
+        unitsPerCase: toNonNegativeNumber(data.unitsPerCase),
+        casePrice: toNonNegativeNumber(data.casePrice),
+        unitCost: toNonNegativeNumber(data.unitCost),
+        isActive: data.isActive ?? true,
+        category: data.category ?? 'food',
+        currentVersionId: data.currentVersionId,
+        isBatch: data.isBatch,
+        recipeIngredients: data.recipeIngredients,
+        yield: data.yield,
+        yieldUnit: data.yieldUnit
+      });
+    });
+
     const costSnapshots = await Promise.all(
       inventoryEntries.map(async (entry) => {
-        const ingredientRef = doc(firestore, 'businesses', businessId, 'ingredients', entry.ingredientId);
-        const ingredientSnapshot = await transaction.get(ingredientRef);
+        const ingredient = ingredientsMap.get(entry.ingredientId);
 
-        if (!ingredientSnapshot.exists()) {
+        if (!ingredient) {
           throw new Error(`Ingredient ${entry.ingredientId} was not found while finalizing.`);
         }
 
-        const ingredientData = ingredientSnapshot.data();
+        // For batch ingredients, calculate the actual cost using the batch calculation
+        // For regular ingredients, use the stored unitCost
+        let effectiveCost: number;
+        if (ingredient.isBatch) {
+          const allIngredients = Array.from(ingredientsMap.values());
+          effectiveCost = calculateBatchIngredientCost(ingredient, allIngredients);
+        } else {
+          effectiveCost = ingredient.unitCost;
+        }
 
         return {
           ingredientId: entry.ingredientId,
-          unitCost: toNonNegativeNumber(ingredientData.unitCost),
-          sourceVersionId: ingredientData.currentVersionId ?? 'unspecified'
+          unitCost: toNonNegativeNumber(effectiveCost),
+          sourceVersionId: ingredient.currentVersionId ?? 'unspecified'
         } satisfies WeeklyCostSnapshotEntry;
       })
     );

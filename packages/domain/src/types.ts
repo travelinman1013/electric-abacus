@@ -158,10 +158,17 @@ export interface ComputeReportSummaryInput {
   now?: () => Date;
 }
 
+export interface ConversionWarning {
+  ingredientId: string;
+  ingredientName: string;
+  message: string;
+}
+
 export interface RecipeCostSummary {
   totalRecipeCost: number;
   foodCostPercentage: number;
   ingredients: RecipeIngredientCost[];
+  conversionWarnings?: ConversionWarning[];
 }
 
 export interface RecipeIngredientCost {

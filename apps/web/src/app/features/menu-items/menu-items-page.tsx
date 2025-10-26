@@ -26,7 +26,6 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
-import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
 import {
   Table,
@@ -37,7 +36,6 @@ import {
   TableHeadResizable,
   TableRow,
 } from '../../components/ui/table';
-import { cn } from '../../lib/utils';
 import { useIngredients } from '../../hooks/use-ingredients';
 import {
   useDeleteMenuItem,
@@ -154,6 +152,25 @@ export const MenuItemsPage = () => {
   const [catalogCostSummaries, setCatalogCostSummaries] =
     useState<Record<string, RecipeCostSummary>>({});
 
+  // Memoize ingredient cost-relevant fields to trigger recalculation only when costs change
+  // This ensures batch ingredient costs update when nested ingredient prices change
+  const ingredientCostSignature = useMemo(() => {
+    return JSON.stringify(
+      ingredients.map((ing) => ({
+        id: ing.id,
+        unitCost: ing.unitCost,
+        isBatch: ing.isBatch,
+        yield: ing.yield,
+        yieldUnit: ing.yieldUnit,
+        recipeIngredients: ing.recipeIngredients?.map((ri) => ({
+          ingredientId: ri.ingredientId,
+          quantity: ri.quantity,
+          unitOfMeasure: ri.unitOfMeasure,
+        })),
+      })),
+    );
+  }, [ingredients]);
+
   useEffect(() => {
     if (!menuItems.length) {
       setCatalogCostSummaries((current) => (Object.keys(current).length ? {} : current));
@@ -228,7 +245,7 @@ export const MenuItemsPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [businessId, ingredients, menuItems]);
+  }, [businessId, ingredientCostSignature, menuItems]);
 
   const createForm = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),
@@ -252,77 +269,59 @@ export const MenuItemsPage = () => {
   });
   const editRecipes = useFieldArray({ control: editForm.control, name: 'recipes' });
 
+  // Watch all form values for live recalculation
+  const createRecipesData = createForm.watch('recipes');
   const createSellingPrice = createForm.watch('sellingPrice');
 
-  // Calculate recipe cost dynamically by watching individual recipe fields
-  const calculateDynamicRecipeCost = (recipes: typeof createRecipes, form: typeof createForm) => {
-    let totalRecipeCost = 0;
+  // Calculate recipe cost using domain logic
+  const createRecipeCostSummary = useMemo(() => {
+    if (!createRecipesData || !createRecipesData.length) {
+      return { totalRecipeCost: 0, foodCostPercentage: 0, ingredients: [] };
+    }
 
-    recipes.fields.forEach((_, index) => {
-      const ingredientId = form.watch(`recipes.${index}.ingredientId`);
-      const quantity = form.watch(`recipes.${index}.quantity`) || 0;
-      const ingredient = ingredients.find((ing) => ing.id === ingredientId);
+    // Ensure all recipe items have required fields including `id`
+    const validRecipes = createRecipesData.filter(
+      (r) => r.ingredientId && r.quantity > 0 && r.unitOfMeasure
+    ).map((r, index) => ({
+      id: String(index + 1), // Generate id for calculation
+      ingredientId: r.ingredientId,
+      quantity: r.quantity,
+      unitOfMeasure: r.unitOfMeasure
+    }));
 
-      if (ingredient && quantity > 0) {
-        let effectiveUnitCost = ingredient.unitCost;
+    return calculateRecipeCostWithPercentage(
+      validRecipes,
+      ingredients,
+      createSellingPrice
+    );
+  }, [createRecipesData, ingredients, createSellingPrice]);
 
-        // Apply conversion if recipe uses recipe unit
-        const recipeUnit = form.watch(`recipes.${index}.unitOfMeasure`);
-        if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
-          if (recipeUnit === ingredient.recipeUnit) {
-            effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
-          }
-        }
-
-        totalRecipeCost += effectiveUnitCost * quantity;
-      }
-    });
-
-    return {
-      totalRecipeCost,
-      foodCostPercentage: createSellingPrice
-        ? calculateFoodCostPercentage(totalRecipeCost, createSellingPrice)
-        : 0,
-    };
-  };
-
-  const createRecipeCostSummary = calculateDynamicRecipeCost(createRecipes, createForm);
-
+  // Watch all edit form values for live recalculation
+  const editRecipesData = editForm.watch('recipes');
   const editSellingPrice = editForm.watch('sellingPrice');
 
-  // Calculate edit recipe cost dynamically by watching individual recipe fields
-  const calculateDynamicEditRecipeCost = (recipes: typeof editRecipes, form: typeof editForm) => {
-    let totalRecipeCost = 0;
+  // Calculate edit recipe cost using domain logic
+  const editRecipeCostSummary = useMemo(() => {
+    if (!editRecipesData || !editRecipesData.length) {
+      return { totalRecipeCost: 0, foodCostPercentage: 0, ingredients: [] };
+    }
 
-    recipes.fields.forEach((_, index) => {
-      const ingredientId = form.watch(`recipes.${index}.ingredientId`);
-      const quantity = form.watch(`recipes.${index}.quantity`) || 0;
-      const ingredient = ingredients.find((ing) => ing.id === ingredientId);
+    // Ensure all recipe items have required fields including `id`
+    const validRecipes = editRecipesData.filter(
+      (r) => r.ingredientId && r.quantity > 0 && r.unitOfMeasure
+    ).map((r, index) => ({
+      id: String(index + 1), // Generate id for calculation
+      ingredientId: r.ingredientId,
+      quantity: r.quantity,
+      unitOfMeasure: r.unitOfMeasure
+    }));
 
-      if (ingredient && quantity > 0) {
-        let effectiveUnitCost = ingredient.unitCost;
-
-        // Apply conversion if recipe uses recipe unit
-        const recipeUnit = form.watch(`recipes.${index}.unitOfMeasure`);
-        if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
-          if (recipeUnit === ingredient.recipeUnit) {
-            effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
-          }
-        }
-
-        totalRecipeCost += effectiveUnitCost * quantity;
-      }
-    });
-
-    return {
-      totalRecipeCost,
-      foodCostPercentage: editSellingPrice
-        ? calculateFoodCostPercentage(totalRecipeCost, editSellingPrice)
-        : 0,
-    };
-  };
-
-  const editRecipeCostSummary = calculateDynamicEditRecipeCost(editRecipes, editForm);
+    return calculateRecipeCostWithPercentage(
+      validRecipes,
+      ingredients,
+      editSellingPrice
+    );
+  }, [editRecipesData, ingredients, editSellingPrice]);
 
   useEffect(() => {
     if (activeIngredients.length && !createForm.getValues('recipes').length) {
@@ -768,15 +767,25 @@ export const MenuItemsPage = () => {
           </CardFooter>
         </Card>
 
-        <div className="space-y-6 w-full">
-          {isCreating && (
-            <Card>
-            <CardHeader>
-              <CardTitle>Create menu item</CardTitle>
-              <CardDescription>Define an item and its ingredient recipe.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <form className="space-y-4" onSubmit={handleCreate} noValidate>
+        <Dialog open={isCreating} onOpenChange={(open) => !open && setIsCreating(false)}>
+          <DialogContent
+            className="max-h-[85vh] w-[90vw] m-4 max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              setTimeout(() => {
+                const firstInput = document.getElementById('menu-name');
+                if (firstInput) {
+                  firstInput.focus();
+                }
+              }, 0);
+            }}
+          >
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+              <DialogTitle>Create menu item</DialogTitle>
+              <DialogDescription>Define an item and its ingredient recipe.</DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+              <form className="space-y-4" onSubmit={handleCreate} noValidate id="create-menu-item-form">
                 <FormField
                   label="Name"
                   htmlFor="menu-name"
@@ -823,6 +832,18 @@ export const MenuItemsPage = () => {
                       >
                         {formatPercentage(createRecipeCostSummary.foodCostPercentage)}
                       </span>
+                    </div>
+                  )}
+                  {createRecipeCostSummary.conversionWarnings && createRecipeCostSummary.conversionWarnings.length > 0 && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                      <div className="font-medium text-yellow-800 mb-1">⚠️ Unit Conversion Warnings:</div>
+                      <ul className="text-yellow-700 space-y-0.5">
+                        {createRecipeCostSummary.conversionWarnings.map((warning, idx) => (
+                          <li key={idx}>
+                            <strong>{warning.ingredientName}:</strong> {warning.message}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
@@ -874,35 +895,36 @@ export const MenuItemsPage = () => {
                 >
                   Add ingredient
                 </Button>
-
-                <div className="flex items-center justify-between gap-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setIsCreating(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      upsertMenuItemMutation.isPending ||
-                      createForm.formState.isSubmitting ||
-                      !activeIngredients.length
-                    }
-                  >
-                    {upsertMenuItemMutation.isPending ? 'Saving...' : 'Save menu item'}
-                  </Button>
-                </div>
               </form>
-            </CardContent>
-          </Card>
-          )}
-        </div>
+            </div>
+            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCreating(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="create-menu-item-form"
+                size="sm"
+                disabled={
+                  upsertMenuItemMutation.isPending ||
+                  createForm.formState.isSubmitting ||
+                  !activeIngredients.length
+                }
+              >
+                {upsertMenuItemMutation.isPending ? 'Saving...' : 'Save menu item'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!editingMenuItemId} onOpenChange={(open) => !open && setEditingMenuItemId(null)}>
             <DialogContent
-              className="h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none lg:h-auto lg:max-h-[90vh] lg:max-w-4xl lg:rounded-lg flex flex-col gap-0"
+              className="max-h-[85vh] w-[90vw] m-4 max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
               onOpenAutoFocus={(e) => {
                 e.preventDefault();
                 // Allow the dialog to open, then focus the first input
@@ -1008,6 +1030,18 @@ export const MenuItemsPage = () => {
                         </span>
                       </div>
                     )}
+                    {editRecipeCostSummary.conversionWarnings && editRecipeCostSummary.conversionWarnings.length > 0 && (
+                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                        <div className="font-medium text-yellow-800 mb-1">⚠️ Unit Conversion Warnings:</div>
+                        <ul className="text-yellow-700 space-y-0.5">
+                          {editRecipeCostSummary.conversionWarnings.map((warning, idx) => (
+                            <li key={idx}>
+                              <strong>{warning.ingredientName}:</strong> {warning.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                 <div className="overflow-x-auto -mx-6 px-6">
@@ -1083,7 +1117,7 @@ export const MenuItemsPage = () => {
                   </Button>
                 </form>
               </div>
-              <DialogFooter className="flex-shrink-0 px-4 py-3 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-2">
+              <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
                 <Button
                   type="button"
                   variant="ghost"

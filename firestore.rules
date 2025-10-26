@@ -49,6 +49,43 @@ service cloud.firestore {
       return weekStatus(businessId, weekId) == 'finalized';
     }
 
+    // Batch ingredient validation helpers
+    function isValidRecipeIngredient(recipeIngredient) {
+      return recipeIngredient is map &&
+        recipeIngredient.keys().hasAll(['ingredientId', 'quantity', 'unitOfMeasure']) &&
+        recipeIngredient.ingredientId is string &&
+        recipeIngredient.ingredientId.size() > 0 &&
+        recipeIngredient.quantity is number &&
+        recipeIngredient.quantity > 0 &&
+        recipeIngredient.unitOfMeasure is string &&
+        recipeIngredient.unitOfMeasure.size() > 0;
+    }
+
+    function allRecipeIngredientsValid(recipeIngredients) {
+      return recipeIngredients.size() > 0 &&
+        recipeIngredients.toSet().hasOnly(
+          recipeIngredients.map((item) => isValidRecipeIngredient(item))
+        );
+    }
+
+    function isValidBatchIngredient(data) {
+      return data.keys().hasAll(['yield', 'yieldUnit', 'recipeIngredients']) &&
+        data.yield is number &&
+        data.yield > 0 &&
+        data.yieldUnit is string &&
+        data.yieldUnit.size() > 0 &&
+        data.recipeIngredients is list &&
+        data.recipeIngredients.size() > 0;
+    }
+
+    function hasValidBatchFields() {
+      return !request.resource.data.keys().hasAny(['isBatch']) ||
+        !request.resource.data.isBatch ||
+        (isValidBatchIngredient(request.resource.data) &&
+         // Check each recipe ingredient individually
+         request.resource.data.recipeIngredients.map((item) => isValidRecipeIngredient(item)).hasOnly([true]));
+    }
+
     // Global User Profiles (not tenant-scoped)
     match /users/{uid} {
       // Users can read their own profile, owners can read all profiles in their business
@@ -73,7 +110,8 @@ service cloud.firestore {
       // Ingredients + Versions
       match /ingredients/{ingredientId} {
         allow read: if belongsToBusiness(businessId);
-        allow create, update, delete: if belongsToBusiness(businessId) && isOwner();
+        allow create, update: if belongsToBusiness(businessId) && isOwner() && hasValidBatchFields();
+        allow delete: if belongsToBusiness(businessId) && isOwner();
 
         match /versions/{versionId} {
           allow read: if belongsToBusiness(businessId);
