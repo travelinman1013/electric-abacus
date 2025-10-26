@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
+      { find: '@domain/terminology', replacement: path.resolve(__dirname, '../../packages/domain/src/terminology') },
       { find: '@domain', replacement: path.resolve(__dirname, '../../packages/domain/src') },
       {
         find: '@electric/firebase',
