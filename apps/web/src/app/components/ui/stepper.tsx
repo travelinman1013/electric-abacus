@@ -8,8 +8,8 @@ interface StepperProps {
 
 export const Stepper = ({ currentStep, steps }: StepperProps) => {
   return (
-    <nav aria-label="Progress" className="w-full">
-      <ol className="flex items-center justify-center space-x-2 sm:space-x-4">
+    <nav aria-label="Signup progress" className="w-full">
+      <ol className="flex items-center justify-center space-x-2 sm:space-x-4" role="list">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
           const isCompleted = index < currentStep;
@@ -18,7 +18,7 @@ export const Stepper = ({ currentStep, steps }: StepperProps) => {
 
           return (
             <li key={step} className="flex items-center">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 {/* Step circle */}
                 <div
                   className={cn(
@@ -29,6 +29,7 @@ export const Stepper = ({ currentStep, steps }: StepperProps) => {
                     isFuture && 'border-slate-300 bg-background text-slate-400'
                   )}
                   aria-current={isCurrent ? 'step' : undefined}
+                  aria-label={`Step ${stepNumber}: ${step}`}
                 >
                   {isCompleted ? (
                     <Check className="h-4 w-4" aria-label="Completed" />
@@ -37,14 +38,15 @@ export const Stepper = ({ currentStep, steps }: StepperProps) => {
                   )}
                 </div>
 
-                {/* Step label */}
+                {/* Step label - visible on all screen sizes, smaller on mobile */}
                 <span
                   className={cn(
-                    'text-sm font-medium hidden sm:inline',
+                    'text-xs sm:text-sm font-medium',
                     isCompleted && 'text-primary',
                     isCurrent && 'text-primary',
                     isFuture && 'text-slate-400'
                   )}
+                  aria-hidden="true"
                 >
                   {step}
                 </span>

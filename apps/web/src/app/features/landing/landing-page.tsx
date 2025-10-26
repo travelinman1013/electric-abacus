@@ -24,8 +24,9 @@ export const LandingPage = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="mx-auto max-w-7xl px-6 py-20 text-center">
+      <main>
+        {/* Hero Section */}
+        <section className="mx-auto max-w-7xl px-6 py-20 text-center">
         <div className="mx-auto max-w-3xl space-y-6">
           <h1 className="text-5xl font-bold text-slate-900 leading-tight">
             Streamline Your Operations.
@@ -225,6 +226,7 @@ export const LandingPage = () => {
           </div>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-8">

@@ -13,6 +13,12 @@
     "test:unit": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:e2e:tablet": "playwright test --project='iPad' --project='iPad Pro'",
+    "test:e2e:desktop": "playwright test --project='Desktop Small' --project='Desktop Medium' --project='Desktop Large'",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
     "e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "npm run build && firebase deploy --only hosting"

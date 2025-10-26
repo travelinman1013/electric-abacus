@@ -670,6 +670,118 @@ describe('calculateRecipeCost with batch ingredients', () => {
     // Cost should be $6.50 per lb (same as seasoned-beef cost per yield unit)
     expect(result).toBeCloseTo(6.5, 4);
   });
+
+  it('detects and prevents true circular dependencies (A→B→A)', () => {
+    // Create batch A that uses batch B
+    const batchA: Ingredient = {
+      id: 'batch-a',
+      name: 'Batch A',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 2,
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'batch-b', quantity: 1, unitOfMeasure: 'lb' }
+      ]
+    };
+
+    // Create batch B that uses batch A (creating circular dependency)
+    const batchB: Ingredient = {
+      id: 'batch-b',
+      name: 'Batch B',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 2,
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'batch-a', quantity: 1, unitOfMeasure: 'lb' }
+      ]
+    };
+
+    const circularIngredients = [batchA, batchB];
+
+    // Should return 0 and not cause infinite recursion
+    const resultA = calculateBatchIngredientCost(batchA, circularIngredients);
+    const resultB = calculateBatchIngredientCost(batchB, circularIngredients);
+
+    expect(resultA).toBe(0);
+    expect(resultB).toBe(0);
+  });
+
+  it('handles deep nesting without circular dependencies', () => {
+    // Create a chain: level1 → level2 → level3 → ground-beef
+    const groundBeef = allIngredients.find((i) => i.id === 'ground-beef');
+    if (!groundBeef) throw new Error('Test setup error: ground-beef not found');
+
+    const level3: Ingredient = {
+      id: 'level3',
+      name: 'Level 3 Batch',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 1,
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'ground-beef', quantity: 1, unitOfMeasure: 'lb' }
+      ]
+    };
+
+    const level2: Ingredient = {
+      id: 'level2',
+      name: 'Level 2 Batch',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 1,
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'level3', quantity: 1, unitOfMeasure: 'lb' }
+      ]
+    };
+
+    const level1: Ingredient = {
+      id: 'level1',
+      name: 'Level 1 Batch',
+      inventoryUnit: 'lb',
+      unitsPerCase: 1,
+      casePrice: 0,
+      unitCost: 0,
+      category: 'food',
+      isActive: true,
+      isBatch: true,
+      yield: 1,
+      yieldUnit: 'lb',
+      recipeIngredients: [
+        { id: '1', ingredientId: 'level2', quantity: 1, unitOfMeasure: 'lb' }
+      ]
+    };
+
+    const deepIngredients = [...allIngredients, level1, level2, level3];
+
+    // Should calculate correctly through 3 levels
+    const result = calculateBatchIngredientCost(level1, deepIngredients);
+
+    // Cost should propagate: ground-beef is $5.00/lb, so all levels should be $5.00/lb with yield of 1
+    expect(result).toBeCloseTo(5.0, 4);
+  });
 });
 
 describe('calculateGrossProfit', () => {

@@ -139,8 +139,8 @@ export const SignupPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-slate-100 px-4 py-8">
-      <div className="w-full max-w-2xl space-y-6 rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-slate-100 px-2 sm:px-4 py-8">
+      <div className="w-full max-w-full sm:max-w-2xl space-y-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-8 shadow-lg">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold text-slate-900">Create Your Account</h1>
           <p className="text-sm text-slate-500">
@@ -422,6 +422,6 @@ export const SignupPage = () => {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 };

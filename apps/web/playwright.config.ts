@@ -22,10 +22,17 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Capture screenshot on failure for debugging */
+    screenshot: 'only-on-failure',
+
+    /* Capture video on failure for debugging */
+    video: 'retain-on-failure',
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for major browsers and viewports */
   projects: [
+    // Desktop browsers (default viewport)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
@@ -41,17 +48,56 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    // Mobile viewports
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
 
-    /* Test against branded browsers. */
+    // Tablet viewports
+    {
+      name: 'iPad',
+      use: {
+        ...devices['iPad (gen 7)'],
+        viewport: { width: 768, height: 1024 },
+      },
+    },
+    {
+      name: 'iPad Pro',
+      use: {
+        ...devices['iPad Pro 11'],
+        viewport: { width: 1024, height: 1366 },
+      },
+    },
+
+    // Custom desktop viewports for comprehensive coverage
+    {
+      name: 'Desktop Small',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+      },
+    },
+    {
+      name: 'Desktop Medium',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'Desktop Large',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+
+    /* Test against branded browsers (optional, uncomment if needed) */
     // {
     //   name: 'Microsoft Edge',
     //   use: { ...devices['Desktop Edge'], channel: 'msedge' },

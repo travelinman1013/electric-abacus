@@ -26,7 +26,6 @@ import {
   DialogTitle
 } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
-import { NumberInput } from '../../components/ui/number-input';
 import { Select } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { cn } from '../../lib/utils';
@@ -307,7 +306,8 @@ export const IngredientsPage = () => {
       const error = errors[index];
       return (
         <TableRow key={field.id ?? index}>
-          <TableCell className="font-medium align-middle min-w-[140px]">
+          {/* Ingredient column - auto width from colgroup */}
+          <TableCell className="font-medium align-middle">
             <Select className="w-full text-sm" {...form.register(`recipeIngredients.${index}.ingredientId` as const)}>
               <option value="">Select</option>
               {ingredientsList.map((ingredient) => (
@@ -320,29 +320,31 @@ export const IngredientsPage = () => {
               <p className="text-destructive text-xs mt-1">{error.ingredientId.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="align-middle text-right">
-            <NumberInput
-              className="text-right"
-              inputClassName="text-base text-right"
-              increment={0.25}
+          {/* Quantity column - 90px from colgroup */}
+          <TableCell className="align-middle px-2">
+            <Input
+              type="number"
+              step="0.25"
               min={0}
-              value={form.watch(`recipeIngredients.${index}.quantity`) || 0}
-              onChange={(value) => form.setValue(`recipeIngredients.${index}.quantity`, value)}
+              className="w-full text-center text-sm px-2"
+              {...form.register(`recipeIngredients.${index}.quantity`, { valueAsNumber: true })}
             />
             {error?.quantity?.message ? (
-              <p className="text-destructive text-xs mt-1">{error.quantity.message}</p>
+              <p className="text-destructive text-xs mt-1 text-center">{error.quantity.message}</p>
             ) : null}
           </TableCell>
-          <TableCell className="align-middle">
+          {/* Unit column - 100px from colgroup */}
+          <TableCell className="align-middle px-2">
             <Input
-              className="w-[90px] text-right text-sm bg-slate-50 cursor-not-allowed"
+              className="w-full text-center text-sm bg-slate-50 cursor-not-allowed px-2"
               readOnly
               {...form.register(`recipeIngredients.${index}.unitOfMeasure` as const)}
             />
             {error?.unitOfMeasure?.message ? (
-              <p className="text-destructive text-xs mt-1">{error.unitOfMeasure.message}</p>
+              <p className="text-destructive text-xs mt-1 text-center">{error.unitOfMeasure.message}</p>
             ) : null}
           </TableCell>
+          {/* Line Cost column - 100px from colgroup */}
           <TableCell className="text-right font-medium align-middle">
             {(() => {
               const ingredientId = form.watch(`recipeIngredients.${index}.ingredientId`);
@@ -350,22 +352,22 @@ export const IngredientsPage = () => {
               const quantity = form.watch(`recipeIngredients.${index}.quantity`) || 0;
               const recipeUnit = form.watch(`recipeIngredients.${index}.unitOfMeasure`);
 
-              if (ingredient && quantity > 0) {
-                let effectiveUnitCost = ingredient.unitCost;
-
-                // Apply conversion if recipe uses recipe unit
-                if (ingredient.recipeUnit && ingredient.conversionFactor && ingredient.conversionFactor > 0) {
-                  if (recipeUnit === ingredient.recipeUnit) {
-                    effectiveUnitCost = ingredient.unitCost / ingredient.conversionFactor;
-                  }
-                }
-
-                return formatCurrency(effectiveUnitCost * quantity);
+              if (ingredient && quantity > 0 && recipeUnit) {
+                // Use domain calculateRecipeCost for accurate calculation including batch ingredients
+                const singleRecipe = [{
+                  id: '1',
+                  ingredientId,
+                  quantity,
+                  unitOfMeasure: recipeUnit
+                }];
+                const costSummary = calculateRecipeCost(singleRecipe, ingredientsList);
+                return formatCurrency(costSummary.totalRecipeCost);
               }
               return '—';
             })()}
           </TableCell>
-          <TableCell className="w-[1%] whitespace-nowrap text-right align-middle">
+          {/* Remove column - 120px from colgroup */}
+          <TableCell className="whitespace-nowrap text-right align-middle">
             <Button
               type="button"
               size="sm"
@@ -590,15 +592,25 @@ export const IngredientsPage = () => {
           </CardFooter>
         </Card>
 
-        <div className="space-y-6">
-          {isCreating && (
-            <Card>
-            <CardHeader>
-              <CardTitle>Create ingredient</CardTitle>
-              <CardDescription>Add new cost inputs to the catalog.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={(e) => void handleCreate(e)} noValidate>
+        <Dialog open={isCreating} onOpenChange={(open) => !open && setIsCreating(false)}>
+          <DialogContent
+            className="max-h-[85vh] w-[90vw] m-4 max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              setTimeout(() => {
+                const firstInput = document.getElementById('new-name');
+                if (firstInput) {
+                  firstInput.focus();
+                }
+              }, 0);
+            }}
+          >
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+              <DialogTitle>Create ingredient</DialogTitle>
+              <DialogDescription>Add new cost inputs to the catalog.</DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+              <form className="space-y-4" onSubmit={(e) => void handleCreate(e)} noValidate id="create-ingredient-form">
                 {formError && !editingIngredientId ? (
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     {formError}
@@ -657,18 +669,21 @@ export const IngredientsPage = () => {
                   </Select>
                 </FormField>
 
-                <FormField
-                  label="Conversion Factor"
-                  htmlFor="new-conversion-factor"
-                  description="Automatically calculated when inventory and recipe units are compatible"
-                >
-                  <div
-                    id="new-conversion-factor"
-                    className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
+                {/* Hide conversion factor for batch ingredients */}
+                {!createForm.watch('isBatch') && (
+                  <FormField
+                    label="Conversion Factor"
+                    htmlFor="new-conversion-factor"
+                    description="Automatically calculated when inventory and recipe units are compatible"
                   >
-                    {formatConversionFactor(createForm.watch('inventoryUnit'), createForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
-                  </div>
-                </FormField>
+                    <div
+                      id="new-conversion-factor"
+                      className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
+                    >
+                      {formatConversionFactor(createForm.watch('inventoryUnit'), createForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
+                    </div>
+                  </FormField>
+                )}
 
                 <FormField
                   label="Category"
@@ -765,14 +780,21 @@ export const IngredientsPage = () => {
                           Add Ingredient
                         </Button>
                       </div>
-                      <Table className="min-w-full text-xs sm:text-sm">
+                      <Table className="w-full text-xs">
+                        <colgroup>
+                          <col />
+                          <col style={{ width: '90px' }} />
+                          <col style={{ width: '100px' }} />
+                          <col style={{ width: '100px' }} />
+                          <col style={{ width: '120px' }} />
+                        </colgroup>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-auto min-w-[140px]">Ingredient</TableHead>
-                            <TableHead className="w-24 text-right">Quantity</TableHead>
-                            <TableHead className="w-20 text-right">Unit</TableHead>
-                            <TableHead className="w-24 text-right">Line Cost</TableHead>
-                            <TableHead className="w-16 text-right">Actions</TableHead>
+                            <TableHead>Ingredient</TableHead>
+                            <TableHead className="text-right">Quantity</TableHead>
+                            <TableHead className="text-right">Unit</TableHead>
+                            <TableHead className="text-right">Line Cost</TableHead>
+                            <TableHead className="text-right"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -817,35 +839,49 @@ export const IngredientsPage = () => {
                   </>
                 )}
 
-                <div className="flex items-center justify-between gap-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setIsCreating(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createIngredientMutation.isPending || createForm.formState.isSubmitting}
-                  >
-                    {createIngredientMutation.isPending ? 'Creating...' : 'Add ingredient'}
-                  </Button>
-                </div>
               </form>
-            </CardContent>
-          </Card>
-          )}
+            </div>
+            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCreating(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="create-ingredient-form"
+                size="sm"
+                disabled={createIngredientMutation.isPending || createForm.formState.isSubmitting}
+              >
+                {createIngredientMutation.isPending ? 'Creating...' : 'Add ingredient'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          {editingIngredientId ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Edit ingredient</CardTitle>
-                <CardDescription>
-                  Update pricing or pack sizes to spawn a new cost version.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <Dialog open={!!editingIngredientId} onOpenChange={(open) => !open && setEditingIngredientId(null)}>
+          <DialogContent
+            className="max-h-[85vh] w-[90vw] m-4 max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              setTimeout(() => {
+                const firstInput = document.getElementById('edit-name');
+                if (firstInput) {
+                  firstInput.focus();
+                }
+              }, 0);
+            }}
+          >
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+              <DialogTitle>Edit ingredient</DialogTitle>
+              <DialogDescription>
+                Update pricing or pack sizes to spawn a new cost version.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0 space-y-4">
                 {formError && editingIngredientId ? (
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     {formError}
@@ -857,7 +893,7 @@ export const IngredientsPage = () => {
                   </div>
                 ) : null}
 
-                <form className="space-y-4" onSubmit={(e) => void handleUpdate(e)} noValidate>
+                <form className="space-y-4" onSubmit={(e) => void handleUpdate(e)} noValidate id="edit-ingredient-form">
                   <FormField
                     label="Name"
                     htmlFor="edit-name"
@@ -905,18 +941,21 @@ export const IngredientsPage = () => {
                     </Select>
                   </FormField>
 
-                  <FormField
-                    label="Conversion Factor"
-                    htmlFor="edit-conversion-factor"
-                    description="Automatically calculated when inventory and recipe units are compatible"
-                  >
-                    <div
-                      id="edit-conversion-factor"
-                      className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
+                  {/* Hide conversion factor for batch ingredients */}
+                  {!editForm.watch('isBatch') && (
+                    <FormField
+                      label="Conversion Factor"
+                      htmlFor="edit-conversion-factor"
+                      description="Automatically calculated when inventory and recipe units are compatible"
                     >
-                      {formatConversionFactor(editForm.watch('inventoryUnit'), editForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
-                    </div>
-                  </FormField>
+                      <div
+                        id="edit-conversion-factor"
+                        className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
+                      >
+                        {formatConversionFactor(editForm.watch('inventoryUnit'), editForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
+                      </div>
+                    </FormField>
+                  )}
 
                   <FormField
                     label="Category"
@@ -1000,12 +1039,13 @@ export const IngredientsPage = () => {
                         </FormField>
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium">Recipe Ingredients</label>
+                      <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-slate-700">Recipe Ingredients</h4>
                           <Button
                             type="button"
                             size="sm"
+                            variant="outline"
                             onClick={() => handleAddRecipeIngredient(editRecipeIngredients)}
                             disabled={editRecipeIngredients.fields.length >= availableForBatch.length}
                           >
@@ -1014,15 +1054,21 @@ export const IngredientsPage = () => {
                         </div>
 
                         {editRecipeIngredients.fields.length > 0 && (
-                          <Table>
+                          <Table className="w-full text-xs">
+                            <colgroup>
+                              <col />
+                              <col style={{ width: '90px' }} />
+                              <col style={{ width: '100px' }} />
+                              <col style={{ width: '100px' }} />
+                              <col style={{ width: '120px' }} />
+                            </colgroup>
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Ingredient</TableHead>
                                 <TableHead className="text-right">Quantity</TableHead>
-                                <TableHead>Unit</TableHead>
-                                <TableHead className="text-right">Unit Cost</TableHead>
-                                <TableHead className="text-right">Line Total</TableHead>
-                                <TableHead className="w-10"></TableHead>
+                                <TableHead className="text-right">Unit</TableHead>
+                                <TableHead className="text-right">Line Cost</TableHead>
+                                <TableHead className="text-right"></TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1074,20 +1120,6 @@ export const IngredientsPage = () => {
                     )}
                     .
                   </div>
-
-                  <div className="flex items-center justify-between gap-3">
-                    <Button type="button" variant="ghost" onClick={() => setEditingIngredientId(null)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={
-                        editForm.formState.isSubmitting || updateIngredientMutation.isPending || isLoading
-                      }
-                    >
-                      {updateIngredientMutation.isPending ? 'Saving...' : 'Save changes'}
-                    </Button>
-                  </div>
                 </form>
 
                 <div className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
@@ -1109,10 +1141,29 @@ export const IngredientsPage = () => {
                     <p className="text-slate-500">No versions recorded yet.</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
+            </div>
+            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingIngredientId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="edit-ingredient-form"
+                size="sm"
+                disabled={
+                  editForm.formState.isSubmitting || updateIngredientMutation.isPending || isLoading
+                }
+              >
+                {updateIngredientMutation.isPending ? 'Saving...' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Dialog open={Boolean(deletingIngredientId)} onOpenChange={(open) => !open && setDeletingIngredientId(null)}>
