@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type {
-  ThemeName,
+  ThemeMode,
+  BaseColor,
   TableDensity,
   CurrencySymbol,
   DecimalPrecision,
@@ -12,11 +13,29 @@ import type {
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
-import { Select } from '../../components/ui/select';
+import { NativeSelect as Select } from '../../components/ui/native-select';
 import { Input } from '../../components/ui/input';
 import { usePreferences } from '../../providers/preferences-provider';
 import { useAuthContext } from '../../providers/auth-provider';
-import { THEME_OPTIONS, THEMES } from '../../../constants/themes';
+
+const BASE_COLOR_OPTIONS: Array<{ value: BaseColor; label: string; description: string }> = [
+  { value: 'slate', label: 'Slate', description: 'Cool and professional blue-gray tones' },
+  { value: 'gray', label: 'Gray', description: 'True neutral gray palette' },
+  { value: 'zinc', label: 'Zinc', description: 'Modern and refined cool gray' },
+  { value: 'neutral', label: 'Neutral', description: 'Warm neutral tones' },
+  { value: 'stone', label: 'Stone', description: 'Earthy and organic brown-gray' },
+  { value: 'blue', label: 'Blue', description: 'Ocean and sky inspired tones' },
+  { value: 'green', label: 'Green', description: 'Fresh and natural forest tones' },
+  { value: 'violet', label: 'Violet', description: 'Rich purple and lavender hues' },
+  { value: 'rose', label: 'Rose', description: 'Warm pink and rose tones' },
+  { value: 'orange', label: 'Orange', description: 'Energetic and vibrant warm tones' },
+];
+
+const MODE_OPTIONS: Array<{ value: ThemeMode; label: string; icon: string }> = [
+  { value: 'light', label: 'Light', icon: '☀️' },
+  { value: 'dark', label: 'Dark', icon: '🌙' },
+  { value: 'system', label: 'System', icon: '💻' },
+];
 
 export const UserSettingsPage = () => {
   const { user, profile } = useAuthContext();
@@ -25,23 +44,40 @@ export const UserSettingsPage = () => {
     null
   );
 
-  const handleThemeChange = async (theme: ThemeName) => {
+  const showSuccess = (message: string) => {
+    setSaveMessage({ type: 'success', message });
+    setTimeout(() => setSaveMessage(null), 3000);
+  };
+
+  const showError = (message: string) => {
+    setSaveMessage({ type: 'error', message });
+    setTimeout(() => setSaveMessage(null), 3000);
+  };
+
+  const handleModeChange = async (mode: ThemeMode) => {
     try {
-      await updatePreferences({ theme });
-      setSaveMessage({ type: 'success', message: 'Theme updated' });
-      setTimeout(() => setSaveMessage(null), 3000);
+      await updatePreferences({ mode });
+      showSuccess('Theme mode updated');
     } catch (error) {
-      setSaveMessage({ type: 'error', message: 'Failed to update theme' });
+      showError('Failed to update theme mode');
+    }
+  };
+
+  const handleBaseColorChange = async (baseColor: BaseColor) => {
+    try {
+      await updatePreferences({ baseColor });
+      showSuccess('Theme color updated');
+    } catch (error) {
+      showError('Failed to update theme color');
     }
   };
 
   const handleDensityChange = async (density: TableDensity) => {
     try {
       await updatePreferences({ tableDensity: density });
-      setSaveMessage({ type: 'success', message: 'Table density updated' });
-      setTimeout(() => setSaveMessage(null), 3000);
+      showSuccess('Table density updated');
     } catch (error) {
-      setSaveMessage({ type: 'error', message: 'Failed to update density' });
+      showError('Failed to update density');
     }
   };
 
@@ -56,20 +92,18 @@ export const UserSettingsPage = () => {
           [field]: value,
         },
       });
-      setSaveMessage({ type: 'success', message: 'Number format updated' });
-      setTimeout(() => setSaveMessage(null), 3000);
+      showSuccess('Number format updated');
     } catch (error) {
-      setSaveMessage({ type: 'error', message: 'Failed to update number format' });
+      showError('Failed to update number format');
     }
   };
 
   const handleStartPageChange = async (startPage: AppStartPage) => {
     try {
       await updatePreferences({ defaultStartPage: startPage });
-      setSaveMessage({ type: 'success', message: 'Start page updated' });
-      setTimeout(() => setSaveMessage(null), 3000);
+      showSuccess('Start page updated');
     } catch (error) {
-      setSaveMessage({ type: 'error', message: 'Failed to update start page' });
+      showError('Failed to update start page');
     }
   };
 
@@ -84,10 +118,9 @@ export const UserSettingsPage = () => {
           [field]: value,
         },
       });
-      setSaveMessage({ type: 'success', message: 'Notification settings updated' });
-      setTimeout(() => setSaveMessage(null), 3000);
+      showSuccess('Notification settings updated');
     } catch (error) {
-      setSaveMessage({ type: 'error', message: 'Failed to update notifications' });
+      showError('Failed to update notifications');
     }
   };
 
@@ -95,10 +128,9 @@ export const UserSettingsPage = () => {
     if (confirm('Are you sure you want to reset all preferences to defaults?')) {
       try {
         await resetPreferences();
-        setSaveMessage({ type: 'success', message: 'Preferences reset to defaults' });
-        setTimeout(() => setSaveMessage(null), 3000);
+        showSuccess('Preferences reset to defaults');
       } catch (error) {
-        setSaveMessage({ type: 'error', message: 'Failed to reset preferences' });
+        showError('Failed to reset preferences');
       }
     }
   };
@@ -126,8 +158,8 @@ export const UserSettingsPage = () => {
   return (
     <div className="space-y-8 max-w-4xl">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">Settings</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-3xl font-semibold">Settings</h1>
+        <p className="text-sm text-muted-foreground">
           Customize your Electric Abacus experience with themes, formatting, and preferences.
         </p>
       </header>
@@ -136,8 +168,8 @@ export const UserSettingsPage = () => {
         <div
           className={
             saveMessage.type === 'success'
-              ? 'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700'
-              : 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
+              ? 'rounded-md border border-success bg-success/10 px-3 py-2 text-sm text-success-foreground'
+              : 'rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive'
           }
         >
           {saveMessage.message}
@@ -152,16 +184,16 @@ export const UserSettingsPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-sm font-medium text-slate-700">Name</Label>
-            <p className="text-sm text-slate-900 mt-1">{profile?.displayName || 'N/A'}</p>
+            <Label className="text-sm font-medium">Name</Label>
+            <p className="text-sm mt-1">{profile?.displayName || 'N/A'}</p>
           </div>
           <div>
-            <Label className="text-sm font-medium text-slate-700">Email</Label>
-            <p className="text-sm text-slate-900 mt-1">{user?.email || 'N/A'}</p>
+            <Label className="text-sm font-medium">Email</Label>
+            <p className="text-sm mt-1">{user?.email || 'N/A'}</p>
           </div>
           <div>
-            <Label className="text-sm font-medium text-slate-700">Role</Label>
-            <p className="text-sm text-slate-900 mt-1 capitalize">{profile?.role || 'N/A'}</p>
+            <Label className="text-sm font-medium">Role</Label>
+            <p className="text-sm mt-1 capitalize">{profile?.role || 'N/A'}</p>
           </div>
         </CardContent>
       </Card>
@@ -176,7 +208,7 @@ export const UserSettingsPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Change how ingredients, menu items, and other business entities are labeled in your
               workspace. For example, change "Ingredients" to "Products" or "Menu Items" to "Dishes".
             </p>
@@ -187,59 +219,67 @@ export const UserSettingsPage = () => {
         </Card>
       )}
 
-      {/* Theme Selection */}
+      {/* Theme Selection - shadcn Standard */}
       <Card>
         <CardHeader>
-          <CardTitle>Theme</CardTitle>
-          <CardDescription>Choose a color theme for your workspace</CardDescription>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Customize the look and feel of the interface</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {THEME_OPTIONS.map((option) => {
-              const theme = THEMES[option.value];
-              const isSelected = preferences.theme === option.value;
-
-              return (
+        <CardContent className="space-y-6">
+          {/* Mode Selector (Light/Dark/System) */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Theme Mode</Label>
+            <div className="grid grid-cols-3 gap-3">
+              {MODE_OPTIONS.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => handleThemeChange(option.value)}
-                  className={`relative rounded-lg border-2 p-4 text-left transition-all hover:border-primary/50 ${
-                    isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-slate-200'
+                  onClick={() => handleModeChange(option.value)}
+                  className={`flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all hover:border-primary/50 ${
+                    preferences.mode === option.value
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                      : 'border-border'
                   }`}
                 >
-                  {isSelected && (
-                    <div className="absolute top-2 right-2">
-                      <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      {/* Color swatches */}
-                      <div
-                        className="w-8 h-8 rounded"
-                        style={{ backgroundColor: `hsl(${theme.colors.primary})` }}
-                      />
-                      <div
-                        className="w-8 h-8 rounded"
-                        style={{ backgroundColor: `hsl(${theme.colors.secondary})` }}
-                      />
-                      <div
-                        className="w-8 h-8 rounded"
-                        style={{ backgroundColor: `hsl(${theme.colors.accent})` }}
-                      />
-                    </div>
-                    <h3 className="font-semibold text-slate-900">{option.label}</h3>
-                    <p className="text-xs text-slate-500">{option.description}</p>
-                  </div>
+                  <span className="text-lg">{option.icon}</span>
+                  <span>{option.label}</span>
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          {/* Base Color Selector */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Color Theme</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {BASE_COLOR_OPTIONS.map((option) => {
+                const isSelected = preferences.baseColor === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => handleBaseColorChange(option.value)}
+                    className={`relative rounded-lg border-2 p-4 text-left transition-all hover:border-primary/50 ${
+                      isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <h3 className="font-semibold">{option.label}</h3>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -261,14 +301,14 @@ export const UserSettingsPage = () => {
                 className={`rounded-lg border-2 p-4 text-center transition-all capitalize hover:border-primary/50 ${
                   preferences.tableDensity === density
                     ? 'border-primary bg-primary/5'
-                    : 'border-slate-200'
+                    : 'border-border'
                 }`}
               >
                 {density}
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Current: <span className="font-medium capitalize">{preferences.tableDensity}</span>
           </p>
         </CardContent>
@@ -330,9 +370,9 @@ export const UserSettingsPage = () => {
             </div>
           </div>
 
-          <div className="rounded-md bg-slate-50 p-3 border border-slate-200">
-            <p className="text-xs text-slate-600 mb-1">Example:</p>
-            <p className="text-lg font-mono font-semibold text-slate-900">{formatExample(12345.67)}</p>
+          <div className="rounded-md bg-muted p-3 border">
+            <p className="text-xs text-muted-foreground mb-1">Example:</p>
+            <p className="text-lg font-mono font-semibold">{formatExample(12345.67)}</p>
           </div>
         </CardContent>
       </Card>
@@ -383,7 +423,7 @@ export const UserSettingsPage = () => {
                 handleNotificationChange('foodCostWarningThreshold', Number(e.target.value))
               }
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Show warnings when food cost percentage exceeds this threshold (current:{' '}
               {preferences.notifications.foodCostWarningThreshold}%)
             </p>
@@ -402,7 +442,7 @@ export const UserSettingsPage = () => {
                 handleNotificationChange('successToastDuration', Number(e.target.value) * 1000)
               }
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               How long success messages display before auto-dismissing (current:{' '}
               {preferences.notifications.successToastDuration / 1000}s)
             </p>
@@ -411,13 +451,17 @@ export const UserSettingsPage = () => {
       </Card>
 
       {/* Reset Section */}
-      <Card className="border-slate-300">
+      <Card className="border-destructive/30">
         <CardHeader>
           <CardTitle>Reset Preferences</CardTitle>
           <CardDescription>Restore all settings to their default values</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" onClick={handleReset} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+          >
             Reset All Preferences
           </Button>
         </CardContent>

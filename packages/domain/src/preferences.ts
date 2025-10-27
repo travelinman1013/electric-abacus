@@ -2,54 +2,30 @@
  * User preferences and theming types for Electric Abacus
  *
  * Supports 6 key preference categories:
- * 1. Theme selection
+ * 1. Theme selection (mode + base color)
  * 2. Table density
  * 3. Currency & number formatting
  * 4. Column width persistence
  * 5. Default start page
  * 6. Notification preferences
+ *
+ * Theme system uses shadcn/ui standard:
+ * - Mode: light/dark/system
+ * - Base Color: zinc/slate/stone/gray/neutral
  */
 
-export type ThemeName =
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+export type BaseColor = 'zinc' | 'slate' | 'stone' | 'gray' | 'neutral' | 'blue' | 'green' | 'violet' | 'rose' | 'orange';
+
+// Legacy type for migration compatibility
+export type LegacyThemeName =
   | 'default'
   | 'ocean-blue'
   | 'forest-green'
   | 'professional-gray'
-  | 'high-contrast';
-
-export interface ThemeDefinition {
-  name: ThemeName;
-  displayName: string;
-  description: string;
-  colors: {
-    // Core colors
-    primary: string;
-    primaryForeground: string;
-    secondary: string;
-    secondaryForeground: string;
-
-    // UI colors
-    background: string;
-    foreground: string;
-    border: string;
-    input: string;
-    ring: string;
-
-    // State colors
-    destructive: string;
-    destructiveForeground: string;
-    muted: string;
-    mutedForeground: string;
-    accent: string;
-    accentForeground: string;
-
-    // Surface colors
-    popover: string;
-    popoverForeground: string;
-    card: string;
-    cardForeground: string;
-  };
-}
+  | 'high-contrast'
+  | 'vibrant-purple';
 
 export type TableDensity = 'compact' | 'comfortable' | 'spacious';
 
@@ -107,8 +83,9 @@ export interface NotificationPreferences {
 }
 
 export interface UserPreferences {
-  // 1. Theme selection
-  theme: ThemeName;
+  // 1. Theme selection (mode + base color)
+  mode: ThemeMode;
+  baseColor: BaseColor;
 
   // 2. Table density
   tableDensity: TableDensity;
@@ -131,7 +108,8 @@ export interface UserPreferences {
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
-  theme: 'default',
+  mode: 'system',
+  baseColor: 'slate',
   tableDensity: 'comfortable',
   numberFormat: {
     currency: '$',
@@ -165,6 +143,28 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   },
   version: 1,
 };
+
+/**
+ * Helper to migrate legacy theme names to new mode + baseColor structure
+ */
+export function migrateLegacyTheme(legacyTheme: LegacyThemeName): {
+  mode: ThemeMode;
+  baseColor: BaseColor;
+} {
+  const migrations: Record<
+    LegacyThemeName,
+    { mode: ThemeMode; baseColor: BaseColor }
+  > = {
+    default: { mode: 'light', baseColor: 'slate' },
+    'ocean-blue': { mode: 'light', baseColor: 'slate' },
+    'forest-green': { mode: 'light', baseColor: 'stone' },
+    'professional-gray': { mode: 'light', baseColor: 'gray' },
+    'high-contrast': { mode: 'light', baseColor: 'zinc' },
+    'vibrant-purple': { mode: 'light', baseColor: 'slate' },
+  };
+
+  return migrations[legacyTheme] || { mode: 'system', baseColor: 'slate' };
+}
 
 export const TABLE_DENSITY_CONFIGS: Record<TableDensity, TableDensityConfig> = {
   compact: {

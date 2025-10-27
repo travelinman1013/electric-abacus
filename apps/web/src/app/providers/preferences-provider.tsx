@@ -8,47 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import type { UserPreferences } from '@domain/preferences';
+import type { UserPreferences, ThemeMode, BaseColor, LegacyThemeName } from '@domain/preferences';
+import { DEFAULT_USER_PREFERENCES, migrateLegacyTheme } from '@domain/preferences';
 import { getClientFirestore } from '@electric/firebase';
 import { useAuthContext } from './auth-provider';
-import { applyTheme } from '../../constants/themes';
-
-// Default preferences defined locally to avoid module resolution issues
-const DEFAULT_USER_PREFERENCES: UserPreferences = {
-  theme: 'default',
-  tableDensity: 'comfortable',
-  numberFormat: {
-    currency: '$',
-    decimals: 2,
-    thousandsSeparator: 'comma',
-  },
-  columns: {
-    widths: {
-      menuItems: {},
-      ingredients: {},
-      inventory: {},
-      sales: {},
-      weeks: {},
-      review: {},
-    },
-    lockStates: {
-      menuItems: false,
-      ingredients: false,
-      inventory: false,
-      sales: false,
-      weeks: false,
-      review: false,
-    },
-  },
-  defaultStartPage: '/app/weeks',
-  notifications: {
-    foodCostWarningThreshold: 35,
-    successToastDuration: 3000,
-    lowInventoryAlerts: false,
-    weekFinalizationReminders: false,
-  },
-  version: 1,
-};
 
 const PREFERENCES_STORAGE_KEY = 'electric-abacus-preferences';
 const DEBOUNCE_DELAY = 1000; // 1 second debounce for Firestore writes
@@ -67,6 +30,76 @@ interface PreferencesProviderProps {
 }
 
 /**
+ * Helper to detect system theme preference
+ */
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+/**
+ * Apply theme by setting CSS classes on HTML element
+ * This is the shadcn standard approach - no JavaScript style manipulation
+ */
+function applyThemeClasses(mode: ThemeMode, baseColor: BaseColor): void {
+  if (typeof window === 'undefined') return;
+
+  const root = document.documentElement;
+  const systemTheme = getSystemTheme();
+  const effectiveMode = mode === 'system' ? systemTheme : mode;
+
+  console.log(`🎨 Applying theme: mode=${mode} (effective: ${effectiveMode}), baseColor=${baseColor}`);
+
+  // Remove all theme-related classes
+  root.classList.remove('light', 'dark');
+  root.classList.remove('theme-zinc', 'theme-slate', 'theme-stone', 'theme-gray', 'theme-neutral', 'theme-blue', 'theme-green', 'theme-violet', 'theme-rose', 'theme-orange');
+
+  // Apply mode class (light/dark)
+  root.classList.add(effectiveMode);
+
+  // Apply base color theme class
+  root.classList.add(`theme-${baseColor}`);
+
+  // Set data attribute for debugging
+  root.setAttribute('data-mode', mode);
+  root.setAttribute('data-base-color', baseColor);
+
+  console.log(`✅ Theme applied. HTML classes: ${root.classList.toString()}`);
+}
+
+/**
+ * Migrate legacy theme-based preferences to new mode + baseColor structure
+ */
+function migrateLegacyPreferences(stored: any): UserPreferences {
+  // Check if this is legacy format (has 'theme' property but not 'mode')
+  if (stored.theme && !stored.mode) {
+    const legacyTheme = stored.theme as LegacyThemeName;
+    const { mode, baseColor } = migrateLegacyTheme(legacyTheme);
+
+    console.log(`📦 Migrating legacy theme "${legacyTheme}" → mode: ${mode}, baseColor: ${baseColor}`);
+
+    // Create a copy without the theme property (Firestore doesn't allow undefined)
+    const { theme, ...storedWithoutTheme } = stored;
+
+    // Return migrated preferences
+    return {
+      ...DEFAULT_USER_PREFERENCES,
+      ...storedWithoutTheme,
+      mode,
+      baseColor,
+    };
+  }
+
+  // Already in new format - but make sure there's no theme property
+  if (stored.theme !== undefined) {
+    const { theme, ...storedWithoutTheme } = stored;
+    return storedWithoutTheme;
+  }
+
+  return stored;
+}
+
+/**
  * PreferencesProvider manages user preferences with a multi-layer caching strategy:
  *
  * 1. Memory: In-memory state for fast access during session
@@ -82,6 +115,11 @@ interface PreferencesProviderProps {
  * - On mount, load from localStorage for instant UI
  * - Then fetch from Firestore to get latest cross-device state
  * - Apply theme immediately when preferences load
+ *
+ * Theming:
+ * - Uses shadcn standard: CSS classes only (no JavaScript style manipulation)
+ * - Mode: light/dark/system
+ * - Base Color: zinc/slate/stone/gray/neutral
  */
 export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
   const { user } = useAuthContext();
@@ -91,27 +129,42 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
       try {
         const stored = localStorage.getItem(PREFERENCES_STORAGE_KEY);
         if (stored) {
-          const parsed = JSON.parse(stored) as UserPreferences;
+          const parsed = JSON.parse(stored);
+          const migrated = migrateLegacyPreferences(parsed);
           // Apply theme immediately on load
-          applyTheme(parsed.theme);
-          return parsed;
+          applyThemeClasses(migrated.mode, migrated.baseColor);
+          return migrated;
         }
       } catch (error) {
         console.warn('Failed to load preferences from localStorage:', error);
       }
     }
     // Fallback to default and apply default theme
-    applyTheme(DEFAULT_USER_PREFERENCES.theme);
+    applyThemeClasses(DEFAULT_USER_PREFERENCES.mode, DEFAULT_USER_PREFERENCES.baseColor);
     return DEFAULT_USER_PREFERENCES;
   });
   const [loading, setLoading] = useState(true);
   const [pendingWrite, setPendingWrite] = useState<NodeJS.Timeout | null>(null);
 
+  // Listen for system theme changes when mode is 'system'
+  useEffect(() => {
+    if (preferences.mode !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      // Re-apply theme classes to pick up new system theme
+      applyThemeClasses(preferences.mode, preferences.baseColor);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [preferences.mode, preferences.baseColor]);
+
   // Load preferences from Firestore on auth
   useEffect(() => {
     if (!user) {
       setPreferences(DEFAULT_USER_PREFERENCES);
-      applyTheme(DEFAULT_USER_PREFERENCES.theme);
+      applyThemeClasses(DEFAULT_USER_PREFERENCES.mode, DEFAULT_USER_PREFERENCES.baseColor);
       setLoading(false);
       return;
     }
@@ -122,25 +175,34 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
         const preferencesDoc = await getDoc(doc(firestore, `users/${user.uid}/preferences/settings`));
 
         if (preferencesDoc.exists()) {
-          const firestorePrefs = preferencesDoc.data() as UserPreferences;
-          console.log('✅ Loaded preferences from Firestore:', firestorePrefs);
+          const firestorePrefs = preferencesDoc.data();
+          const migrated = migrateLegacyPreferences(firestorePrefs);
+          console.log('✅ Loaded preferences from Firestore:', migrated);
 
-          setPreferences(firestorePrefs);
-          applyTheme(firestorePrefs.theme);
+          setPreferences(migrated);
+          applyThemeClasses(migrated.mode, migrated.baseColor);
 
-          // Update localStorage with Firestore data
-          localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(firestorePrefs));
+          // Update localStorage with Firestore data (clean)
+          const cleanMigrated = Object.fromEntries(
+            Object.entries(migrated).filter(([key]) => key !== 'theme')
+          );
+          localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(cleanMigrated));
+
+          // If we migrated, save back to Firestore
+          if (firestorePrefs.theme && !firestorePrefs.mode) {
+            console.log('💾 Saving migrated preferences to Firestore');
+            await writeToFirestore(migrated);
+          }
         } else {
           console.log('📝 No preferences found in Firestore, using defaults');
           // Save defaults to Firestore for new users
-          const firestore = getClientFirestore();
           await setDoc(doc(firestore, `users/${user.uid}/preferences/settings`), {
             ...DEFAULT_USER_PREFERENCES,
             updatedAt: new Date().toISOString(),
           });
 
           setPreferences(DEFAULT_USER_PREFERENCES);
-          applyTheme(DEFAULT_USER_PREFERENCES.theme);
+          applyThemeClasses(DEFAULT_USER_PREFERENCES.mode, DEFAULT_USER_PREFERENCES.baseColor);
           localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(DEFAULT_USER_PREFERENCES));
         }
       } catch (error) {
@@ -161,8 +223,15 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
 
       try {
         const firestore = getClientFirestore();
+
+        // Remove any undefined values (Firestore doesn't support them)
+        // Also ensure we never have a 'theme' property (legacy)
+        const cleanPrefs = Object.fromEntries(
+          Object.entries(prefs).filter(([key, value]) => key !== 'theme' && value !== undefined)
+        );
+
         await setDoc(doc(firestore, `users/${user.uid}/preferences/settings`), {
-          ...prefs,
+          ...cleanPrefs,
           updatedAt: new Date().toISOString(),
         });
         console.log('✅ Preferences saved to Firestore');
@@ -183,12 +252,20 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
       // 1. Update memory state immediately
       setPreferences(newPreferences);
 
-      // 2. Update localStorage immediately
-      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(newPreferences));
+      // 2. Update localStorage immediately (ensure no theme property)
+      const cleanPrefs = Object.fromEntries(
+        Object.entries(newPreferences).filter(([key]) => key !== 'theme')
+      );
+      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(cleanPrefs));
 
-      // 3. Apply theme if it changed
-      if (updates.theme && updates.theme !== preferences.theme) {
-        applyTheme(updates.theme);
+      // 3. Apply theme if mode or baseColor changed
+      if (
+        (updates.mode && updates.mode !== preferences.mode) ||
+        (updates.baseColor && updates.baseColor !== preferences.baseColor)
+      ) {
+        const mode = updates.mode ?? preferences.mode;
+        const baseColor = updates.baseColor ?? preferences.baseColor;
+        applyThemeClasses(mode, baseColor);
       }
 
       // 4. Debounce Firestore write
@@ -208,7 +285,7 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
 
   const resetPreferences = useCallback(async () => {
     setPreferences(DEFAULT_USER_PREFERENCES);
-    applyTheme(DEFAULT_USER_PREFERENCES.theme);
+    applyThemeClasses(DEFAULT_USER_PREFERENCES.mode, DEFAULT_USER_PREFERENCES.baseColor);
     localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(DEFAULT_USER_PREFERENCES));
 
     if (pendingWrite) {
