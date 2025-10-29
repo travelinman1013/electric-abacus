@@ -720,10 +720,10 @@ export const MenuItemsPage = () => {
                                 )
                               : `Select to view ${terms.recipe.toLowerCase()}`}
                           </TableCell>
-                          <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">
+                          <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-foreground">
                             {recipeSummary ? formatCurrency(recipeSummary.totalRecipeCost) : '—'}
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">
+                          <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-foreground">
                             {typeof item.sellingPrice === 'number'
                               ? formatCurrency(item.sellingPrice)
                               : '—'}

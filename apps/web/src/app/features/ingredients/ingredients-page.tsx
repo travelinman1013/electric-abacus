@@ -549,9 +549,9 @@ export const IngredientsPage = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm">{ingredient.inventoryUnit}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">{ingredient.unitsPerCase}</TableCell>
-                        <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">{formatCurrency(ingredient.casePrice)}</TableCell>
-                        <TableCell className="text-right font-mono text-xs sm:text-sm text-muted-foreground">{formatCurrency(ingredient.unitCost)}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-foreground">{ingredient.unitsPerCase}</TableCell>
+                        <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-foreground">{formatCurrency(ingredient.casePrice)}</TableCell>
+                        <TableCell className="text-right font-mono text-xs sm:text-sm text-foreground">{formatCurrency(ingredient.unitCost)}</TableCell>
                         <TableCell>
                           <div className="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2">
                             <Button

@@ -40,6 +40,7 @@ export const MainNav = ({ role }: MainNavProps) => {
         <NavLink
           key={item.to}
           to={item.to}
+          end={item.to === '/app'}
           className={({ isActive }) =>
             cn(
               'rounded-md px-3 py-2 transition-colors hover:text-foreground whitespace-nowrap',
