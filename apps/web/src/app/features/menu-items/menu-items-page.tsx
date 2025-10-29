@@ -771,7 +771,7 @@ export const MenuItemsPage = () => {
 
         <Dialog open={isCreating} onOpenChange={(open) => !open && setIsCreating(false)}>
           <DialogContent
-            className="max-h-[85vh] w-[90vw] m-4 max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
+            className="max-h-[85vh] w-[90vw] max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
             onOpenAutoFocus={(e) => {
               e.preventDefault();
               setTimeout(() => {
@@ -926,7 +926,7 @@ export const MenuItemsPage = () => {
 
         <Dialog open={!!editingMenuItemId} onOpenChange={(open) => !open && setEditingMenuItemId(null)}>
             <DialogContent
-              className="max-h-[85vh] w-[90vw] m-4 max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
+              className="max-h-[85vh] w-[90vw] max-w-none rounded-lg lg:max-h-[90vh] lg:max-w-4xl flex flex-col gap-0"
               onOpenAutoFocus={(e) => {
                 e.preventDefault();
                 // Allow the dialog to open, then focus the first input
