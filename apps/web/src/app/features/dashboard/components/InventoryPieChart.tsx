@@ -48,7 +48,7 @@ export const InventoryPieChart = ({ data, totalValue }: InventoryPieChartProps) 
           <CardTitle className="text-base">{terms.inventory} by Category</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+          <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed bg-muted text-sm text-muted-foreground">
             No {terms.inventory.toLowerCase()} data available
           </div>
         </CardContent>
@@ -89,10 +89,10 @@ export const InventoryPieChart = ({ data, totalValue }: InventoryPieChartProps) 
                   if (active && payload && payload.length) {
                     const item = payload[0].payload as { name: string; value: number; color: string };
                     return (
-                      <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
-                        <p className="text-sm font-medium text-slate-900">{item.name}</p>
-                        <p className="text-sm text-slate-600">{formatCurrency(item.value)}</p>
-                        <p className="text-xs text-slate-500">
+                      <div className="rounded-lg border bg-card p-3 shadow-lg">
+                        <p className="text-sm font-medium text-foreground">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">{formatCurrency(item.value)}</p>
+                        <p className="text-xs text-muted-foreground">
                           {formatPercentage(item.value, totalValue)} of total
                         </p>
                       </div>
@@ -113,13 +113,13 @@ export const InventoryPieChart = ({ data, totalValue }: InventoryPieChartProps) 
                     className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-sm text-slate-600">{item.name}</span>
+                  <span className="text-sm text-muted-foreground">{item.name}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-medium text-slate-900">
+                  <span className="text-sm font-medium text-foreground">
                     {formatCurrency(item.value)}
                   </span>
-                  <span className="ml-2 text-xs text-slate-500">
+                  <span className="ml-2 text-xs text-muted-foreground">
                     {formatPercentage(item.value, totalValue)}
                   </span>
                 </div>
@@ -128,10 +128,10 @@ export const InventoryPieChart = ({ data, totalValue }: InventoryPieChartProps) 
           </div>
 
           {/* Total */}
-          <div className="border-t border-slate-200 pt-2">
+          <div className="border-t pt-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-900">Total</span>
-              <span className="text-sm font-bold text-slate-900">
+              <span className="text-sm font-medium text-foreground">Total</span>
+              <span className="text-sm font-bold text-foreground">
                 {formatCurrency(totalValue)}
               </span>
             </div>

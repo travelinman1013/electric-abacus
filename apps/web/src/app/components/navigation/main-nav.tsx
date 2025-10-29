@@ -35,15 +35,15 @@ export const MainNav = ({ role }: MainNavProps) => {
   };
 
   return (
-    <nav className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 overflow-x-auto">
+    <nav className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-muted-foreground overflow-x-auto">
       {items.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
           className={({ isActive }) =>
             cn(
-              'rounded-md px-3 py-2 transition-colors hover:text-slate-900 whitespace-nowrap',
-              isActive ? 'bg-orange-50 text-slate-900' : 'text-slate-600'
+              'rounded-md px-3 py-2 transition-colors hover:text-foreground whitespace-nowrap',
+              isActive ? 'bg-primary/10 text-foreground' : 'text-muted-foreground'
             )
           }
         >

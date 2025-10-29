@@ -112,16 +112,16 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   // Show loading state while polling for claims
   if (isPolling) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm text-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="w-full max-w-md space-y-4 rounded-lg border bg-card p-8 shadow-sm text-center">
           <div className="flex justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           </div>
-          <h1 className="text-xl font-semibold text-slate-900">Setting Up Your Account</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl font-semibold text-foreground">Setting Up Your Account</h1>
+          <p className="text-sm text-muted-foreground">
             Please wait while we configure your business permissions...
           </p>
-          <p className="text-xs text-slate-400">This usually takes 5-10 seconds</p>
+          <p className="text-xs text-muted-foreground/70">This usually takes 5-10 seconds</p>
         </div>
       </div>
     );
@@ -130,21 +130,21 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   // Show error UI only if claims are still missing after polling completes
   if (!loading && !businessId && user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="w-full max-w-md space-y-4 rounded-lg border bg-card p-8 shadow-sm">
           <div className="text-center">
-            <h1 className="text-xl font-semibold text-slate-900">Account Setup Incomplete</h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <h1 className="text-xl font-semibold text-foreground">Account Setup Incomplete</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
               Your account is missing required business permissions. This can happen if:
             </p>
           </div>
-          <ul className="list-disc space-y-1 pl-6 text-sm text-slate-600">
+          <ul className="list-disc space-y-1 pl-6 text-sm text-muted-foreground">
             <li>Your account was just created and permissions are still being set up</li>
             <li>Your auth token needs to be refreshed to get the latest permissions</li>
             <li>There was an issue during account creation</li>
           </ul>
-          <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
-            <p className="text-xs text-blue-900">
+          <div className="rounded-md border bg-muted p-3">
+            <p className="text-xs text-muted-foreground">
               <strong>User ID:</strong> {user.uid}
               <br />
               <strong>Email:</strong> {user.email}
@@ -166,7 +166,7 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
               Sign Out and Try Again
             </Button>
           </div>
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             If this problem persists, please contact support with your User ID above.
           </p>
         </div>

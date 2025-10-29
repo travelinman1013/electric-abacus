@@ -36,15 +36,15 @@ export const TopPerformersList = ({ ingredients }: TopPerformersListProps) => {
             {topCostlyIngredients.map((ingredient, index) => (
               <div key={ingredient.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-sm font-medium text-orange-700">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-medium text-primary">
                     {index + 1}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{ingredient.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium text-foreground">{ingredient.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       per {ingredient.inventoryUnit}
                       {ingredient.isBatch && (
-                        <span className="ml-1 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                        <span className="ml-1 rounded bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
                           Batch
                         </span>
                       )}
@@ -52,16 +52,16 @@ export const TopPerformersList = ({ ingredients }: TopPerformersListProps) => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-foreground">
                     {formatCurrency(ingredient.unitCost)}
                   </p>
-                  <p className="text-xs text-slate-500">{ingredient.category}</p>
+                  <p className="text-xs text-muted-foreground">{ingredient.category}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+          <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed bg-muted text-sm text-muted-foreground">
             No active {terms.ingredients.toLowerCase()} found
           </div>
         )}

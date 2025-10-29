@@ -79,15 +79,15 @@ export const RecentPriceChanges = ({ ingredients, allVersions }: RecentPriceChan
             {recentChanges.map((change) => (
               <div key={change.ingredient.id} className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">{change.ingredient.name}</p>
-                  <p className="text-xs text-slate-500">{formatDate(change.changeDate)}</p>
+                  <p className="text-sm font-medium text-foreground">{change.ingredient.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(change.changeDate)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="text-xs text-slate-500 line-through">
+                    <p className="text-xs text-muted-foreground line-through">
                       {formatCurrency(change.previousCost || 0)}
                     </p>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-foreground">
                       {formatCurrency(change.currentCost)}
                     </p>
                   </div>
@@ -95,10 +95,10 @@ export const RecentPriceChanges = ({ ingredients, allVersions }: RecentPriceChan
                     <div
                       className={`flex h-7 min-w-[60px] items-center justify-center rounded px-2 text-xs font-medium ${
                         change.percentChange > 0
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-destructive/20 text-destructive'
                           : change.percentChange < 0
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-100 text-slate-700'
+                          ? 'bg-success/20 text-success'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {change.percentChange > 0 ? '+' : ''}
@@ -110,7 +110,7 @@ export const RecentPriceChanges = ({ ingredients, allVersions }: RecentPriceChan
             ))}
           </div>
         ) : (
-          <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+          <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed bg-muted text-sm text-muted-foreground">
             No recent price changes found
           </div>
         )}
