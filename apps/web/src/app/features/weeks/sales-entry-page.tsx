@@ -187,8 +187,8 @@ export const SalesEntryPage = () => {
   if (!weekId) {
     return (
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Daily sales entry</h1>
-        <p className="text-sm text-slate-500">Select a week from the week list to continue.</p>
+        <h1 className="text-2xl font-semibold text-foreground">Daily sales entry</h1>
+        <p className="text-sm text-muted-foreground">Select a week from the week list to continue.</p>
       </div>
     );
   }
@@ -196,16 +196,16 @@ export const SalesEntryPage = () => {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-slate-500">{weekId}</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{weekId}</p>
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-semibold text-slate-900">Daily sales entry</h1>
+          <h1 className="text-3xl font-semibold text-foreground">Daily sales entry</h1>
           {week ? (
-            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+            <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
               {week.status}
             </span>
           ) : null}
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Record gross sales, tax, and promos for each day. Weekly totals update automatically and feed the
           owner review.
         </p>
@@ -217,7 +217,7 @@ export const SalesEntryPage = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
               Loading sales...
             </div>
           ) : isError ? (
@@ -256,7 +256,7 @@ export const SalesEntryPage = () => {
 
                       return (
                         <TableRow key={dayKey}>
-                          <TableCell className="font-medium text-slate-800">{dayLabel}</TableCell>
+                          <TableCell className="font-medium text-foreground">{dayLabel}</TableCell>
                           {salesFields.map((field) => {
                             const fieldName = `${dayKey}.${field.key}` as const;
                             const fieldError = errors?.[field.key]?.message;
@@ -279,7 +279,7 @@ export const SalesEntryPage = () => {
                               </TableCell>
                             );
                           })}
-                          <TableCell className="text-right font-semibold text-slate-700">
+                          <TableCell className="text-right font-semibold text-foreground">
                             {formatCurrency(netSales)}
                           </TableCell>
                         </TableRow>
@@ -289,31 +289,31 @@ export const SalesEntryPage = () => {
                 </Table>
               </div>
 
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <div className="rounded-md border border bg-muted/50 p-4">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Weekly totals
                 </h2>
                 <dl className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Gross sales</dt>
-                    <dd className="text-lg font-semibold text-slate-800">
+                    <dt className="text-xs uppercase text-muted-foreground">Gross sales</dt>
+                    <dd className="text-lg font-semibold text-foreground">
                       {formatCurrency(totals.grossSales)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Less sales tax</dt>
-                    <dd className="text-lg font-semibold text-slate-800">
+                    <dt className="text-xs uppercase text-muted-foreground">Less sales tax</dt>
+                    <dd className="text-lg font-semibold text-foreground">
                       {formatCurrency(totals.lessSalesTax)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Less promo</dt>
-                    <dd className="text-lg font-semibold text-slate-800">
+                    <dt className="text-xs uppercase text-muted-foreground">Less promo</dt>
+                    <dd className="text-lg font-semibold text-foreground">
                       {formatCurrency(totals.lessPromo)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Net sales</dt>
+                    <dt className="text-xs uppercase text-muted-foreground">Net sales</dt>
                     <dd className="text-lg font-semibold text-emerald-700">
                       {formatCurrency(totals.netSales)}
                     </dd>
@@ -321,7 +321,7 @@ export const SalesEntryPage = () => {
                 </dl>
               </div>
 
-              <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-sm text-slate-500">
+              <div className="flex items-center justify-between border-t border pt-4 text-sm text-muted-foreground">
                 <p>Sales totals save with each submit. Finalized weeks are locked for editing.</p>
                 <Button
                   type="submit"

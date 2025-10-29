@@ -144,8 +144,8 @@ export const InventoryPage = () => {
   if (!weekId) {
     return (
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-slate-900">{terms.inventory} recount</h1>
-        <p className="text-sm text-slate-500">Select a {terms.week.toLowerCase()} from the {terms.week.toLowerCase()} list to continue.</p>
+        <h1 className="text-3xl font-semibold text-foreground">{terms.inventory} recount</h1>
+        <p className="text-sm text-muted-foreground">Select a {terms.week.toLowerCase()} from the {terms.week.toLowerCase()} list to continue.</p>
       </div>
     );
   }
@@ -162,16 +162,16 @@ export const InventoryPage = () => {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-slate-500">{weekId}</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{weekId}</p>
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-semibold text-slate-900">{terms.inventory} recount</h1>
+          <h1 className="text-3xl font-semibold text-foreground">{terms.inventory} recount</h1>
           {week ? (
-            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+            <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
               {week.status}
             </span>
           ) : null}
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Enter beginning, received, and ending {terms.inventory.toLowerCase()} for each tracked {terms.ingredient.toLowerCase()}. Numbers must be
           non-negative.
         </p>
@@ -183,7 +183,7 @@ export const InventoryPage = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
               Loading {terms.inventory.toLowerCase()}...
             </div>
           ) : combinedError ? (
@@ -191,7 +191,7 @@ export const InventoryPage = () => {
               {combinedErrorMessage}
             </div>
           ) : !rows.length ? (
-            <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
               No active {terms.ingredients.toLowerCase()} configured. Owners can add {terms.ingredients.toLowerCase()} to begin tracking {terms.inventory.toLowerCase()}.
             </div>
           ) : (
@@ -225,10 +225,10 @@ export const InventoryPage = () => {
                       const errors = form.formState.errors.entries?.[index];
                       return (
                         <TableRow key={ingredient.id}>
-                          <TableCell className="font-medium text-slate-800">
+                          <TableCell className="font-medium text-foreground">
                             <div className="flex flex-col">
                               <span>{ingredient.name}</span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-muted-foreground">
                                 {ingredient.inventoryUnit} • {formatCurrency(unitCost)}
                               </span>
                             </div>
@@ -275,10 +275,10 @@ export const InventoryPage = () => {
                               ) : null}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-slate-700">
+                          <TableCell className="text-right font-semibold text-foreground">
                             {usage.toFixed(2)}
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-slate-700">
+                          <TableCell className="text-right font-semibold text-foreground">
                             {formatCurrency(costOfSales)}
                           </TableCell>
                         </TableRow>
@@ -288,17 +288,17 @@ export const InventoryPage = () => {
                 </Table>
               </div>
 
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <div className="rounded-md border border bg-muted/50 p-4">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Weekly totals
                 </h2>
                 <dl className="mt-3 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Total usage</dt>
-                    <dd className="text-lg font-semibold text-slate-800">{totals.usage.toFixed(2)}</dd>
+                    <dt className="text-xs uppercase text-muted-foreground">Total usage</dt>
+                    <dd className="text-lg font-semibold text-foreground">{totals.usage.toFixed(2)}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Total cost of sales</dt>
+                    <dt className="text-xs uppercase text-muted-foreground">Total cost of sales</dt>
                     <dd className="text-lg font-semibold text-emerald-700">
                       {formatCurrency(totals.costOfSales)}
                     </dd>
@@ -306,7 +306,7 @@ export const InventoryPage = () => {
                 </dl>
               </div>
 
-              <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-sm text-slate-500">
+              <div className="flex items-center justify-between border-t border pt-4 text-sm text-muted-foreground">
                 <p>
                   {terms.inventory} saves with each submit. Owners lock values when finalizing the {terms.week.toLowerCase()}.
                 </p>

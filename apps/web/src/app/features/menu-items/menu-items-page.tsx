@@ -103,7 +103,7 @@ const buildDefaultRecipe = (ingredient?: Ingredient) => ({
 
 const foodCostPercentageClass = (percentage: number) => {
   if (percentage <= 0) {
-    return 'text-slate-500';
+    return 'text-muted-foreground';
   }
   if (percentage <= 30) {
     return 'text-green-700';
@@ -566,7 +566,7 @@ export const MenuItemsPage = () => {
           {/* Unit column - 100px from colgroup */}
           <TableCell className="align-middle px-2">
             <Input
-              className="w-full text-center text-sm bg-slate-50 cursor-not-allowed px-2"
+              className="w-full text-center text-sm bg-muted cursor-not-allowed px-2"
               readOnly
               {...form.register(`recipes.${index}.unitOfMeasure` as const)}
             />
@@ -627,8 +627,8 @@ export const MenuItemsPage = () => {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">{terms.menuItems} & {terms.recipes.toLowerCase()}</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-3xl font-semibold text-foreground">{terms.menuItems} & {terms.recipes.toLowerCase()}</h1>
+        <p className="text-sm text-muted-foreground">
           Keep {terms.menuItems.toLowerCase()} in sync with {terms.ingredient.toLowerCase()} {terms.recipes.toLowerCase()}. Costs roll up automatically in the review
           step.
         </p>
@@ -673,7 +673,7 @@ export const MenuItemsPage = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+              <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
                 Loading {terms.menuItems.toLowerCase()}...
               </div>
             ) : (
@@ -700,17 +700,17 @@ export const MenuItemsPage = () => {
                       const foodCostTextClass =
                         recipeSummary && recipeSummary.foodCostPercentage > 0
                           ? foodCostPercentageClass(recipeSummary.foodCostPercentage)
-                          : 'text-slate-500';
+                          : 'text-muted-foreground';
 
                       return (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                          <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                           <TableCell>
                             <Badge variant={item.isActive ? 'success' : 'warning'} className="text-[10px] sm:text-xs">
                               {item.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-slate-500 max-w-[200px] whitespace-normal break-words">
+                          <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-muted-foreground max-w-[200px] whitespace-normal break-words">
                             {editingMenuItemId === item.id && editingMenuItem.data
                               ? formatIngredientList(
                                   editingMenuItem.data.recipes.map((recipe) =>
@@ -720,10 +720,10 @@ export const MenuItemsPage = () => {
                                 )
                               : `Select to view ${terms.recipe.toLowerCase()}`}
                           </TableCell>
-                          <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">
+                          <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">
                             {recipeSummary ? formatCurrency(recipeSummary.totalRecipeCost) : '—'}
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">
+                          <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">
                             {typeof item.sellingPrice === 'number'
                               ? formatCurrency(item.sellingPrice)
                               : '—'}
@@ -764,7 +764,7 @@ export const MenuItemsPage = () => {
               </div>
             )}
           </CardContent>
-          <CardFooter className="text-sm text-slate-500">
+          <CardFooter className="text-sm text-muted-foreground">
             {terms.recipes} are versioned implicitly via {terms.ingredient.toLowerCase()} history; finalize to snapshot costs.
           </CardFooter>
         </Card>
@@ -782,7 +782,7 @@ export const MenuItemsPage = () => {
               }, 0);
             }}
           >
-            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border bg-card z-10">
               <DialogTitle>Create {terms.menuItem.toLowerCase()}</DialogTitle>
               <DialogDescription>Define an item and its {terms.ingredient.toLowerCase()} {terms.recipe.toLowerCase()}.</DialogDescription>
             </DialogHeader>
@@ -811,22 +811,22 @@ export const MenuItemsPage = () => {
                     {...createForm.register('sellingPrice', { valueAsNumber: true })}
                   />
                   {createRecipeCostSummary.totalRecipeCost > 0 && (
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Suggested for 30% food cost: {formatCurrency(createRecipeCostSummary.totalRecipeCost / 0.30)}
                     </p>
                   )}
                 </FormField>
 
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                <div className="rounded-md border border bg-muted/50 p-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">{terms.recipe} Cost:</span>
-                    <span className="font-mono text-slate-900">
+                    <span className="font-medium text-muted-foreground">{terms.recipe} Cost:</span>
+                    <span className="font-mono text-foreground">
                       {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
                     </span>
                   </div>
                   {createRecipeCostSummary.foodCostPercentage > 0 && (
                     <div className="mt-1 flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-700">Food Cost %:</span>
+                      <span className="font-medium text-muted-foreground">Food Cost %:</span>
                       <span
                         className={`font-mono ${foodCostPercentageClass(
                           createRecipeCostSummary.foodCostPercentage,
@@ -870,11 +870,11 @@ export const MenuItemsPage = () => {
                     </TableHeader>
                     <TableBody>
                       {renderRecipeRows(createRecipes, createForm, activeIngredients)}
-                      <TableRow className="border-t-2 bg-slate-50">
-                        <TableCell colSpan={3} className="text-right font-medium text-slate-900 text-sm">
+                      <TableRow className="border-t-2 bg-muted/50">
+                        <TableCell colSpan={3} className="text-right font-medium text-foreground text-sm">
                           {terms.recipe} Total:
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-slate-900 text-sm">
+                        <TableCell className="text-right font-mono font-bold text-foreground text-sm">
                           {formatCurrency(createRecipeCostSummary.totalRecipeCost)}
                         </TableCell>
                         <TableCell />
@@ -899,7 +899,7 @@ export const MenuItemsPage = () => {
                 </Button>
               </form>
             </div>
-            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border bg-card z-10 flex-row justify-between sm:justify-between gap-4">
               <Button
                 type="button"
                 variant="ghost"
@@ -938,7 +938,7 @@ export const MenuItemsPage = () => {
                 }, 0);
               }}
             >
-              <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+              <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border bg-card z-10">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <DialogTitle>
@@ -1007,22 +1007,22 @@ export const MenuItemsPage = () => {
                       {...editForm.register('sellingPrice', { valueAsNumber: true })}
                     />
                     {editRecipeCostSummary.totalRecipeCost > 0 && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Suggested for 30% food cost: {formatCurrency(editRecipeCostSummary.totalRecipeCost / 0.30)}
                       </p>
                     )}
                   </FormField>
 
-                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="rounded-md border border bg-muted/50 p-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-700">{terms.recipe} Cost:</span>
-                      <span className="font-mono text-slate-900">
+                      <span className="font-medium text-muted-foreground">{terms.recipe} Cost:</span>
+                      <span className="font-mono text-foreground">
                         {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
                       </span>
                     </div>
                     {editRecipeCostSummary.foodCostPercentage > 0 && (
                       <div className="mt-1 flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-700">Food Cost %:</span>
+                        <span className="font-medium text-muted-foreground">Food Cost %:</span>
                         <span
                           className={`font-mono ${foodCostPercentageClass(
                             editRecipeCostSummary.foodCostPercentage,
@@ -1090,11 +1090,11 @@ export const MenuItemsPage = () => {
                     </TableHeader>
                     <TableBody>
                         {renderRecipeRows(editRecipes, editForm, activeIngredients)}
-                        <TableRow className="border-t-2 bg-slate-50">
-                          <TableCell colSpan={3} className="text-right font-medium text-slate-900 text-sm">
+                        <TableRow className="border-t-2 bg-muted/50">
+                          <TableCell colSpan={3} className="text-right font-medium text-foreground text-sm">
                             {terms.recipe} Total:
                           </TableCell>
-                          <TableCell className="text-right font-mono font-bold text-slate-900 text-sm">
+                          <TableCell className="text-right font-mono font-bold text-foreground text-sm">
                             {formatCurrency(editRecipeCostSummary.totalRecipeCost)}
                           </TableCell>
                           <TableCell />
@@ -1119,7 +1119,7 @@ export const MenuItemsPage = () => {
                   </Button>
                 </form>
               </div>
-              <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+              <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border bg-card z-10 flex-row justify-between sm:justify-between gap-4">
                 <Button
                   type="button"
                   variant="ghost"
