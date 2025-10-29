@@ -100,7 +100,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       <div
         className={cn(
           'flex h-10 w-full max-w-[5rem] items-stretch rounded-md border border-input bg-white shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0',
-          disabled ? 'cursor-not-allowed bg-slate-100' : 'cursor-text',
+          disabled ? 'cursor-not-allowed bg-muted' : 'cursor-text',
           className,
         )}
       >
@@ -108,7 +108,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           ref={ref}
           type="number"
           className={cn(
-            'flex-1 rounded-l-md border-0 bg-transparent px-3 py-2 text-right text-sm font-mono text-slate-900 placeholder:text-slate-400 focus-visible:outline-none disabled:cursor-not-allowed',
+            'flex-1 rounded-l-md border-0 bg-transparent px-3 py-2 text-right text-sm font-mono text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none disabled:cursor-not-allowed',
             // Hide default number input spinners
             '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
             inputClassName,
@@ -128,7 +128,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             type="button"
             variant="ghost"
             size="sm"
-            className="flex-1 rounded-none rounded-tr-md p-0 hover:bg-slate-100"
+            className="flex-1 rounded-none rounded-tr-md p-0 hover:bg-muted"
             onClick={handleIncrement}
             disabled={disabled || (max !== undefined && (value || 0) >= max)}
             tabIndex={-1}

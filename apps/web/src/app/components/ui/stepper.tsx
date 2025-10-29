@@ -26,7 +26,7 @@ export const Stepper = ({ currentStep, steps }: StepperProps) => {
                     isCompleted &&
                       'border-primary bg-primary text-primary-foreground',
                     isCurrent && 'border-primary bg-background text-primary',
-                    isFuture && 'border-slate-300 bg-background text-slate-400'
+                    isFuture && 'border-muted-foreground/30 bg-background text-muted-foreground/60'
                   )}
                   aria-current={isCurrent ? 'step' : undefined}
                   aria-label={`Step ${stepNumber}: ${step}`}
@@ -44,7 +44,7 @@ export const Stepper = ({ currentStep, steps }: StepperProps) => {
                     'text-xs sm:text-sm font-medium',
                     isCompleted && 'text-primary',
                     isCurrent && 'text-primary',
-                    isFuture && 'text-slate-400'
+                    isFuture && 'text-muted-foreground/60'
                   )}
                   aria-hidden="true"
                 >
@@ -57,7 +57,7 @@ export const Stepper = ({ currentStep, steps }: StepperProps) => {
                 <div
                   className={cn(
                     'ml-2 sm:ml-4 h-0.5 w-8 sm:w-12 transition-colors',
-                    isCompleted ? 'bg-primary' : 'bg-slate-300'
+                    isCompleted ? 'bg-primary' : 'bg-muted-foreground/30'
                   )}
                   aria-hidden="true"
                 />

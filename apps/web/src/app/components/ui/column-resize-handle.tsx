@@ -56,7 +56,7 @@ export const ColumnResizeHandle = ({
     >
       <div
         className={cn(
-          'absolute right-0 top-0 h-full w-0.5 bg-slate-300 transition-all',
+          'absolute right-0 top-0 h-full w-0.5 bg-border transition-all',
           !isLocked && 'group-hover:w-1 group-hover:bg-blue-500',
           isResizing && 'w-1 bg-blue-500',
         )}

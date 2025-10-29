@@ -18,7 +18,7 @@ export const FormField = ({ label, htmlFor, required, description, error, childr
       {required ? <span className="text-destructive ml-1">*</span> : null}
     </Label>
     {children}
-    {description ? <p className="text-xs text-slate-500">{description}</p> : null}
+    {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
     {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
   </div>
 );
