@@ -74,7 +74,10 @@ export const InventoryPieChart = ({ data, totalValue }: InventoryPieChartProps) 
                 outerRadius={80}
                 paddingAngle={2}
                 dataKey="value"
-                label={(props: any) => `${props.name} ${(props.percent * 100).toFixed(0)}%`}
+                label={(props) => {
+                  const { name, percent } = props as unknown as { name: string; percent: number };
+                  return `${name} ${(percent * 100).toFixed(0)}%`;
+                }}
                 labelLine={false}
               >
                 {chartData.map((entry, index) => (
@@ -84,7 +87,6 @@ export const InventoryPieChart = ({ data, totalValue }: InventoryPieChartProps) 
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     const item = payload[0].payload as { name: string; value: number; color: string };
                     return (
                       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-lg">

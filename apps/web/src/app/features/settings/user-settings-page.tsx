@@ -58,7 +58,7 @@ export const UserSettingsPage = () => {
     try {
       await updatePreferences({ mode });
       showSuccess('Theme mode updated');
-    } catch (error) {
+    } catch {
       showError('Failed to update theme mode');
     }
   };
@@ -67,7 +67,7 @@ export const UserSettingsPage = () => {
     try {
       await updatePreferences({ baseColor });
       showSuccess('Theme color updated');
-    } catch (error) {
+    } catch {
       showError('Failed to update theme color');
     }
   };
@@ -76,7 +76,7 @@ export const UserSettingsPage = () => {
     try {
       await updatePreferences({ tableDensity: density });
       showSuccess('Table density updated');
-    } catch (error) {
+    } catch {
       showError('Failed to update density');
     }
   };
@@ -93,7 +93,7 @@ export const UserSettingsPage = () => {
         },
       });
       showSuccess('Number format updated');
-    } catch (error) {
+    } catch {
       showError('Failed to update number format');
     }
   };
@@ -102,7 +102,7 @@ export const UserSettingsPage = () => {
     try {
       await updatePreferences({ defaultStartPage: startPage });
       showSuccess('Start page updated');
-    } catch (error) {
+    } catch {
       showError('Failed to update start page');
     }
   };
@@ -119,7 +119,7 @@ export const UserSettingsPage = () => {
         },
       });
       showSuccess('Notification settings updated');
-    } catch (error) {
+    } catch {
       showError('Failed to update notifications');
     }
   };
@@ -129,7 +129,7 @@ export const UserSettingsPage = () => {
       try {
         await resetPreferences();
         showSuccess('Preferences reset to defaults');
-      } catch (error) {
+      } catch {
         showError('Failed to reset preferences');
       }
     }

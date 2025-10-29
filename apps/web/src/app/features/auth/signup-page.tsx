@@ -57,7 +57,7 @@ export const SignupPage = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      termsAccepted: false as any // Allow false during form initialization, validation will ensure it's true on submit
+      termsAccepted: false as true // Allow false during form initialization, validation will ensure it's true on submit
     }
   });
 
@@ -241,7 +241,7 @@ export const SignupPage = () => {
                 id="terms"
                 checked={accountForm.watch('termsAccepted')}
                 onCheckedChange={(checked) =>
-                  accountForm.setValue('termsAccepted', checked === true ? true : false as any)
+                  accountForm.setValue('termsAccepted', checked as true)
                 }
               />
               <Label

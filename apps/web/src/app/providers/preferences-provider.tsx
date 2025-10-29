@@ -70,7 +70,7 @@ function applyThemeClasses(mode: ThemeMode, baseColor: BaseColor): void {
 /**
  * Migrate legacy theme-based preferences to new mode + baseColor structure
  */
-function migrateLegacyPreferences(stored: any): UserPreferences {
+function migrateLegacyPreferences(stored: Record<string, unknown>): UserPreferences {
   // Check if this is legacy format (has 'theme' property but not 'mode')
   if (stored.theme && !stored.mode) {
     const legacyTheme = stored.theme as LegacyThemeName;
@@ -79,6 +79,7 @@ function migrateLegacyPreferences(stored: any): UserPreferences {
     console.log(`📦 Migrating legacy theme "${legacyTheme}" → mode: ${mode}, baseColor: ${baseColor}`);
 
     // Create a copy without the theme property (Firestore doesn't allow undefined)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { theme, ...storedWithoutTheme } = stored;
 
     // Return migrated preferences
@@ -92,11 +93,12 @@ function migrateLegacyPreferences(stored: any): UserPreferences {
 
   // Already in new format - but make sure there's no theme property
   if (stored.theme !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { theme, ...storedWithoutTheme } = stored;
-    return storedWithoutTheme;
+    return storedWithoutTheme as unknown as UserPreferences;
   }
 
-  return stored;
+  return stored as unknown as UserPreferences;
 }
 
 /**
@@ -145,6 +147,32 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
   });
   const [loading, setLoading] = useState(true);
   const [pendingWrite, setPendingWrite] = useState<NodeJS.Timeout | null>(null);
+
+  // Debounced Firestore write
+  const writeToFirestore = useCallback(
+    async (prefs: UserPreferences) => {
+      if (!user) return;
+
+      try {
+        const firestore = getClientFirestore();
+
+        // Remove any undefined values (Firestore doesn't support them)
+        // Also ensure we never have a 'theme' property (legacy)
+        const cleanPrefs = Object.fromEntries(
+          Object.entries(prefs).filter(([key, value]) => key !== 'theme' && value !== undefined)
+        );
+
+        await setDoc(doc(firestore, `users/${user.uid}/preferences/settings`), {
+          ...cleanPrefs,
+          updatedAt: new Date().toISOString(),
+        });
+        console.log('✅ Preferences saved to Firestore');
+      } catch (error) {
+        console.error('❌ Failed to save preferences to Firestore:', error);
+      }
+    },
+    [user]
+  );
 
   // Listen for system theme changes when mode is 'system'
   useEffect(() => {
@@ -214,33 +242,7 @@ export const PreferencesProvider = ({ children }: PreferencesProviderProps) => {
     };
 
     void loadPreferences();
-  }, [user]);
-
-  // Debounced Firestore write
-  const writeToFirestore = useCallback(
-    async (prefs: UserPreferences) => {
-      if (!user) return;
-
-      try {
-        const firestore = getClientFirestore();
-
-        // Remove any undefined values (Firestore doesn't support them)
-        // Also ensure we never have a 'theme' property (legacy)
-        const cleanPrefs = Object.fromEntries(
-          Object.entries(prefs).filter(([key, value]) => key !== 'theme' && value !== undefined)
-        );
-
-        await setDoc(doc(firestore, `users/${user.uid}/preferences/settings`), {
-          ...cleanPrefs,
-          updatedAt: new Date().toISOString(),
-        });
-        console.log('✅ Preferences saved to Firestore');
-      } catch (error) {
-        console.error('❌ Failed to save preferences to Firestore:', error);
-      }
-    },
-    [user]
-  );
+  }, [user, writeToFirestore]);
 
   const updatePreferences = useCallback(
     async (updates: Partial<UserPreferences>) => {

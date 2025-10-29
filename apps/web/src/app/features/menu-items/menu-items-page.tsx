@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Ingredient, RecipeCostSummary } from '@domain/costing';
-import { calculateFoodCostPercentage, calculateRecipeCostWithPercentage } from '@domain/costing';
+import { calculateRecipeCostWithPercentage } from '@domain/costing';
 
 import { FormField } from '../../components/forms/FormField';
 import { Badge } from '../../components/ui/badge';
@@ -247,7 +247,7 @@ export const MenuItemsPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [businessId, ingredientCostSignature, menuItems]);
+  }, [businessId, ingredientCostSignature, ingredients, menuItems]);
 
   const createForm = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),

@@ -63,6 +63,6 @@ export async function debugAuthToken() {
 
 // Make it available globally for easy access in console
 if (typeof window !== 'undefined') {
-  (window as any).debugAuthToken = debugAuthToken;
+  (window as typeof window & { debugAuthToken: typeof debugAuthToken }).debugAuthToken = debugAuthToken;
   console.log('💡 Debug utility loaded! Run window.debugAuthToken() to check your auth token');
 }
