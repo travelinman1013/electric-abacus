@@ -1,0 +1,87 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:  # Manual trigger only for production
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        default: ''
+
+jobs:
+  deploy:
+    name: Build and Deploy to Production
+    runs-on: ubuntu-latest
+
+    # Safety check: Only deploy if user typed "deploy"
+    if: github.event.inputs.confirm == 'deploy'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run e2e tests
+        run: npm run test:e2e
+
+      - name: Create .env.production files
+        run: |
+          # Root .env.production for admin SDK
+          cat > .env.production << EOF
+          FIREBASE_PROJECT_ID=${{ secrets.PRODUCTION_FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL=${{ secrets.PRODUCTION_FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY="${{ secrets.PRODUCTION_FIREBASE_PRIVATE_KEY }}"
+          EOF
+
+          # Web app .env.production for client SDK
+          cat > apps/web/.env.production << EOF
+          VITE_FIREBASE_API_KEY=${{ secrets.PRODUCTION_VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.PRODUCTION_VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID=${{ secrets.PRODUCTION_VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.PRODUCTION_VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.PRODUCTION_VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID=${{ secrets.PRODUCTION_VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.PRODUCTION_VITE_FIREBASE_MEASUREMENT_ID }}
+          VITE_ENV=production
+          EOF
+
+      - name: Build production app
+        run: npm run build:production
+        working-directory: apps/web
+
+      - name: Deploy to Firebase Production
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.PRODUCTION_FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: electric-abacus
+          channelId: live
+
+      - name: Deploy Firestore Rules to Production
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only firestore:rules --project production --token ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deploy Cloud Functions to Production
+        run: |
+          firebase deploy --only functions --project production --token ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deployment summary
+        run: |
+          echo "🎉 Production deployment complete!"
+          echo "🌐 Production URL: https://electric-abacus.web.app"
+          echo "📊 Firebase Console: https://console.firebase.google.com/project/electric-abacus"

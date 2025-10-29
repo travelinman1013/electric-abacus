@@ -6,7 +6,9 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint 'src/**/*.ts' --max-warnings=0",
     "test": "vitest run",
-    "seed": "tsx scripts/seed.ts",
+    "seed": "tsx scripts/seed.ts --env=production",
+    "seed:staging": "tsx scripts/seed.ts --env=staging",
+    "seed:production": "tsx scripts/seed.ts --env=production",
     "migrate": "tsx scripts/migrate-to-multitenant.ts"
   },
   "dependencies": {

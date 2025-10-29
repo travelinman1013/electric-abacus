@@ -384,7 +384,7 @@ export const DashboardPage = () => {
             <ErrorCard title="Dashboard Data Error" error={weeksErrorDetails as Error} />
           )}
           {inventoryError && (
-            <ErrorCard title="Inventory Data Error" error={inventoryErrorDetails as Error} />
+            <ErrorCard title="Inventory Data Error" error={(inventoryErrorDetails || new Error('Unknown error')) as Error} />
           )}
         </div>
       ) : isLoading ? (

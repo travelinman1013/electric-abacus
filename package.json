@@ -26,7 +26,11 @@
     "test:e2e:debug": "npm --workspace apps/web run test:e2e:debug",
     "e2e": "npm --workspace apps/web run test:e2e",
     "deploy": "npm --workspace apps/web run deploy",
-    "seed": "npm --workspace packages/firebase run seed"
+    "deploy:staging": "npm --workspace apps/web run deploy:staging",
+    "deploy:production": "npm --workspace apps/web run deploy:production",
+    "seed": "npm --workspace packages/firebase run seed",
+    "seed:staging": "npm --workspace packages/firebase run seed:staging",
+    "seed:production": "npm --workspace packages/firebase run seed:production"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
@@ -37,6 +41,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "firebase-tools": "^14.17.0",
     "prettier": "^3.2.0",
+    "shadcn": "^3.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.44.1"

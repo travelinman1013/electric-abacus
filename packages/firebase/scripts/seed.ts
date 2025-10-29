@@ -5,7 +5,25 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 import { getAdminAuth, getAdminFirestore, initFirebaseAdmin } from '../src/admin';
 
-const envPath = path.resolve(process.cwd(), '..', '..', '.env');
+// Parse environment from command line args (--env=staging or --env=production)
+const getEnvironment = (): 'production' | 'staging' => {
+  const envArg = process.argv.find(arg => arg.startsWith('--env='));
+  if (envArg) {
+    const env = envArg.split('=')[1];
+    if (env === 'staging' || env === 'production') {
+      return env;
+    }
+    console.warn(`⚠️  Invalid --env value: ${env}. Using 'production' as default.`);
+  }
+  return 'production';
+};
+
+const environment = getEnvironment();
+const envPath = path.resolve(process.cwd(), '..', '..', `.env.${environment}`);
+
+console.log(`🔧 Loading environment: ${environment.toUpperCase()}`);
+console.log(`📁 Config file: ${envPath}\n`);
+
 dotenv.config({ path: envPath });
 
 type SeedUserInput = {
@@ -1835,12 +1853,15 @@ const main = async () => {
   const clientEmail = required('FIREBASE_CLIENT_EMAIL');
   const privateKey = required('FIREBASE_PRIVATE_KEY');
 
+  console.log(`🎯 Target Firebase Project: ${projectId}`);
+  console.log(`🔐 Service Account: ${clientEmail}\n`);
+
   initFirebaseAdmin({ projectId, clientEmail, privateKey });
 
   const auth = getAdminAuth();
   const db = getAdminFirestore();
 
-  console.log('🌱 Starting seed process for 3 restaurants...\n');
+  console.log(`🌱 Starting seed process for 3 restaurants in ${environment.toUpperCase()} environment...\n`);
 
   const weekDays: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   const weekIds = ['2025-W33', '2025-W34', '2025-W35', '2025-W36', '2025-W37', '2025-W38'];

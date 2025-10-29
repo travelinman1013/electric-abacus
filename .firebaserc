@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "electric-abacus"
+    "default": "electric-abacus",
+    "production": "electric-abacus",
+    "staging": "electric-abacus-staging"
   }
 }

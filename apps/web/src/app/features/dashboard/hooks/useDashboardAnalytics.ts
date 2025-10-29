@@ -116,7 +116,7 @@ export const useInventoryAnalytics = () => {
       if (!ingredient) return;
 
       // Calculate value from ending inventory
-      const value = entry.end * ingredient.costPerUnit;
+      const value = entry.end * ingredient.unitCost;
       totalValue += value;
 
       // Add to category total

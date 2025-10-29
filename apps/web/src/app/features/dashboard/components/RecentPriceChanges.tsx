@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 interface PriceChange {
   ingredient: Ingredient;
   versions: IngredientVersion[];
-  previousCost: number | null;
+  previousCost: number;
   currentCost: number;
-  percentChange: number | null;
+  percentChange: number;
   changeDate: string;
 }
 

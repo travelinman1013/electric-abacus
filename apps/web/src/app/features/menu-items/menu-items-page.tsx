@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
-import { Select } from '../../components/ui/select';
+import { NativeSelect as Select } from '../../components/ui/native-select';
 import {
   Table,
   TableBody,

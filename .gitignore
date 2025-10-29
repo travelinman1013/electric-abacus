@@ -2,8 +2,19 @@ node_modules/
 dist/
 .vscode/
 .DS_Store
+
+# Environment files (keep .env.example files tracked)
 .env
+.env.local
+.env.production
+.env.staging
+.env.development
 apps/web/.env
+apps/web/.env.local
+apps/web/.env.production
+apps/web/.env.staging
+apps/web/.env.development
+
 apps/web/dist/
 coverage/
 playwright-report/
@@ -12,6 +23,13 @@ playwright-report/
 # Service account files
 TacoRayServiceAccount.json
 *ServiceAccount.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!firebase.json
+!firestore.indexes.json
+!components.json
 
 # Temporary files
 tmp-*.mjs
