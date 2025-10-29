@@ -308,8 +308,8 @@ export const WeekReviewPage = () => {
   if (!weekId) {
     return (
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-slate-900">Weekly review</h1>
-        <p className="text-sm text-slate-500">Select a week from the list to inspect costing and finalize.</p>
+        <h1 className="text-3xl font-semibold text-foreground">Weekly review</h1>
+        <p className="text-sm text-muted-foreground">Select a week from the list to inspect costing and finalize.</p>
       </div>
     );
   }
@@ -320,16 +320,16 @@ export const WeekReviewPage = () => {
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-wide text-slate-500">{weekId}</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{weekId}</p>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold text-slate-900">Weekly review</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Weekly review</h1>
             {week ? (
               <Badge variant={badgeVariant} className="uppercase">
                 {week.status}
               </Badge>
             ) : null}
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Verify sales, inventory, and costing before finalizing. Finalization snapshots ingredient costs and locks edits.
           </p>
         </div>
@@ -352,7 +352,7 @@ export const WeekReviewPage = () => {
             </Button>
           </div>
           {finalizeHelperText ? (
-            <p className="text-xs text-slate-500">{finalizeHelperText}</p>
+            <p className="text-xs text-muted-foreground">{finalizeHelperText}</p>
           ) : null}
         </div>
       </header>
@@ -370,7 +370,7 @@ export const WeekReviewPage = () => {
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+        <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
           Loading week data...
         </div>
       ) : null}
@@ -382,7 +382,7 @@ export const WeekReviewPage = () => {
       ) : null}
 
       {!isLoading && !errorMessage && week && !inventoryEntries.length ? (
-        <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+        <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
           Inventory inputs are required before costing can be generated. Enter counts on the inventory screen.
         </div>
       ) : null}
@@ -400,25 +400,25 @@ export const WeekReviewPage = () => {
               <CardContent>
                 <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <dt className="text-xs font-medium uppercase text-slate-500">Gross sales</dt>
-                    <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    <dt className="text-xs font-medium uppercase text-muted-foreground">Gross sales</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-foreground">
                       {formatCurrency(salesTotals.grossSales)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-slate-500">Less sales tax</dt>
-                    <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    <dt className="text-xs font-medium uppercase text-muted-foreground">Less sales tax</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-foreground">
                       {formatCurrency(salesTotals.lessSalesTax)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-slate-500">Less promo</dt>
-                    <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    <dt className="text-xs font-medium uppercase text-muted-foreground">Less promo</dt>
+                    <dd className="mt-1 text-2xl font-semibold text-foreground">
                       {formatCurrency(salesTotals.lessPromo)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-slate-500">Net sales</dt>
+                    <dt className="text-xs font-medium uppercase text-muted-foreground">Net sales</dt>
                     <dd className="mt-1 text-2xl font-semibold text-emerald-700">
                       {formatCurrency(salesTotals.netSales)}
                     </dd>
@@ -438,19 +438,19 @@ export const WeekReviewPage = () => {
             <CardContent>
               <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <dt className="text-xs font-medium uppercase text-slate-500">Total cost of sales</dt>
-                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Total cost of sales</dt>
+                  <dd className="mt-1 text-2xl font-semibold text-foreground">
                     {summary ? formatCurrency(summary.totals.totalCostOfSales) : formatCurrency(0)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase text-slate-500">Total usage units</dt>
-                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Total usage units</dt>
+                  <dd className="mt-1 text-2xl font-semibold text-foreground">
                     {summary ? summary.totals.totalUsageUnits.toFixed(2) : '0.00'}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase text-slate-500">Food cost percentage</dt>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Food cost percentage</dt>
                   <dd className="mt-1 text-2xl font-semibold">
                     {foodCostPercentage !== null ? (
                       <span
@@ -465,7 +465,7 @@ export const WeekReviewPage = () => {
                         {foodCostPercentage}%
                       </span>
                     ) : (
-                      <span className="text-slate-400">N/A</span>
+                      <span className="text-muted-foreground/60">N/A</span>
                     )}
                   </dd>
                 </div>
@@ -484,13 +484,13 @@ export const WeekReviewPage = () => {
               <CardContent>
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <dt className="text-xs font-medium uppercase text-slate-500">Gross profit</dt>
+                    <dt className="text-xs font-medium uppercase text-muted-foreground">Gross profit</dt>
                     <dd className="mt-1 text-2xl font-semibold text-emerald-700">
                       {formatCurrency(grossProfit)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-slate-500">Gross margin</dt>
+                    <dt className="text-xs font-medium uppercase text-muted-foreground">Gross margin</dt>
                     <dd className="mt-1 text-2xl font-semibold">
                       <span
                         className={cn(
@@ -533,7 +533,7 @@ export const WeekReviewPage = () => {
                   <TableBody>
                     {tableRows.map((row) => (
                       <TableRow key={row.ingredientId}>
-                        <TableCell className="font-medium text-slate-800">{row.ingredientName}</TableCell>
+                        <TableCell className="font-medium text-foreground">{row.ingredientName}</TableCell>
                         <TableCell className="text-right">{row.usage.toFixed(2)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(row.unitCost)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(row.costOfSales)}</TableCell>
@@ -543,7 +543,7 @@ export const WeekReviewPage = () => {
                               'inline-block rounded px-2 py-1 text-xs font-mono',
                               row.isVersionMissing
                                 ? 'bg-amber-100 text-amber-800'
-                                : 'bg-slate-100 text-slate-700'
+                                : 'bg-muted text-muted-foreground'
                             )}
                             title={
                               row.isVersionMissing
@@ -557,8 +557,8 @@ export const WeekReviewPage = () => {
                       </TableRow>
                     ))}
                     {summary && (
-                      <TableRow className="bg-slate-50 font-semibold">
-                        <TableCell className="font-bold text-slate-900">TOTAL</TableCell>
+                      <TableRow className="bg-muted/50 font-semibold">
+                        <TableCell className="font-bold text-foreground">TOTAL</TableCell>
                         <TableCell className="text-right">{summary.totals.totalUsageUnits.toFixed(2)}</TableCell>
                         <TableCell className="text-right"></TableCell>
                         <TableCell className="text-right">{formatCurrency(summary.totals.totalCostOfSales)}</TableCell>
@@ -568,16 +568,16 @@ export const WeekReviewPage = () => {
                   </TableBody>
                 </Table>
               ) : (
-                <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
                   No costing data yet. Finalize the week once inventory is complete.
                 </div>
               )}
             </CardContent>
-            <CardFooter className="justify-between text-sm text-slate-500">
+            <CardFooter className="justify-between text-sm text-muted-foreground">
               <span>Owners can re-run costing before finalizing to refresh ingredient price changes.</span>
               <Link
                 to={`/app/weeks/${weekId}/inventory`}
-                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-slate-600 hover:text-slate-900')}
+                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-muted-foreground hover:text-foreground')}
               >
                 View raw inventory
               </Link>
@@ -597,19 +597,19 @@ export const WeekReviewPage = () => {
           </DialogHeader>
 
           {summary && (
-            <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-4">
+            <div className="space-y-2 rounded-md border border bg-muted/50 p-4">
               <h4 className="text-sm font-medium">Summary to be finalized:</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-slate-500">Total usage:</span>
+                  <span className="text-muted-foreground">Total usage:</span>
                   <div className="font-medium">{summary.totals.totalUsageUnits.toFixed(2)} units</div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Total cost:</span>
+                  <span className="text-muted-foreground">Total cost:</span>
                   <div className="font-medium">{formatCurrency(summary.totals.totalCostOfSales)}</div>
                 </div>
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-muted-foreground">
                 {summary.breakdown.length} ingredient{summary.breakdown.length !== 1 ? 's' : ''} will be snapshot
               </div>
             </div>
