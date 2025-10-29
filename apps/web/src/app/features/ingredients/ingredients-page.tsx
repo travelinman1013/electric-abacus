@@ -338,7 +338,7 @@ export const IngredientsPage = () => {
           {/* Unit column - 100px from colgroup */}
           <TableCell className="align-middle px-2">
             <Input
-              className="w-full text-center text-sm bg-slate-50 cursor-not-allowed px-2"
+              className="w-full text-center text-sm bg-muted cursor-not-allowed px-2"
               readOnly
               {...form.register(`recipeIngredients.${index}.unitOfMeasure` as const)}
             />
@@ -487,8 +487,8 @@ export const IngredientsPage = () => {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">{terms.ingredient} catalog</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-3xl font-semibold text-foreground">{terms.ingredient} catalog</h1>
+        <p className="text-sm text-muted-foreground">
           Manage cost inputs that drive the weekly franchise fee report. {terms.ingredient} versions capture price
           changes over time.
         </p>
@@ -522,7 +522,7 @@ export const IngredientsPage = () => {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+              <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
                 Loading {terms.ingredients.toLowerCase()}...
               </div>
             ) : (
@@ -542,16 +542,16 @@ export const IngredientsPage = () => {
                   <TableBody>
                     {sortedIngredients.map((ingredient) => (
                       <TableRow key={ingredient.id}>
-                        <TableCell className="font-medium text-slate-800">{ingredient.name}</TableCell>
+                        <TableCell className="font-medium text-foreground">{ingredient.name}</TableCell>
                         <TableCell>
                           <Badge variant={ingredient.isActive ? 'success' : 'warning'} className="text-[10px] sm:text-xs">
                             {ingredient.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm">{ingredient.inventoryUnit}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">{ingredient.unitsPerCase}</TableCell>
-                        <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-slate-600">{formatCurrency(ingredient.casePrice)}</TableCell>
-                        <TableCell className="text-right font-mono text-xs sm:text-sm text-slate-600">{formatCurrency(ingredient.unitCost)}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">{ingredient.unitsPerCase}</TableCell>
+                        <TableCell className="hidden md:table-cell text-right font-mono text-xs sm:text-sm text-muted-foreground">{formatCurrency(ingredient.casePrice)}</TableCell>
+                        <TableCell className="text-right font-mono text-xs sm:text-sm text-muted-foreground">{formatCurrency(ingredient.unitCost)}</TableCell>
                         <TableCell>
                           <div className="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2">
                             <Button
@@ -589,7 +589,7 @@ export const IngredientsPage = () => {
               </div>
             )}
           </CardContent>
-          <CardFooter className="text-sm text-slate-500">
+          <CardFooter className="text-sm text-muted-foreground">
             Updating {terms.ingredient.toLowerCase()} will spawn a new version record used for future {terms.weeks.toLowerCase()}.
           </CardFooter>
         </Card>
@@ -607,7 +607,7 @@ export const IngredientsPage = () => {
               }, 0);
             }}
           >
-            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border bg-card z-10">
               <DialogTitle>Create {terms.ingredient.toLowerCase()}</DialogTitle>
               <DialogDescription>Add new cost inputs to the catalog.</DialogDescription>
             </DialogHeader>
@@ -680,7 +680,7 @@ export const IngredientsPage = () => {
                   >
                     <div
                       id="new-conversion-factor"
-                      className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
+                      className="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground shadow-sm"
                     >
                       {formatConversionFactor(createForm.watch('inventoryUnit'), createForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
                     </div>
@@ -719,17 +719,17 @@ export const IngredientsPage = () => {
 
                 {createFormIsBatch && (
                   <>
-                    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <div className="rounded-md border border bg-muted/50 p-3">
                       <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="font-medium text-slate-700">Batch Cost:</span>
-                        <span className="font-mono text-slate-900">
+                        <span className="font-medium text-muted-foreground">Batch Cost:</span>
+                        <span className="font-mono text-foreground">
                           {formatCurrency(createBatchCost.totalCost)}
                         </span>
                       </div>
                       {createBatchCost.costPerUnit > 0 && (
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-slate-700">Cost per {createForm.watch('yieldUnit') || 'unit'}:</span>
-                          <span className="font-mono text-slate-900">
+                          <span className="font-medium text-muted-foreground">Cost per {createForm.watch('yieldUnit') || 'unit'}:</span>
+                          <span className="font-mono text-foreground">
                             {formatCurrency(createBatchCost.costPerUnit)}
                           </span>
                         </div>
@@ -771,7 +771,7 @@ export const IngredientsPage = () => {
 
                     <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium text-slate-700">{terms.recipe} {terms.ingredients}</h4>
+                        <h4 className="text-sm font-medium text-foreground">{terms.recipe} {terms.ingredients}</h4>
                         <Button
                           type="button"
                           size="sm"
@@ -843,7 +843,7 @@ export const IngredientsPage = () => {
 
               </form>
             </div>
-            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border bg-card z-10 flex-row justify-between sm:justify-between gap-4">
               <Button
                 type="button"
                 variant="ghost"
@@ -877,7 +877,7 @@ export const IngredientsPage = () => {
               }, 0);
             }}
           >
-            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-200 bg-white z-10">
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border bg-card z-10">
               <DialogTitle>Edit {terms.ingredient.toLowerCase()}</DialogTitle>
               <DialogDescription>
                 Update pricing or pack sizes to spawn a new cost version.
@@ -952,7 +952,7 @@ export const IngredientsPage = () => {
                     >
                       <div
                         id="edit-conversion-factor"
-                        className="flex h-9 w-full rounded-md border border-input bg-slate-100 px-3 py-1 text-sm text-slate-500 shadow-sm"
+                        className="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground shadow-sm"
                       >
                         {formatConversionFactor(editForm.watch('inventoryUnit'), editForm.watch('recipeUnit') || '') || 'Enter recipe unit to see conversion'}
                       </div>
@@ -991,17 +991,17 @@ export const IngredientsPage = () => {
 
                   {editFormIsBatch && (
                     <>
-                      <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                      <div className="rounded-md border border bg-muted/50 p-3">
                         <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="font-medium text-slate-700">Batch Cost:</span>
-                          <span className="font-mono text-slate-900">
+                          <span className="font-medium text-muted-foreground">Batch Cost:</span>
+                          <span className="font-mono text-foreground">
                             {formatCurrency(editBatchCost.totalCost)}
                           </span>
                         </div>
                         {editBatchCost.costPerUnit > 0 && (
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-slate-700">Cost per {editForm.watch('yieldUnit') || 'unit'}:</span>
-                            <span className="font-mono text-slate-900">
+                            <span className="font-medium text-muted-foreground">Cost per {editForm.watch('yieldUnit') || 'unit'}:</span>
+                            <span className="font-mono text-foreground">
                               {formatCurrency(editBatchCost.costPerUnit)}
                             </span>
                           </div>
@@ -1043,7 +1043,7 @@ export const IngredientsPage = () => {
 
                       <div className="overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-slate-700">{terms.recipe} {terms.ingredients}</h4>
+                          <h4 className="text-sm font-medium text-foreground">{terms.recipe} {terms.ingredients}</h4>
                           <Button
                             type="button"
                             size="sm"
@@ -1112,7 +1112,7 @@ export const IngredientsPage = () => {
                     />
                   </FormField>
 
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     Unit cost will update to{' '}
                     {formatCurrency(
                       toUnitCost(
@@ -1124,8 +1124,8 @@ export const IngredientsPage = () => {
                   </div>
                 </form>
 
-                <div className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                  <p className="font-semibold text-slate-700">Version history</p>
+                <div className="space-y-3 rounded-md border border bg-muted/50 p-3 text-xs text-muted-foreground">
+                  <p className="font-semibold text-foreground">Version history</p>
                   {ingredientVersions.data?.length ? (
                     <ul className="space-y-1">
                       {ingredientVersions.data.map((version) => (
@@ -1133,18 +1133,18 @@ export const IngredientsPage = () => {
                           <span>
                             {formatCurrency(version.unitCost)} • {version.unitsPerCase} {version.id}
                           </span>
-                          <span className="text-slate-400">
+                          <span className="text-muted-foreground/70">
                             {new Date(version.effectiveFrom).toLocaleDateString()}
                           </span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-slate-500">No versions recorded yet.</p>
+                    <p className="text-muted-foreground">No versions recorded yet.</p>
                   )}
                 </div>
             </div>
-            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white z-10 flex-row justify-between sm:justify-between gap-4">
+            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border bg-card z-10 flex-row justify-between sm:justify-between gap-4">
               <Button
                 type="button"
                 variant="ghost"
