@@ -109,7 +109,7 @@ export const BusinessTerminology = () => {
   if (termsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-500">Loading terminology...</p>
+        <p className="text-muted-foreground">Loading terminology...</p>
       </div>
     );
   }
@@ -117,8 +117,8 @@ export const BusinessTerminology = () => {
   return (
     <div className="space-y-8 max-w-4xl">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">Business Terminology</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-3xl font-semibold text-foreground">Business Terminology</h1>
+        <p className="text-sm text-muted-foreground">
           Customize the labels used throughout the app to match your business language
         </p>
       </header>
@@ -160,7 +160,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.ingredients}
                   className={errors.ingredients ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.ingredients}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.ingredients}</p>
               </div>
 
               {/* Ingredient (singular) */}
@@ -177,7 +177,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.ingredient}
                   className={errors.ingredient ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.ingredient}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.ingredient}</p>
               </div>
 
               {/* Menu Items (plural) */}
@@ -194,7 +194,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.menuItems}
                   className={errors.menuItems ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.menuItems}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.menuItems}</p>
               </div>
 
               {/* Menu Item (singular) */}
@@ -211,7 +211,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.menuItem}
                   className={errors.menuItem ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.menuItem}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.menuItem}</p>
               </div>
 
               {/* Recipes (plural) */}
@@ -228,7 +228,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.recipes}
                   className={errors.recipes ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.recipes}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.recipes}</p>
               </div>
 
               {/* Recipe (singular) */}
@@ -245,7 +245,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.recipe}
                   className={errors.recipe ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.recipe}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.recipe}</p>
               </div>
 
               {/* Weeks (plural) */}
@@ -260,7 +260,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.weeks}
                   className={errors.weeks ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.weeks}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.weeks}</p>
               </div>
 
               {/* Week (singular) */}
@@ -275,7 +275,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.week}
                   className={errors.week ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.week}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.week}</p>
               </div>
 
               {/* Inventory */}
@@ -292,7 +292,7 @@ export const BusinessTerminology = () => {
                   placeholder={DEFAULT_TERMINOLOGY.inventory}
                   className={errors.inventory ? 'border-red-300' : ''}
                 />
-                <p className="text-xs text-slate-500">Default: {DEFAULT_TERMINOLOGY.inventory}</p>
+                <p className="text-xs text-muted-foreground">Default: {DEFAULT_TERMINOLOGY.inventory}</p>
               </div>
             </div>
 
@@ -316,23 +316,23 @@ export const BusinessTerminology = () => {
               </Button>
 
               {isDirty && (
-                <p className="text-xs text-slate-500">You have unsaved changes</p>
+                <p className="text-xs text-muted-foreground">You have unsaved changes</p>
               )}
             </div>
           </form>
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 bg-slate-50">
+      <Card className="border bg-muted/50">
         <CardHeader>
           <CardTitle className="text-base">Preview</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               Your custom labels will appear throughout the app. For example:
             </p>
-            <ul className="list-disc list-inside space-y-1 text-slate-700 ml-2">
+            <ul className="list-disc list-inside space-y-1 text-foreground ml-2">
               <li>Navigation: "{terms.ingredients}", "{terms.menuItems}", "{terms.weeks}"</li>
               <li>Page headers: "Add {terms.ingredient}", "Edit {terms.menuItem}"</li>
               <li>Tables: "{terms.ingredients} List", "{terms.inventory} Tracking"</li>

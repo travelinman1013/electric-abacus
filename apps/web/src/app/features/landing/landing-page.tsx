@@ -7,11 +7,11 @@ export const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-slate-100">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calculator className="h-6 w-6 text-primary" />
-            <span className="text-xl font-semibold text-slate-900">Electric Abacus</span>
+            <span className="text-xl font-semibold text-foreground">Electric Abacus</span>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/login">
@@ -28,12 +28,12 @@ export const LandingPage = () => {
         {/* Hero Section */}
         <section className="mx-auto max-w-7xl px-6 py-20 text-center">
         <div className="mx-auto max-w-3xl space-y-6">
-          <h1 className="text-5xl font-bold text-slate-900 leading-tight">
+          <h1 className="text-5xl font-bold text-foreground leading-tight">
             Streamline Your Operations.
             <br />
             <span className="text-primary">Maximize Your Profits.</span>
           </h1>
-          <p className="text-xl text-slate-600 leading-relaxed">
+          <p className="text-xl text-muted-foreground leading-relaxed">
             Electric Abacus is a powerful operations management tool built for restaurants, cafés,
             and food service businesses. Track inventory, manage costs, and optimize your menu—all
             in one place.
@@ -56,10 +56,10 @@ export const LandingPage = () => {
       {/* Features Section */}
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 mb-3">
+          <h2 className="text-3xl font-bold text-foreground mb-3">
             Everything You Need to Run Your Business
           </h2>
-          <p className="text-lg text-slate-600">
+          <p className="text-lg text-muted-foreground">
             Powerful features designed for food service operations
           </p>
         </div>
@@ -73,7 +73,7 @@ export const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Real-Time Cost Tracking</h3>
-                  <p className="text-slate-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Monitor ingredient costs, recipe profitability, and food cost percentages in
                     real-time with automatic calculations.
                   </p>
@@ -90,7 +90,7 @@ export const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Weekly Operations Management</h3>
-                  <p className="text-slate-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Track sales, inventory, and usage on a weekly basis. Finalize weeks and
                     generate comprehensive PDF reports.
                   </p>
@@ -107,7 +107,7 @@ export const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Recipe Costing</h3>
-                  <p className="text-slate-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Calculate exact recipe costs with automatic unit conversions and batch
                     ingredient support. Optimize menu pricing effortlessly.
                   </p>
@@ -124,7 +124,7 @@ export const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Team Collaboration</h3>
-                  <p className="text-slate-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Role-based access control lets you manage who can view and edit sensitive data.
                     Perfect for multi-user teams.
                   </p>
@@ -141,7 +141,7 @@ export const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Secure & Reliable</h3>
-                  <p className="text-slate-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Built on Firebase and Google Cloud Platform with enterprise-grade security and
                     99.9% uptime SLA.
                   </p>
@@ -158,7 +158,7 @@ export const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Lightning Fast</h3>
-                  <p className="text-slate-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Modern architecture built with React and TypeScript delivers instant updates and
                     a responsive user experience.
                   </p>
@@ -213,7 +213,7 @@ export const LandingPage = () => {
       {/* CTA Section */}
       <section className="mx-auto max-w-7xl px-6 py-20 text-center">
         <div className="mx-auto max-w-2xl space-y-6">
-          <h2 className="text-4xl font-bold text-slate-900">Ready to Get Started?</h2>
+          <h2 className="text-4xl font-bold text-foreground">Ready to Get Started?</h2>
           <p className="text-xl text-slate-600">
             Join today and start optimizing your operations. No credit card required.
           </p>
@@ -229,14 +229,14 @@ export const LandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-8">
+      <footer className="border-t border bg-card py-8">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Calculator className="h-5 w-5 text-primary" />
               <span className="font-semibold text-slate-900">Electric Abacus</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-slate-600">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link to="/terms" className="hover:text-primary transition-colors">
                 Terms of Service
               </Link>
@@ -247,7 +247,7 @@ export const LandingPage = () => {
                 Contact
               </a>
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               © 2025 Electric Abacus. All rights reserved.
             </p>
           </div>
