@@ -139,11 +139,11 @@ export const SignupPage = () => {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-slate-100 px-2 sm:px-4 py-8">
-      <div className="w-full max-w-full sm:max-w-2xl space-y-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-background to-muted px-2 sm:px-4 py-8">
+      <div className="w-full max-w-full sm:max-w-2xl space-y-6 rounded-xl border border bg-card p-4 sm:p-8 shadow-lg">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Create Your Account</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-foreground">Create Your Account</h1>
+          <p className="text-sm text-muted-foreground">
             Get started with Electric Abacus to manage your operations
           </p>
         </div>
@@ -197,7 +197,7 @@ export const SignupPage = () => {
               {password && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Password strength:</span>
+                    <span className="text-muted-foreground">Password strength:</span>
                     <span
                       className={`font-medium ${
                         strengthScore < 2
@@ -246,7 +246,7 @@ export const SignupPage = () => {
               />
               <Label
                 htmlFor="terms"
-                className="text-sm leading-none text-slate-700 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="text-sm leading-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
                 I agree to the{' '}
                 <Link to="/terms" className="text-primary hover:underline">
@@ -304,7 +304,7 @@ export const SignupPage = () => {
             >
               <select
                 id="industry"
-                className="flex h-10 w-full rounded-md border border-slate-300 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 {...businessForm.register('industry')}
               >
                 {INDUSTRY_OPTIONS.map((option) => (
@@ -323,7 +323,7 @@ export const SignupPage = () => {
             >
               <select
                 id="teamSize"
-                className="flex h-10 w-full rounded-md border border-slate-300 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 {...businessForm.register('teamSize')}
               >
                 {TEAM_SIZE_OPTIONS.map((option) => (
@@ -346,22 +346,22 @@ export const SignupPage = () => {
         {/* Step 3: Review */}
         {currentStep === 2 && (
           <div className="space-y-6">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 space-y-4">
+            <div className="rounded-lg border border bg-muted/50 p-6 space-y-4">
               <h3 className="font-semibold text-lg">Review Your Information</h3>
 
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-slate-500">Email</p>
+                  <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium">{accountForm.getValues('email')}</p>
                 </div>
 
-                <div className="border-t border-slate-200 pt-3">
-                  <p className="text-sm text-slate-500">Business Name</p>
+                <div className="border-t border pt-3">
+                  <p className="text-sm text-muted-foreground">Business Name</p>
                   <p className="font-medium">{businessForm.getValues('name')}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-slate-500">Industry</p>
+                  <p className="text-sm text-muted-foreground">Industry</p>
                   <p className="font-medium">
                     {
                       INDUSTRY_OPTIONS.find((o) => o.value === businessForm.getValues('industry'))
@@ -371,7 +371,7 @@ export const SignupPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-sm text-slate-500">Team Size</p>
+                  <p className="text-sm text-muted-foreground">Team Size</p>
                   <p className="font-medium">
                     {
                       TEAM_SIZE_OPTIONS.find((o) => o.value === businessForm.getValues('teamSize'))
@@ -415,7 +415,7 @@ export const SignupPage = () => {
           </div>
         )}
 
-        <div className="text-center text-sm text-slate-500">
+        <div className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link to="/login" className="text-primary hover:underline font-medium">
             Sign in

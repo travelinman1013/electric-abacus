@@ -141,8 +141,8 @@ export const WeekListPage = () => {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold text-slate-900">Weekly Operations</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-3xl font-semibold text-foreground">Weekly Operations</h1>
+        <p className="text-sm text-muted-foreground">
           Track draft {terms.weeks.toLowerCase()}, capture team inputs, and finalize reports for franchise fee submission.
         </p>
       </header>
@@ -160,7 +160,7 @@ export const WeekListPage = () => {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+              <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
                 Loading {terms.weeks.toLowerCase()}...
               </div>
             ) : sortedWeeks.length ? (
@@ -179,7 +179,7 @@ export const WeekListPage = () => {
                       const actions = profile ? actionsForRole(profile.role, week, terms.inventory) : [];
                       return (
                         <TableRow key={week.id}>
-                          <TableCell className="font-medium text-slate-800">{week.id}</TableCell>
+                          <TableCell className="font-medium text-foreground">{week.id}</TableCell>
                           <TableCell>
                             <Badge variant={badgeVariantByStatus[week.status]} className="uppercase text-[10px] sm:text-xs">
                               {week.status}
@@ -214,7 +214,7 @@ export const WeekListPage = () => {
                 </Table>
               </div>
             ) : (
-              <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+              <div className="rounded-md border border-dashed border p-6 text-center text-sm text-muted-foreground bg-muted/50">
                 No {terms.weeks.toLowerCase()} yet. Owners can create the first {terms.week.toLowerCase()} to kick off data collection.
               </div>
             )}
@@ -256,18 +256,18 @@ export const WeekListPage = () => {
                 >
                   {createWeekMutation.isPending ? 'Creating...' : `Create ${terms.week.toLowerCase()}`}
                 </Button>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Opening a {terms.week.toLowerCase()} records a draft shell for the team to provide sales and {terms.inventory.toLowerCase()}. Active
                   {terms.ingredients.toLowerCase()} are preloaded for {terms.inventory.toLowerCase()} tracking.
                 </p>
               </form>
             ) : (
-              <div className="space-y-3 text-sm text-slate-600">
+              <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
                   Only owners can open a new {terms.week.toLowerCase()}. Request an owner to create the {terms.week.toLowerCase()} before entering
                   sales or {terms.inventory.toLowerCase()}.
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Tip: Use the Seed script to provision a sample draft week during local development.
                 </p>
               </div>

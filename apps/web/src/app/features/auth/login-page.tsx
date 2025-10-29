@@ -103,11 +103,11 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-slate-100 px-4 py-8">
-      <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-background to-muted px-4 py-8">
+      <div className="w-full max-w-md space-y-6 rounded-xl border border bg-card p-8 shadow-lg">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Electric Abacus</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-foreground">Electric Abacus</h1>
+          <p className="text-sm text-muted-foreground">
             Sign in with your account credentials to access your operations dashboard.
           </p>
         </div>
@@ -168,13 +168,13 @@ export const LoginPage = () => {
           </Button>
         </form>
 
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-          <p className="font-semibold text-slate-600">Demo credentials</p>
+        <div className="rounded-md border border bg-muted/50 p-3 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground">Demo credentials</p>
           <p>Admin: admin@electricabacus.test</p>
           <p>Staff: staff@electricabacus.test</p>
         </div>
 
-        <div className="text-center text-sm text-slate-500">
+        <div className="text-center text-sm text-muted-foreground">
           Don't have an account?{' '}
           <Link to="/signup" className="text-primary hover:underline font-medium">
             Sign up
